@@ -9,8 +9,8 @@ Copyright (C) 2020 Ian R.B. Reeves
 Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
-# Version Number: 1
-# Updated: 22 Jan 2020
+# Version Number: 2
+# Updated: 28 Jan 2020
 
 
 # Script loads all input parameters from Barrier_Input.xlsx
@@ -22,7 +22,6 @@ Full copyright notice located in main Barrier3D.py file
 import numpy as np
 import xlrd
 
-
 # Set-up input files
 loc = ("Barrier3D_Input.xlsx") # Input File Path
 
@@ -30,6 +29,7 @@ loc = ("Barrier3D_Input.xlsx") # Input File Path
 wb = xlrd.open_workbook(loc)
 param = wb.sheet_by_index(0) # Parameters sheet
 morph = wb.sheet_by_index(1) # Initial morphology sheet
+
 
 
 ################################
@@ -97,6 +97,14 @@ DuneWidth = int(param.cell_value(11,3) /10)
 
 
 ################################
+### Storm Time Series
+StormTimeSeries = 0 # 1 = on, 0 = off      
+StormSeries = np.load('Parameterization/StormTimeSeries_1000yr.npy') # TEMP HARDWIRED
+
+
+
+
+################################
 ### DUNES
 
 # Dune height refers to heigh of dune above the static berm elevation
@@ -104,15 +112,26 @@ Dstart = param.cell_value(19,3) /10
 BermEl = param.cell_value(20,3) /10 - MHW
 
 # Initialize dune crest height domain
-DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
-DuneDomain[0,:,0] = np.ones([1, BarrierLength]) * (Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1,BarrierLength)))
-for w in range(1,DuneWidth):
-    DuneDomain[0,:,w] = DuneDomain[0,:,0]
-
+if StormTimeSeries == 0:
+    DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
+    DuneDomain[0,:,0] = np.ones([1, BarrierLength]) * (Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1,BarrierLength)))
+    for w in range(1,DuneWidth):
+        DuneDomain[0,:,w] = DuneDomain[0,:,0]
+else:
+    DuneStart = np.load('Parameterization/DuneStart_1000dam.npy') # TEMP HARDWIRED
+    DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
+    DuneDomain[0,:,0] = DuneStart[0:BarrierLength]    
+    for w in range(1,DuneWidth):
+        DuneDomain[0,:,w] = DuneDomain[0,:,0]  
+    
 # Dune growth parameter
 rmin = param.cell_value(21,3)
 rmax = param.cell_value(22,3)
-growthparam = rmin + (rmax-rmin) * np.random.rand(1,BarrierLength)
+if StormTimeSeries == 0:
+    growthparam = rmin + (rmax-rmin) * np.random.rand(1,BarrierLength)
+else:
+    growthparamstart = np.load('Parameterization/growthparam_1000dam.npy') # TEMP HARDWIRED
+    growthparam = growthparamstart[0:BarrierLength]
 
 # Dune diffusion parameter
 HdDiffu = param.cell_value(23,3) /10

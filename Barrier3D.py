@@ -12,8 +12,8 @@
 - You should have received a copy of the GNU General Public License along with this program; if not, see <https://www.gnu.org/licenses/>.                                     -
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"""
 
-# Version Number: 1
-# Updated: 22 Jan 2020
+# Version Number: 3
+# Updated: 13 Mar 2020
 
 # All units are in decameters for simulation; convert to meters after simulation end for presentation
 
@@ -27,6 +27,9 @@
 #   Exponential decay of sediment drop-out in back-barrier bay
 #   Uses initial morphology from lidar
 #   Dune field has width of multiple cells
+#   Has option for using a prefabricated storm time series
+#   Tracks dead shrubs
+#   Same sediment transport rule for both overwash regimes  
    
 
 
@@ -44,21 +47,23 @@ import sys # analysis:ignore
 from sys import platform
 import os
 import imageio # analysis:ignore
+import pickle
+from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
 
 Time = time.time()
-
-print('TEMP!: Salt spray shrub impact turned OFF')
-
+ 
 #==============================================================================================================================================
 # SET PARAMETERS       
 #==============================================================================================================================================
 
+
 ### Load Input Parameters
-from Barrier3D_Parameters import (BarrierLength, BayDepth, BermEl, DomainWidth, DuneDomain, Dstart, DuneWidth, DShoreface, InteriorDomain, LShoreface, MHW, SD_storm, StormStart,
+from Barrier3D_Parameters_2 import (BarrierLength, BayDepth, BermEl, DomainWidth, DuneDomain, Dstart, DuneWidth, DShoreface, InteriorDomain, LShoreface, MHW, SD_storm, StormStart, StormTimeSeries, StormSeries,
                                       TMAX, mean_storm, numstorm, Shrub_ON, Qshrub_max, C1, C2, DuneRestart, nn, mm, threshold_in, Rin_r, Rin_i, Qs_min, Kr, Ki, Cbb_r, Cbb_i)
+
 
 ### Sea Level
 SL = 0 # Does not change (Lagrangian frame of reference)
@@ -72,8 +77,11 @@ ShrubFemaleTS = [None] * TMAX
 ShrubFemaleTS[0] = np.zeros([DomainWidth, BarrierLength])
 ShrubMaleTS = [None] * TMAX
 ShrubMaleTS[0] = np.zeros([DomainWidth, BarrierLength])
-ShrubDomainFemale = ShrubFemaleTS[0]
-ShrubDomainMale = ShrubMaleTS[0]
+ShrubDeadTS = [None] * TMAX
+ShrubDeadTS[0] = np.zeros([DomainWidth, BarrierLength])
+ShrubDomainFemale = np.zeros([DomainWidth, BarrierLength])
+ShrubDomainMale = np.zeros([DomainWidth, BarrierLength])
+ShrubDomainDead = np.zeros([DomainWidth, BarrierLength])
 ShrubPercentCover = PercentCoverTS[0]
 BurialDomain = np.zeros([DomainWidth, BarrierLength])
 ShrubArea = [0]
@@ -86,13 +94,11 @@ SCR = 0 # (dam/yr) Change rate of ocean-fronting shoreline: (+) = progradation, 
 SCRagg = 0 # Counter variable for shoreline change that is less than 1 cell size per year
 ShorelineChangeTS = [0] 
 ShorelineChange = 0 # (dam) Total amount of shoreline change 
-BBShorelineChangeTS = [0]
-BBShorelineChange = 0 # (dam) Total amount of back-barrier shoreline extension 
-StormCount = []
+StormCount = [0]
 InundationCount = 0
 RunUpCount = 0
 InteriorWidth_AvgTS = [DomainWidth]
-QowTS = [] # (m^3/m)
+QowTS = [0] # (m^3/m)
 x_t = 0  # (dam) Start location of shoreface toe
 x_s = x_t + LShoreface # (dam) Start location of shoreline
 x_t_TS = [x_t] # (dam) Shoreface toe locations for each time step
@@ -148,7 +154,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     
     if Shrub_ON == 1:
 
-        ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain = func.Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth)
+        ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain, ShrubDomainDead = func.Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth, ShrubDomainDead)
     
     
     
@@ -156,15 +162,30 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     ### Storms
 
     OWloss = 0
+    DuneLoss = 0
     
     if t >= StormStart:
         # Select number of storms for this time step from normal distribution
-        numstorm = int(numstorm)
-        numstorm = round(np.random.normal(mean_storm, SD_storm)) # analysis:ignore # Comment out this line if using pre-specified static number of storms per year
+        if StormTimeSeries == 1:
+            TSloc = np.argwhere(StormSeries[:,0] == t)
+            numstorm = int(len(TSloc)) # analysis:ignore
+        else:        
+            numstorm = int(numstorm)
+            numstorm = round(np.random.normal(mean_storm, SD_storm)) # analysis:ignore # Comment out this line if using pre-specified static number of storms per year        
         
         if numstorm > 0:
-            # Draw statistics for each storm           
-            Rhigh, Rlow, period, dur = func.WaterLevels(numstorm, MHW)
+            if StormTimeSeries == 1:
+                TSloc = np.argwhere(StormSeries[:,0] == t)
+                start = TSloc[0,0]
+                stop = TSloc[-1,0] + 1
+                Rhigh = StormSeries[start:stop,1]
+                Rlow = StormSeries[start:stop,2]
+                period = StormSeries[start:stop,3]
+                dur = np.array(StormSeries[start:stop,4], dtype='int')
+                
+            else:                    
+                # Draw statistics for each storm           
+                Rhigh, Rlow, period, dur = func.WaterLevels(numstorm, MHW)
             
             ### Individual Storm Impacts       
             for n in range(numstorm): # Loop through each individual storm
@@ -204,6 +225,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 # Dune Height Diffusion
                 DuneDomain = func.DiffuseDunes(DuneDomain, t)
                 
+                DuneLoss = np.sum(DuneChange)/BarrierLength
                 Hd_TSloss = DuneChange.max(axis=1) / dur[n] # Average height of dune loss for each substep during storm
 
 
@@ -222,30 +244,19 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                     # Determine number of gaps in inundation regime
                     if Rlow[n] > meandune:
                         Iow += 1
-        
+                        
                 # Dertermine Sediment And Water Routing Rules
+                        
                 if len(gaps) > 0 and Iow / len(gaps) >= threshold_in: # If greater than 25% of dune gaps are in unundation regime, use inundation regime routing
-                    inundation = 1
-#                    #### Calc substep
-#                    Smax = 0
-#                    Smin = 0
-#                    for l in range(BarrierLength):
-#                        for w in range(InteriorWidth[l]):
-#                            slope = InteriorDomain[w,l] - InteriorDomain[w+1,l]
-#                            if slope > Smax:
-#                                Smax = slope
-#                    calc maxQ
-#                    accrete = f(maxQ, smax)
-#                    ceil(accrete / (Smax *2)) = substep
-#                    ####
-                    substep = 15 # pre 14Jan20: 5, ~20 needed?
+                    inundation = 1                   
+                    substep = 1                                              
                     InundationCount += 1
                 else:
                     inundation = 0
                     surges = (1 / period[n]) * 60 * 60 # Number of surges per hour
                     substep = 1 
                     RunUpCount += 1
-
+                                
                 # Set Domain
                 add = 25
                 duration = dur[n] * substep
@@ -261,8 +272,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 SedFluxOut = np.zeros([duration, width, BarrierLength])
 
                 Rin = 0 # (dam^3/t) Infiltration Rate, volume of overwash flow lost per m cross-shore per time 
-                inundation = 0 
-                
+                                
                 # Set Water and Sediment at Dune Crest
                 for q in range(len(gaps)):
                     start = gaps[q][0]
@@ -272,7 +282,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                     meandune = (sum(Dunes_prestorm[start:stop+1]) / gapwidth) + BermEl # Average elevation of dune gap
                     
                     # Calculate discharge through each dune cell
-                    Vdune = math.sqrt(2 * 9.8 * (Rexcess * 10)) / 10 # (dam/surge)                      
+                    Vdune = math.sqrt(2 * 9.8 * (Rexcess * 10)) / 10 # (dam/s)                      
                     Qdune =  Vdune * Rexcess * 3600 # (dam^3/hr)
 
                     # Set discharge at dune gap
@@ -280,23 +290,14 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                     
                     if inundation == 1: # Inundation regime       
                         Rin = Rin_i
-                        slopes = []
-                        # Find average slope of interior
-                        for u in range(1,width-1):
-                            for v in range(BarrierLength):                            
-                                if Elevation[0,u,v] > SL and Elevation[0,u+1,v] > SL:
-                                    SS = Elevation[0,u,v] - Elevation[0,u+1,v]
-                                    slopes.append(SS)
-                        AvgSlope = sum(slopes) / len(slopes)
-                        C = 2 * AvgSlope                             
                         # Set sediment at dune gap
-                        SedFluxIn[:,0,start:stop] = Ki * (Qdune*(AvgSlope + C))**mm        
+                        SedFluxIn[:,0,start:stop] = Ki * Qdune
                     else: # Run-up regime
                         Rin = Rin_r
                         # Set sediment at dune gap
                         SedFluxIn[:,0,start:stop] = Kr * Qdune           
 
-  
+
                 ### Run Flow Routing Algorithm                                      
                 for TS in range(duration):
                     
@@ -423,8 +424,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                     # Cell 3
                                     if i < (BarrierLength-1):
                                         Discharge[TS,d+1,i+1] = Discharge[TS,d+1,i+1] + Q3  
-                                
-                               
+                                                               
                                 
                                 ### Calculate Sed Movement                                                                                                                    
                                 # Run-up regime
@@ -445,42 +445,21 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                         Qs3 = 0
                                 
                                 # Inundation Regime (Murray and Paola (1994, 1997) Rule 3)
-                                else:                                    
-                                    if Q1 > Qs_min:
-                                        Qs1 = Ki * (Q1*(S1 + C))**mm
+                                else:      
+                                    if Q1 > Qs_min and S1 >= 0:
+                                        Qs1 = Ki * Q1
                                     else:
                                         Qs1 = 0
                                         
-                                    if Q2 > Qs_min:
-                                        Qs2 = Ki * (Q2*(S2 + C))**mm
+                                    if Q2 > Qs_min and S2 >= 0:
+                                        Qs2 = Ki * Q2
                                     else:
                                         Qs2 = 0
                                         
-                                    if Q3 > Qs_min:
-                                        Qs3 = Ki * (Q3*(S3 + C))**mm
+                                    if Q3 > Qs_min and S3 >= 0:
+                                        Qs3 = Ki * Q3
                                     else:
                                         Qs3 = 0
-                                
-#                                # Inundation Regime (Murray and Paola (1994, 1997) Rule 5)
-#                                else:                                    
-#                                    Qt = np.mean(Discharge[0,0,:]) # Typical discharge
-#                                    St = AvgSlope # Typical slope
-#                                    ThD = 2 # Threshold denomenator, threshold therefore around half of the typical stream power
-#                                    Th = Qt * St / ThD 
-#                                    if Q1 > Qs_min:
-#                                        Qs1 = Ki * (Q1 * (S1 + C) - Th)**mm
-#                                    else:
-#                                        Qs1 = 0
-#                                        
-#                                    if Q2 > Qs_min:
-#                                        Qs2 = Ki * (Q2 * (S2 + C) - Th)**mm
-#                                    else:
-#                                        Qs2 = 0
-#                                        
-#                                    if Q3 > Qs_min:
-#                                        Qs3 = Ki * (Q3 * (S3 + C) - Th)**mm
-#                                    else:
-#                                        Qs3 = 0
                                         
                                         
                                 ### Calculate Net Erosion/Accretion
@@ -498,47 +477,31 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                     
                                 else: # If cell is subaqeous, exponentially decay deposition of remaining sediment across bay
                                     Qs_bb_min = 0.0001 # Assumes sediment flux less than this threshold can be ignored
-                                    if inundation == 1: # Inundation regime
 
-                                        SedFluxOut[TS,d,i] = SedFluxIn[TS,d,i] * Cbb_i
-                                        Qs0 = SedFluxOut[TS,d,i]
-                                        
-                                        Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
-                                        Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
-                                        Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
+                                    if inundation == 0: Cbb = Cbb_r
+                                    else: Cbb = Cbb_i
 
-                                        if i > 0 and Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS,d+1,i-1] += Qs1
-                                        
-                                        if Qs1 > Qs_bb_min:    
-                                            SedFluxIn[TS,d+1,i] += Qs2
-                                        
-                                        if i < (BarrierLength-1) and Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS,d+1,i+1] += Qs3
+                                    SedFluxOut[TS,d,i] = SedFluxIn[TS,d,i] * Cbb_i
+                                    Qs0 = SedFluxOut[TS,d,i]
                                     
-                                    else: # Run-up regime
+                                    Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
+                                    Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
+                                    Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
 
-                                        SedFluxOut[TS,d,i] = SedFluxIn[TS,d,i] * Cbb_r
-                                        Qs0 = SedFluxOut[TS,d,i]
+                                    if i > 0 and Qs1 > Qs_bb_min:
+                                        SedFluxIn[TS,d+1,i-1] += Qs1
+                                    
+                                    if Qs1 > Qs_bb_min:    
+                                        SedFluxIn[TS,d+1,i] += Qs2
+                                    
+                                    if i < (BarrierLength-1) and Qs1 > Qs_bb_min:
+                                        SedFluxIn[TS,d+1,i+1] += Qs3                           
+                                       
                                         
-                                        Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
-                                        Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
-                                        Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
-
-                                        if i > 0 and Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS,d+1,i-1] += Qs1
-                                        
-                                        if Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS,d+1,i] += Qs2
-                                        
-                                        if i < (BarrierLength-1) and Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS,d+1,i+1] += Qs3                                             
-
-                                                                      
                                 ### Saline Flooding 
-                                ShrubDomainFemale, ShrubDomainMale = func.SalineFlooding(ShrubDomainWidth, ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, d, i, Q0)  
-
-                                           
+                                ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead = func.SalineFlooding(ShrubDomainWidth, ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead, d, i, Q0)  
+                                   
+                                
                     ### Update Elevation After Every Storm Hour                      
                     if inundation == 1:
                         ElevationChange = (SedFluxIn[TS,:,:] - SedFluxOut[TS,:,:]) / substep
@@ -568,18 +531,19 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 
                 # Update Domain widths
                 DomainWidth = np.shape(InteriorDomain)[0]
-                ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain = func.UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain)
+                ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead = func.UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead)
                            
                     
     # Record storm data
     StormCount.append(numstorm)
 
 
+
     ###########################################      
     ### Ocean Shoreline Change
     
     ### Calculate shoreline/shoreface position change following Lorenzo-Trueba and Ashton (2014)  
-    SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS = func.LTA_SC(InteriorDomain, OWloss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS)
+    SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS = func.LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS)
 
     
     ### Erode/Prograde Ocean Shoreline
@@ -592,14 +556,17 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
         if SCRagg > 0: # Positive = prograde, add row(s) to front of interior domain
             for d in range(sc):
                 InteriorDomain = np.vstack([DuneDomain[t,:,-1] + BermEl, InteriorDomain]) # New interior row added with elevation of previous dune field (i.e. previous dune row now part of interior)
-                
-                newDuneHeight = np.ones([BarrierLength]) * (0.01 + (-0.005 + (0.005 - (-0.005)) * np.random.rand(BarrierLength)))
+                if StormTimeSeries == 0:
+                    newDuneHeight = np.ones([BarrierLength]) * (0.01 + (-0.005 + (0.005 - (-0.005)) * np.random.rand(BarrierLength)))
+                else:
+                    newDuneHeight = np.ones([BarrierLength]) * 0.01
                 DuneDomain[t,:,:] = np.roll(DuneDomain[t,:,:], 1, axis=1)
                 DuneDomain[t,:,0] = newDuneHeight
                 
                 # Update shrub domains too
                 ShrubDomainFemale = np.concatenate((np.zeros([1,BarrierLength]), ShrubDomainFemale))
                 ShrubDomainMale = np.concatenate((np.zeros([1,BarrierLength]), ShrubDomainMale))
+                ShrubDomainDead = np.concatenate((np.zeros([1,BarrierLength]), ShrubDomainDead))
                 ShrubPercentCover = np.concatenate((np.zeros([1,BarrierLength]), ShrubPercentCover))
                 BurialDomain = np.concatenate((np.zeros([1,BarrierLength]), BurialDomain))
             DomainWidth = DomainWidth + sc # Update width of interior domain
@@ -621,6 +588,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 # Update shrub domains too
                 ShrubDomainFemale = np.delete(ShrubDomainFemale,(0), axis=0)
                 ShrubDomainMale = np.delete(ShrubDomainMale,(0), axis=0)
+                ShrubDomainDead = np.delete(ShrubDomainDead,(0), axis=0)
                 ShrubPercentCover = np.delete(ShrubPercentCover,(0), axis=0)
                 BurialDomain = np.delete(BurialDomain,(0), axis=0)
             DomainWidth = DomainWidth - sc # Update width of interior domain
@@ -648,17 +616,19 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     ########################################### 
     ### Save domains of this timestep
     DomainTS[t] = InteriorDomain 
-    
-    ShrubFemaleTS[t] = ShrubDomainFemale 
-    ShrubMaleTS[t] = ShrubDomainMale
-    ShrubDomainAll = ShrubDomainMale + ShrubDomainFemale
+    zero = np.zeros([DomainWidth, BarrierLength])    
+    ShrubFemaleTS[t] = ShrubDomainFemale + zero # Correctly saves domain to list only if array of zeros are added to domain first, no clue why - 4Mar20
+    ShrubMaleTS[t] = ShrubDomainMale + zero
+    ShrubDeadTS[t] = ShrubDomainDead + zero
     
     # Calculate Percent Cover and Area
-    ShrubPercentCover, PercentCoverTS, ShrubArea = func.CalcPC(ShrubDomainAll, PercentCoverTS, ShrubArea, t)
+    ShrubDomainAll = ShrubDomainMale + ShrubDomainFemale
+    ShrubPercentCover, PercentCoverTS, ShrubArea = func.CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, ShrubArea, t)
 
 
 ###########################################     
 ### End of model run
+    
 print()
 print('Elapsed Time: ', time.time() - Time, 'sec') # Print elapsed time of simulation
 if platform == "win32":
@@ -671,8 +641,14 @@ elif platform == "darwin":
 elif platform == "linux" or platform == "linux2":
     print('\a')
     os.system('spd-say "barrier shrub simulation complete"')
-
- 
+    
+    
+# Save Run Data
+#filename = 'Output/SimData-' + datetime.today().strftime('%Y%m%d_%H%M') + '.npz'
+filename = 'Output/SimData.npz'
+np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS,
+         QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS, PercentCoverTS = PercentCoverTS, ShrubArea = ShrubArea, ShrubDomainAll = ShrubDomainAll, StormCount = StormCount, TMAX = TMAX, t = t, Shrub_ON = Shrub_ON, RunUpCount = RunUpCount,
+         InundationCount = InundationCount, SL = SL, ShorelineChange = ShorelineChange)
 
 
 
@@ -694,23 +670,23 @@ func.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS)
 
 
 ## 4: Animation Frames of Barrier and Dune Elevation
-func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX)
+#func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, ShrubDeadTS)
 
 
 # 5: Cross-Shore Transect Every 100 m Alongshore For Last Time Step
 func.plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX)
 
 
-## 6: Shoreline Change Per Year Over Time <-------------- REDO!
-#func.plot_ShorelineChange(ShorelineChangeTS, BBShorelineChangeTS)
+# 6: Shoreline Positions Over Time 
+func.plot_ShorelinePositions(x_s_TS, x_b_TS)
       
 
-## 7: Shoreline Change Rate Over Time <-------------- REDO!
-#func.plot_ShorelineChangeRate(ShorelineChangeTS)
+# 7: Shoreline Change Rate Over Time
+func.plot_ShorelineChangeRate(x_s_TS)
     
 
 ## 8: OW vs IN count
-#func.plot_RuInCount(RunUpCount, InundationCount)
+func.plot_RuInCount(RunUpCount, InundationCount)
 
 
 ## 9: Shoreface LTA14 transects over time
@@ -761,8 +737,9 @@ func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS,
 func.plot_ShrubArea(ShrubArea)
 
 
-## 21: Storm count over time
-#func.plot_StormCount(StormCount)
+# 21: Storm count over time
+func.plot_StormCount(StormCount)
 
 
-
+# 22: Average Interior Width Over Time
+func.plot_AlongshoreDuneHeight(DuneDomain)
