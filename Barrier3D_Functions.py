@@ -9,8 +9,8 @@ Copyright (C) 2020 Ian R.B. Reeves
 Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
-# Version Number: 1
-# Updated: 22 Jan 2020
+# Version Number: 3
+# Updated: 4 March 2020
 
 
 # Simulation Functions Included: 
@@ -188,20 +188,22 @@ def SeaLevel(InteriorDomain, DuneDomain, t):
 
 def DuneGrowth(DuneDomain, t):
     
-    from Barrier3D_Parameters import (Dmaxel, BermEl, growthparam, BarrierLength, DuneWidth)
+    from Barrier3D_Parameters import (Dmaxel, BermEl, growthparam, DuneWidth, BarrierLength)
     
     # Set max dune height - depends on beach width according to relationship gathered from VCR data
     Dmax = Dmaxel - BermEl # (dam) Max dune height 
     if Dmax < 0:
         Dmax = 0  
     
-    Qdg = 0    
+    Cf = 3 # Decay coefficient
+    Qdg = 0
     # Grow dune
     for q in range(DuneWidth):
-        G = growthparam * DuneDomain[t-1,:,q] * (1 - DuneDomain[t-1,:,q] / Dmax)
+        reduc = 1/(Cf**q)
+        G = growthparam * DuneDomain[t-1,:,q] * (1 - DuneDomain[t-1,:,q] / Dmax) * reduc
         DuneDomain[t,:,q] = G + DuneDomain[t-1,:,q]
-        Qdg = Qdg + sum(G[0,:]) / BarrierLength # Volume of sediment lost from beach/shoreface from dune growth
-   
+        Qdg = Qdg + (np.sum(G) / BarrierLength) # Volume of sediment lost from beach/shoreface from dune growth
+    
     return DuneDomain, Dmax, Qdg
 
 
@@ -257,18 +259,6 @@ def FindWidths(InteriorDomain, SL):
     # Average width of island
     InteriorWidth_Avg = np.nanmean(InteriorWidth)
 
-#    for l in range(BarrierLength):
-#        if InteriorDomain[0,l] < SL:
-#            front = next((index for index, value in enumerate(InteriorDomain[:,l]) if value >= SL), DomainWidth)
-#            back = next((index for index, value in enumerate(InteriorDomain[front:,l]) if value < SL), DomainWidth)
-#            width = back - front
-#            if width < 0: width = 0
-#            InteriorWidth[l] = width
-#        else:
-#            width = next((index for index, value in enumerate(InteriorDomain[:,l]) if value <= SL), DomainWidth)          
-#            if width < 0: width = 0
-#            InteriorWidth[l] = width
-
     return DomainWidth, InteriorWidth, InteriorWidth_Avg
 
 
@@ -276,17 +266,21 @@ def FindWidths(InteriorDomain, SL):
 
 
 #===================================================
-# LTA_SCR
+# LTA_SC
 
 # Finds shoreline change for modeled year following Lorenzo-Trueba and Ashton (2014)
 
-def LTA_SC(InteriorDomain, OWloss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS):
+def LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS):
 
     from Barrier3D_Parameters import (BarrierLength, DShoreface, k_sf, s_sf_eq, RSLR, Qat)
     
-    # Find volume of shoreface/beach sand deposited on island
+    # Find volume of shoreface/beach/dune sand deposited in island interior and back-barrier
     Qow = (OWloss) / (BarrierLength) # (dam^3/dam) Volume of sediment lost from shoreface/beach by overwash
     QowTS.append(Qow * 100) # Save in m^3/m    
+    if DuneLoss < Qow:
+        Qow = Qow - DuneLoss # Account for dune contribution to overwash volume
+    else:
+        Qow = 0 # Excess DuneLoss assumed lost offshore
     
     # DefineParams
     d_sf = DShoreface 
@@ -296,12 +290,12 @@ def LTA_SC(InteriorDomain, OWloss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, In
     # Shoreface Flux
     s_sf = d_sf / (x_s - x_t)
     Qsf = (k_sf / 100) * (s_sf_eq - s_sf) # Convert Ksf from m^3/m/yr to dam^3/dam/yr
-    QsfTS.append(Qsf * 100) # Save in m^3/m
+    QsfTS.append(Qsf * 100) # Save in m^3/m    
 
     # Toe, Shoreline, and island base elevation changes     
     x_t_dt = (4 * Qsf * (h_b + d_sf) / (d_sf * (2 * h_b + d_sf))) + (2 * RSLR / s_sf)   
-    x_s_dt = 2 * (Qow + Qat) / ((2 * h_b) + d_sf) - (4 * Qsf * (h_b + d_sf) / (((2 * h_b) + d_sf)**2)) # Dune growth and alongshore transport added to LTA14 formulation
-       
+    x_s_dt = 2 * (Qow + Qdg + Qat) / ((2 * h_b) + d_sf) - (4 * Qsf * (h_b + d_sf) / (((2 * h_b) + d_sf)**2)) # Dune growth and alongshore transport added to LTA14 formulation
+    
     # Record changes
     x_t = x_t + x_t_dt
     x_s = x_s + x_s_dt    
@@ -324,15 +318,45 @@ def LTA_SC(InteriorDomain, OWloss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, In
 
 # Main shrub expansion and mortality function
     
-def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth):
+def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth, ShrubDomainDead):
 
-    from Barrier3D_Parameters import (BarrierLength, Dshrub, BermEl, Female, ShrubEl_min, ShrubEl_max, BurialLimit, UprootLimit, TimeFruit, Seedmin, Seedmax, GermRate, disp_mu, disp_sigma)
+    from Barrier3D_Parameters import (BarrierLength, Dshrub, BermEl, Female, ShrubEl_min, ShrubEl_max, BurialLimit, UprootLimit, TimeFruit, Seedmin, Seedmax, GermRate, disp_mu, disp_sigma)    
     
+    ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
+    
+    ### Burial
+    # Kill all shrubs buried by over depth limit or eroded            
+    ShrubDomainDead[BurialDomain > BurialLimit] = ShrubDomainAll[BurialDomain > BurialLimit] # Transfer to dead domain
+    ShrubDomainDead[BurialDomain >= 0.2] = 0 # If buried by more than 2 m, considered shrub to be completely gone
+    ShrubDomainDead[BurialDomain < UprootLimit] = ShrubDomainAll[BurialDomain < UprootLimit] # Transfer to dead domain 
+    
+    ShrubDomainFemale[BurialDomain > BurialLimit] = 0
+    ShrubDomainFemale[BurialDomain < UprootLimit] = 0
+    ShrubDomainMale[BurialDomain > BurialLimit] = 0
+    ShrubDomainMale[BurialDomain < UprootLimit] = 0
+   
+    BurialDomain[BurialDomain > BurialLimit] = 0 # Reset burial domain
+    BurialDomain[BurialDomain < UprootLimit] = 0 # Reset burial domain
+    BurialDomain[BurialDomain >= 0.2] = 0 # Reset burial domain
+    ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale # Recalculate   
+    
+    ### Inundation
+    # Remove shrubs that have fallen below Mean High Water (i.e. elevation of 0) (passively inundated by rising back-barrier water elevations)
+ 
+    TideRange = 0.12 # dam, half range   
+    for w in range(DomainWidth):
+        for l in range(BarrierLength):
+            if InteriorDomain[w,l] < 0 and ShrubDomainAll[w,l] > 0:
+                if InteriorDomain[w,l] > -TideRange:
+                    ShrubDomainDead[w,l] = ShrubDomainAll[w,l] # Shrub remains as dead if within tidal range (i.e. MHW - tidal range)
+                ShrubDomainFemale[w,l] = 0
+                ShrubDomainMale[w,l] = 0   
+                
     ### Age the shrubs in years
     ShrubDomainFemale[ShrubDomainFemale > 0] += 1            
     ShrubDomainMale[ShrubDomainMale > 0] += 1
 
-    ### Randomly disperse a seed onto the island each time step
+    ### Randomly drop a seed onto the island each time step
     randX = np.random.randint(0,BarrierLength)
     randY = np.random.randint(0,InteriorWidth_Avg)
     if  ShrubDomainFemale[randY,randX] == 0 and ShrubDomainMale[randY,randX] == 0 and DuneDomainCrest[randX] + BermEl >= Dshrub and InteriorDomain[randY,randX] >= ShrubEl_min and InteriorDomain[randY,randX] <= ShrubEl_max:
@@ -340,33 +364,7 @@ def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMal
             ShrubDomainFemale[randY, randX] = 1
         else:
             ShrubDomainMale[randY, randX] = 1
-    
-    ### Inundation
-    # Remove shrubs that have fallen below SL (passively inundated by rising back-barrier water elevations)
-    ShrubDomainFemale[InteriorDomain < 0] = 0
-    ShrubDomainMale[InteriorDomain < 0] = 0
-    
-    ### Burial
-    # Kill all shrubs buried by over depth limit or eroded 
-    ShrubDomainFemale[BurialDomain > BurialLimit] = 0
-    ShrubDomainFemale[BurialDomain < UprootLimit] = 0
-    ShrubDomainMale[BurialDomain > BurialLimit] = 0
-    ShrubDomainMale[BurialDomain < UprootLimit] = 0
-    BurialDomain[BurialDomain > BurialLimit] = 0 # Reset
-    BurialDomain[BurialDomain < UprootLimit] = 0 # Reset
-    ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
-    
-#        ### Salt spray
-#        # Kill first row of shrubs exposed to ocean (i.e. dune below threhold height) from last time step
-#        for j in range(BarrierLength):
-#            shrubs = np.nonzero(ShrubDomainAll[:,j])[0] # Gather indices of all shrubs in column
-#            if len(shrubs) != 0: # If column not empty
-#                first = shrubs[0] # Get index of fronting shrub cell
-#                if DuneDomainCrest[j] + BermEl < Dshrub and first < np.shape(ShrubDomainAll)[1] - 1: # Crashing here (out of index)
-#                    ShrubDomainFemale[first,j] = 0
-#                    ShrubDomainMale[first,j] = 0
-#        ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
-
+            
     ### Disperse seeds
     for k in range(BarrierLength): # Loop through each row of island width (i.e. from ocean to mainland side of island)
         if 0 in ShrubDomainAll:                  #<--------------- Working??            
@@ -420,26 +418,24 @@ def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMal
                                 
                                 targetY = originX + (matTargetX-matOriginX)
                                 targetX = originY + (matTargetY-matOriginY)
-                            
-                            
+                                                     
                             # Put a plant in the ground if 
                             #   -the dropdistance>0, 
                             #   -the target drop location is within the island domain, 
-                            #   -there is no shrub at the receiving cell (male or female),
+                            #   -there is no shrub at the receiving cell (male, female, or dead),
                             #   -the receiving cell has a tall enough fronting dune
                             #   -the receiving cell is within elevation range
                             if  targetY >= 0 and targetY < DomainWidth and targetX >= 0 and targetX < BarrierLength and ShrubDomainFemale[targetY,targetX] == 0 and ShrubDomainMale[targetY,targetX] == 0 \
-                                and DuneDomainCrest[targetX] + BermEl >= Dshrub and InteriorDomain[targetY,targetX] >= ShrubEl_min and InteriorDomain[targetY,targetX] <= ShrubEl_max:
+                                and DuneDomainCrest[targetX] + BermEl >= Dshrub and InteriorDomain[targetY,targetX] >= ShrubEl_min and InteriorDomain[targetY,targetX] <= ShrubEl_max and ShrubDomainDead[targetY,targetX] < 1:
                                 # Decide if the tree wll be a female or male
                                 if random.random() > Female:
                                     ShrubDomainFemale[targetY,targetX] = 1
                                 else:
-                                    ShrubDomainMale[targetY,targetX] = 1                                    
+                                    ShrubDomainMale[targetY,targetX] = 1
     
     ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
-
-    
-    return ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain
+  
+    return ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain, ShrubDomainDead
 
     
 
@@ -450,7 +446,7 @@ def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMal
 
 # Updates size of shrub domains
     
-def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain):
+def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead):
     
     from Barrier3D_Parameters import (BarrierLength)
 
@@ -459,6 +455,7 @@ def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDo
         AddRows = np.zeros([DomainWidth-ShrubDomainWidth,BarrierLength])
         ShrubDomainFemale = np.vstack([ShrubDomainFemale, AddRows])
         ShrubDomainMale = np.vstack([ShrubDomainMale, AddRows])
+        ShrubDomainDead = np.vstack([ShrubDomainDead, AddRows])
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
         ShrubPercentCover = np.vstack([ShrubPercentCover, AddRows])   
         BurialDomain = np.vstack([BurialDomain, AddRows])
@@ -466,11 +463,12 @@ def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDo
         RemoveRows = ShrubDomainWidth - DomainWidth
         ShrubDomainFemale = ShrubDomainFemale[0:-RemoveRows,:]
         ShrubDomainMale = ShrubDomainMale[0:-RemoveRows,:]
+        ShrubDomainDead = ShrubDomainDead[0:-RemoveRows,:]
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
         ShrubPercentCover = ShrubPercentCover[0:-RemoveRows,:]   
         BurialDomain = BurialDomain[0:-RemoveRows,:] 
         
-    return ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain
+    return ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead
 
 
 
@@ -481,17 +479,17 @@ def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDo
 
 # Kill all immature (< 1 yr-old) shrubs that have been flooded beyond a threshold discharge (Tolliver et al., 1997)
     
-def SalineFlooding(ShrubDomainWidth, ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, d, i, Q0):
+def SalineFlooding(ShrubDomainWidth, ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead, d, i, Q0):
                    
     from Barrier3D_Parameters import (BarrierLength, SalineLimit)
     
     if d < (ShrubDomainWidth-1) and i < (BarrierLength - 1):
         if Q0 >= SalineLimit and ShrubDomainAll[d,i] == 1:
+            ShrubDomainDead[d,i] = ShrubDomainMale[d,i] + ShrubDomainFemale[d,i] # Transfer to dead shrub domain
             ShrubDomainFemale[d,i] = 0
             ShrubDomainMale[d,i] = 0
-            #ShrubDomainMale[d,i] = 0    #???               
-                   
-    return ShrubDomainFemale, ShrubDomainMale                
+                            
+    return ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead             
 
                    
                    
@@ -518,18 +516,23 @@ def UpdateBurial(BurialDomain, ElevationChange, ShrubDomainWidth, ShrubDomainAll
 
 # Calculates percent cover of shrub domain and shrub coverage area (dam^2)
     
-def CalcPC(ShrubDomainAll, PercentCoverTS, ShrubArea, t):
+def CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, ShrubArea, t):
 
     from Barrier3D_Parameters import PC
     
     Allshrub_t = ShrubDomainAll.astype('int64')
-    ShrubPercentCover = PC.take(Allshrub_t) 
+    Deadshrub_t = ShrubDomainDead.astype('int64')
+    ShrubPercentCover = PC.take(Allshrub_t)
+    DeadPercentCover = PC.take(Deadshrub_t)
+    
+#    ShrubPercentCover[ShrubPercentCover == 0] = DeadPercentCover[ShrubPercentCover == 0]
     PercentCoverTS[t] = ShrubPercentCover
     ShrubArea.append(np.count_nonzero(ShrubDomainAll))
 
     return ShrubPercentCover, PercentCoverTS, ShrubArea
 
-    
+
+
 
 
 #==============================================================================================================================================
@@ -542,7 +545,7 @@ def CalcPC(ShrubDomainAll, PercentCoverTS, ShrubArea, t):
 
 def plot_DuneHeight(DuneDomain):
     DuneCrest = DuneDomain.max(axis=2)
-    duneFig = plt.figure(figsize=(15,8))
+    duneFig = plt.figure(figsize=(14,8))
     plt.rcParams.update({'font.size':13})
     ax = duneFig.add_subplot(111)
     ax.matshow((DuneCrest)*10, origin='lower', cmap='bwr', aspect='auto')#, vmin=0, vmax=Dmax)
@@ -550,7 +553,7 @@ def plot_DuneHeight(DuneDomain):
     #cbar = duneFig.colorbar(cax)
     #cbar.set_label('Dune Height Above Berm Elevation (m)', rotation=270)
     plt.xlabel('Alongshore Distance (dam)')
-    plt.ylabel('Time (yr)')
+    plt.ylabel('Year')
     plt.title('Dune Height (m)')
     name = 'Output/Dunes'
     duneFig.savefig(name)
@@ -572,7 +575,7 @@ def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
     Dunes = np.flipud(Dunes)
     Domain = DomainTS[TMAX] * 10
     Domain = np.vstack([Dunes, Domain])
-    elevFig1 = plt.figure(figsize=(15,5))
+    elevFig1 = plt.figure(figsize=(14,5))
     ax = elevFig1.add_subplot(111)
     cax = ax.matshow(Domain, origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0)#, interpolation='gaussian') # analysis:ignore
     ax.xaxis.set_ticks_position('bottom')
@@ -595,7 +598,7 @@ def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
 def plot_ElevFrames(TMAX, DomainTS):
 
     for t in range(TMAX):
-        elevFig1 = plt.figure(figsize=(15,5))
+        elevFig1 = plt.figure(figsize=(14,5))
         ax = elevFig1.add_subplot(111)
         cax = ax.matshow(DomainTS[t], origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0)
         ax.xaxis.set_ticks_position('bottom')
@@ -616,15 +619,14 @@ def plot_ElevFrames(TMAX, DomainTS):
 #===================================================
 # 4: Animation Frames of Barrier and Dune Elevation
 
-def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX):
+def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, ShrubDeadTS):
 
     from Barrier3D_Parameters import (BarrierLength, BermEl, DuneWidth)
-    
+        
     BeachWidth = 6
     OriginY = 10
     AniDomainWidth = int(max(InteriorWidth_AvgTS) + BeachWidth + abs(ShorelineChange) + OriginY + 15)
     
-#    for t in range(0,len(DomainTS)):
     for t in range(TMAX):
         # Build beach elevation domain
         BeachDomain = np.zeros([BeachWidth, BarrierLength])    
@@ -653,16 +655,20 @@ def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomai
         AnimateDomain[OriginTstart:OriginTstop, 0:BarrierLength] = Domain    
         if Shrub_ON == 1:
             Shrubs = PercentCoverTS[t]
+            Dead = ShrubDeadTS[t]
             wid = np.zeros([BeachWidth + DuneWidth + OriginTstart, BarrierLength])
-            Shrubs = np.vstack([wid, Shrubs])       
+            Shrubs = np.vstack([wid, Shrubs])
+            Dead = np.vstack([wid, Dead])
             Sy, Sx = np.argwhere(Shrubs > 0).T
+            Dy, Dx = np.where(Dead > 0)
         
         # Plot and save
-        elevFig1 = plt.figure(figsize=(15,12))
+        elevFig1 = plt.figure(figsize=(14,12))
         ax = elevFig1.add_subplot(111)
-        cax = ax.matshow(AnimateDomain, origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0)#, interpolation='gaussian') # analysis:ignore
+        cax = ax.matshow(AnimateDomain, origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0, interpolation='gaussian') # analysis:ignore
         if Shrub_ON == 1:
-            ax.scatter(Sx, Sy, marker='o', s=12, c='black', alpha=0.35, edgecolors='none')
+            ax.scatter(Sx, Sy, marker='o', s=30, c='black', alpha=0.35, edgecolors='none') #size12
+            ax.scatter(Dx, Dy, marker='o', s=23, facecolors='none', edgecolors='red', alpha=0.45)
         ax.xaxis.set_ticks_position('bottom')
         #cbar = elevFig1.colorbar(cax)
         plt.xlabel('Alongshore Distance (dam)')
@@ -707,7 +713,7 @@ def plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX):
         CrossElev = CrossElev2 * 10 # Convert to meters
         plt.plot(CrossElev)
     fig = plt.gcf()
-    fig.set_size_inches(15,6)
+    fig.set_size_inches(14,6)
     plt.hlines(SL,-1,len(CrossElev+1),colors='dodgerblue')
     plt.xlabel('Cross-Shore Distance (dam)')
     plt.ylabel('Elevation (m)')
@@ -720,48 +726,43 @@ def plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX):
     
     
 #===================================================    
-# 6: Shoreline Change Per Year Over Time   
+# 6: Shoreline Positions Over Time   
 
-def plot_ShorelineChange(ShorelineChangeTS, BBShorelineChangeTS):
+def plot_ShorelinePositions(x_s_TS, x_b_TS):
     
-    shorelinesum = 0
-    BBsum = 0
-    scts = []
-    bbscts = []
-    for i in ShorelineChangeTS:
-        shorelinesum += i
-        scts.append(shorelinesum)
-    for q in BBShorelineChangeTS:
-        BBsum += q
-        bbscts.append(BBsum)
-    plt.figure()
-    plt.plot(bbscts)
-    plt.plot(scts)
+    scts = [(x - x_s_TS[0]) * -10 for x in x_s_TS]
+    bscts = [(x - x_s_TS[0]) * -10 for x in x_b_TS]
+    shorelinefig = plt.figure()
+    plt.plot(scts, 'b')
+    plt.plot(bscts, 'g')
     fig = plt.gcf()
-    fig.set_size_inches(25 ,5)
-    plt.xlabel('Time (yrs)')
-    plt.ylabel('Shoreline Change (dam)')
-    plt.title('Shoreline Change')
+    fig.set_size_inches(14,8)
+    plt.ylabel('Shoreline Position (m)')
+    plt.xlabel('Year')
     plt.show()   
-    
+    name = 'Output/Shorelines'
+    shorelinefig.savefig(name)   
    
     
     
 #===================================================    
 # 7: Shoreline Change Rate Over Time
 
-def plot_ShorelineChangeRate(ShorelineChangeTS):
-
-    scRts = ShorelineChangeTS
-    plt.figure()
-    plt.plot(scRts)
-    fig = plt.gcf()
-    fig.set_size_inches(25 ,5)
-    plt.xlabel('Time (yrs)')
-    plt.ylabel('Shoreline Change Rate(dam/yr)')
-    plt.title('Shoreline Change Rate Over Time')
-    plt.show() 
+def plot_ShorelineChangeRate(x_s_TS):
     
+    scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS]
+    rate = [0]
+    for k in range(1,len(scts)):
+        rate.append(scts[k]- scts[k-1])
+    ratefig = plt.figure()
+    plt.plot(rate)
+    fig = plt.gcf()
+    fig.set_size_inches(14 ,5)
+    plt.xlabel('Year')
+    plt.ylabel('Shoreline Erosion Rate(m/yr)')
+    plt.show() 
+    name = 'Output/ShorelineRate'
+    ratefig.savefig(name)  
     
     
 #===================================================
@@ -795,7 +796,7 @@ def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
     axes = plt.gca()
     colors = plt.cm.jet(np.linspace(0,1,TMAX))
     
-    for t in range(0,TMAX,5): # Plots one transect every 5 years
+    for t in range(0,TMAX,25): # Plots one transect every 25 years
         # Create data points
         Tx = x_t_TS[t]
         Ty = ((SL + (t * RSLR)) - DShoreface) *10
@@ -832,7 +833,7 @@ def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
     
     
 #===================================================
-# Average Island Elevation Over Time
+# 10: Average Island Elevation Over Time
 
 def plot_AvgIslandElev(h_b_TS):
     
@@ -840,7 +841,7 @@ def plot_AvgIslandElev(h_b_TS):
     plt.figure()
     plt.plot(beTS)
     fig = plt.gcf()
-    fig.set_size_inches(20 ,5)
+    fig.set_size_inches(14 ,5)
     plt.xlabel('Time (yrs)')
     plt.ylabel('Average Island Elevation (m)')
     plt.show()
@@ -857,7 +858,7 @@ def plot_ShorefaceSlope(s_sf_TS):
     plt.figure()
     plt.plot(ssfTS)
     fig = plt.gcf()
-    fig.set_size_inches(20 ,5)
+    fig.set_size_inches(14 ,5)
     plt.xlabel('Time (yrs)')
     plt.ylabel('Shoreface Slope')
     plt.title('Shoreface Slope Over Time')
@@ -875,7 +876,7 @@ def plot_AvgInteriorWidth(InteriorWidth_AvgTS):
     plt.figure()
     plt.plot(aiw)
     fig = plt.gcf()
-    fig.set_size_inches(20 ,5)
+    fig.set_size_inches(14,5)
     plt.xlabel('Time (yrs)')
     plt.ylabel('Average Interior Width (dam)')
     plt.title('Average Interior Width Over Time')
@@ -894,7 +895,7 @@ def plot_OverwashFlux(QowTS):
     plt.figure()
     plt.plot(qow)
     fig = plt.gcf()
-    fig.set_size_inches(20 ,5)
+    fig.set_size_inches(14,5)
     plt.xlabel('Time (yrs)')
     plt.ylabel('Qow (m^3)')
     plt.title('Shoreface Overwash Flux')
@@ -908,20 +909,20 @@ def plot_OverwashFlux(QowTS):
 # 14: Width, Berm Elevation, SF Slope, Shoreline Change, and Overwash Flux Over Time (all in one)
 
 def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS):
-
+    
     from Barrier3D_Parameters import (s_sf_eq)
     
     plt.figure()
     fig = plt.gcf()
     fig.set_size_inches(14,20)
-    plt.rcParams.update({'font.size':11})
+    plt.rcParams.update({'font.size':17})
     
     
     # Shoreface Slope
     plt.subplot(6,1,1)
     ssfTS = s_sf_TS
     plt.plot(ssfTS)
-    plt.hlines(s_sf_eq,0,TMAX,colors='black',linestyles='dashed')
+    plt.hlines(s_sf_eq,0,TMAX-1,colors='black',linestyles='dashed')
     
     plt.ylabel('Shoreface Slope')
     
@@ -929,10 +930,10 @@ def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, 
     plt.subplot(6,1,2)
     aiw = [a * 10 for a in InteriorWidth_AvgTS]
     plt.plot(aiw)
-    plt.ylabel('Average Interior Width (m)')
+    plt.ylabel('Avg. Width (m)') # Avergae Interior Width
     
     # Shoreline Change
-    scts = [(x - x_s_TS[0]) * -10 for x in x_s_TS]
+    scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS]
     plt.subplot(6,1,3)
     plt.plot(scts)
     plt.ylabel('Shoreline Position (m)')
@@ -951,8 +952,8 @@ def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, 
     aHd = [a * 10 for a in Hd_AverageTS]
     plt.subplot(6,1,6)
     plt.plot(aHd)
-    plt.xlabel('Time (yrs)')
-    plt.ylabel('Average Dune Height (m)')
+    plt.xlabel('Year')
+    plt.ylabel('Avg. Dune Height (m)') # Average Dune Height
     
     plt.show() 
     name = 'Output/Stats'
@@ -1156,7 +1157,7 @@ def plot_ShrubAgeTMAX(ShrubDomainAll):
 
     if Shrub_ON == 1:
         ShrubAll = ShrubDomainAll
-        shrubFig1 = plt.figure(figsize=(40,5))
+        shrubFig1 = plt.figure(figsize=(14,5))
         ax = shrubFig1.add_subplot(111)
         cax = ax.matshow(ShrubAll, origin='lower', cmap='RdYlGn', vmin=0, vmax=10) # analysis:ignore
         ax.xaxis.set_ticks_position('bottom')
@@ -1179,7 +1180,7 @@ def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX):
     
     if Shrub_ON == 1:
         ShrubPC = PercentCoverTS[TMAX-1]
-        shrubFig2 = plt.figure(figsize=(15,5))
+        shrubFig2 = plt.figure(figsize=(14,5))
         ax = shrubFig2.add_subplot(111)
         cax = ax.matshow(ShrubPC, origin='lower', cmap='YlGn', vmin=0, vmax=1) # analysis:ignore
         ax.xaxis.set_ticks_position('bottom')
@@ -1207,13 +1208,13 @@ def plot_ShrubArea(ShrubArea):
         plt.figure()
         plt.plot(area)
         fig = plt.gcf()
-        fig.set_size_inches(15,3)
-        plt.xlabel('Time (yrs)')
+        fig.set_size_inches(14,3)
+        plt.xlabel('Year')
         plt.ylabel('Shrub Area (dam^2)')
-        plt.title('Shrub Coverage Over Time')
         plt.show()
         name = 'Output/ShrubArea'
         fig.savefig(name)    
+    
     
     
     
@@ -1225,12 +1226,39 @@ def plot_StormCount(StormCount):
     plt.figure()
     plt.plot(StormCount)
     fig = plt.gcf()
-    fig.set_size_inches(12 ,5)
+    fig.set_size_inches(14 ,5)
     plt.xlabel('Year')
     plt.ylabel('Number of Storms')
     plt.title('Storm Count')
     plt.show()          
         
-        
-        
-        
+    
+
+    
+#===================================================
+# 22: Alongshore Dune Height Over Time
+
+def plot_AlongshoreDuneHeight(DuneDomain):
+    
+    from Barrier3D_Parameters import (BarrierLength)
+    
+    Dunes = DuneDomain.max(axis=2)
+
+    # Plot full tranects    
+    plt.figure()
+    for x in range(0, BarrierLength, 10):        
+        Hd_TS = Dunes[:,x]
+        Hd_TS = Hd_TS * 10 # Convert to meters
+        plt.plot(Hd_TS)    
+    fig = plt.gcf()
+    fig.set_size_inches(14,6)
+    plt.xlabel('Year')
+    plt.ylabel('Dune Height (m)')
+    plt.title('Dune Height Alongshore')
+    plt.show()
+    name = 'Output/Dunes_Alongshore'
+    fig.savefig(name)        
+     
+
+
+         
