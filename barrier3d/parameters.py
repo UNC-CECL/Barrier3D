@@ -173,7 +173,7 @@ def process_params(params):
     params["DuneWidth"] = int(params["DuneWidth"] / 10.0)
 
     z = params["InteriorDomain"] / 10.0 - params["MHW"]
-    z[z <= 0.0] = - params["BayDepth"]
+    z[z <= 0.0] = -params["BayDepth"]
     # above_water = np.any(z > 0, axis=0)
     # z = z[:, above_water]
     u = 1
@@ -188,7 +188,9 @@ def process_params(params):
 
     if len(params["InteriorDomain"][0]) > params["BarrierLength"]:
         # Reduce to specified max length
-        params["InteriorDomain"] = params["InteriorDomain"][:, :params["BarrierLength"]]
+        params["InteriorDomain"] = params["InteriorDomain"][
+            :, : params["BarrierLength"]
+        ]
     else:
         params["BarrierLength"] = len(params["InteriorDomain"][0])
 
@@ -207,9 +209,12 @@ def process_params(params):
     params["BermEl"] = params["BermEl"] / 10.0 - params["MHW"]
 
     # Initialize dune crest height domain
-    params["DuneDomain"] = np.zeros([params["TMAX"], params["BarrierLength"], params["DuneWidth"]])
+    params["DuneDomain"] = np.zeros(
+        [params["TMAX"], params["BarrierLength"], params["DuneWidth"]]
+    )
     params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
-        params["Dstart"] + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"]))
+        params["Dstart"]
+        + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"]))
     )
     params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
     # for col in range(1, DuneWidth):

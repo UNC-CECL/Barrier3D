@@ -2,8 +2,8 @@ import numpy as np
 import xlrd
 from numpy.testing import assert_array_equal
 
-from barrier3d.parameters import from_xls, load_params
 from barrier3d.barrier3d import Barrier3D
+from barrier3d.parameters import from_xls, load_params
 
 
 def test_from_xls(datadir):
