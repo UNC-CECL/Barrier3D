@@ -607,8 +607,8 @@ class Barrier3D:
         self._Seedmax = kwds.pop("Seedmax")
         self._Seedmin = kwds.pop("Seedmin")
         self._Shrub_ON = kwds.pop("Shrub_ON")
-        self._ShrubEl_max = kwds.pop("ShrubEL_max")
-        self._ShrubEl_min = kwds.pop("ShrubEL_min")
+        self._ShrubEl_max = kwds.pop("ShrubEl_max")
+        self._ShrubEl_min = kwds.pop("ShrubEl_min")
         self._StormStart = kwds.pop("StormStart")
         self._surge_tide_m = kwds.pop("surge_tide_m")
         self._surge_tide_sd = kwds.pop("surge_tide_sd")
@@ -616,6 +616,8 @@ class Barrier3D:
         self._TimeFruit = kwds.pop("TimeFruit")
         self._TMAX = kwds.pop("TMAX")
         self._UprootLimit = kwds.pop("UprootLimit")
+
+        assert len(kwds) == 0
 
         ### Initialize Shrubs
         # if Shrub_ON ==1: print('Shrubs ON')
