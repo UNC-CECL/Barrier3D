@@ -10,7 +10,7 @@ Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
 # Version Number: 3
-# Updated: 4 March 2020
+# Updated: 28 May 2020
 
 
 # Simulation Functions Included: 
@@ -32,6 +32,7 @@ Full copyright notice located in main Barrier3D.py file
 import numpy as np
 import math
 import random
+import os
 import matplotlib.pyplot as plt
 from matplotlib import cm # analysis:ignore
 from mpl_toolkits.mplot3d import Axes3D # analysis:ignore
@@ -173,7 +174,7 @@ def SeaLevel(InteriorDomain, DuneDomain, t):
     # Decrease all elevation this year by RSLR increment
     InteriorDomain = InteriorDomain - RSLR
     DuneDomain[t-1] = DuneDomain[t-1] - RSLR    
-    InteriorDomain[InteriorDomain < -BayDepth] = -BayDepth # Bay can't be deeper than BayDepth (assumes equilibrium depth maintained)
+    InteriorDomain[InteriorDomain < -BayDepth] = -BayDepth # Bay can't be deeper than BayDepth (roughly equivalent to constant back-barrier slope)
         
     return InteriorDomain, DuneDomain
 
@@ -195,7 +196,7 @@ def DuneGrowth(DuneDomain, t):
     if Dmax < 0:
         Dmax = 0  
     
-    Cf = 3 # Decay coefficient
+    Cf = 3 # Decay coefficient     
     Qdg = 0
     # Grow dune
     for q in range(DuneWidth):
@@ -206,6 +207,36 @@ def DuneGrowth(DuneDomain, t):
     
     return DuneDomain, Dmax, Qdg
 
+
+
+
+
+#===================================================
+# DuneGrowthBatch
+    
+# Grows dune cells (Version for batch runs takes growthparam as direct input)
+
+def DuneGrowthBatch(DuneDomain, t, growthparam):
+    
+    from Barrier3D_Parameters import (Dmaxel, BermEl, DuneWidth, BarrierLength)
+    
+    growthparam = growthparam[0:BarrierLength]
+    
+    # Set max dune height
+    Dmax = Dmaxel - BermEl # (dam) Max dune height 
+    if Dmax < 0:
+        Dmax = 0  
+    
+    Cf = 3 # Decay coefficient
+    Qdg = 0
+    # Grow dune
+    for q in range(DuneWidth):
+        reduc = 1/(Cf**q)
+        G = growthparam * DuneDomain[t-1,:,q] * (1 - DuneDomain[t-1,:,q] / Dmax) * reduc
+        DuneDomain[t,:,q] = G + DuneDomain[t-1,:,q]
+        Qdg = Qdg + (np.sum(G) / BarrierLength) # Volume of sediment lost from beach/shoreface from dune growth
+    
+    return DuneDomain, Dmax, Qdg
 
 
 
@@ -276,11 +307,14 @@ def LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_
     
     # Find volume of shoreface/beach/dune sand deposited in island interior and back-barrier
     Qow = (OWloss) / (BarrierLength) # (dam^3/dam) Volume of sediment lost from shoreface/beach by overwash
-    QowTS.append(Qow * 100) # Save in m^3/m    
+    QowTS.append(Qow * 100) # Save in m^3/m
+    if Qow < 0:
+        print('Qow = ', Qow, ', OWloss = ', OWloss)       
     if DuneLoss < Qow:
-        Qow = Qow - DuneLoss # Account for dune contribution to overwash volume
+        Qow = Qow - DuneLoss # Account for dune contribution to overwash volume                     
     else:
         Qow = 0 # Excess DuneLoss assumed lost offshore
+#    QowTS.append(Qow * 100) # Save in m^3/m
     
     # DefineParams
     d_sf = DShoreface 
@@ -536,7 +570,7 @@ def CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, ShrubArea, t):
 
 
 #==============================================================================================================================================
-# PLOTTING FUNCTIONS      
+# PLOTTING & CALCULATION FUNCTIONS      
 #==============================================================================================================================================
     
 
@@ -625,7 +659,7 @@ def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomai
         
     BeachWidth = 6
     OriginY = 10
-    AniDomainWidth = int(max(InteriorWidth_AvgTS) + BeachWidth + abs(ShorelineChange) + OriginY + 15)
+    AniDomainWidth = int(max(InteriorWidth_AvgTS) + BeachWidth + abs(ShorelineChange) + OriginY + 35) # was +15
     
     for t in range(TMAX):
         # Build beach elevation domain
@@ -665,7 +699,7 @@ def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomai
         # Plot and save
         elevFig1 = plt.figure(figsize=(14,12))
         ax = elevFig1.add_subplot(111)
-        cax = ax.matshow(AnimateDomain, origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0, interpolation='gaussian') # analysis:ignore
+        cax = ax.matshow(AnimateDomain, origin='lower', cmap='terrain', vmin=-1.1, vmax=4.0)#, interpolation='gaussian') # analysis:ignore
         if Shrub_ON == 1:
             ax.scatter(Sx, Sy, marker='o', s=30, c='black', alpha=0.35, edgecolors='none') #size12
             ax.scatter(Dx, Dy, marker='o', s=23, facecolors='none', edgecolors='red', alpha=0.45)
@@ -675,6 +709,9 @@ def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomai
         plt.ylabel('Cross-Shore Diatance (dam)')
         plt.title('Interior Elevation')
         timestr = 'Time = ' + str(t) + ' yrs'
+        newpath = 'Output/SimFrames/'
+        if not os.path.exists(newpath):
+            os.makedirs(newpath)            
         plt.text(1, 1, timestr)
         name = 'Output/SimFrames/elev_' + str(t)
         elevFig1.savefig(name) # dpi=200
@@ -914,7 +951,7 @@ def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, 
     
     plt.figure()
     fig = plt.gcf()
-    fig.set_size_inches(14,20)
+    fig.set_size_inches(14,18)
     plt.rcParams.update({'font.size':17})
     
     
@@ -941,6 +978,9 @@ def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, 
     # Overwash Flux
     plt.subplot(6,1,4)
     plt.plot(QowTS)
+#    movingavg = np.convolve(QowTS, np.ones((50,))/50, mode='valid')
+#    movingavg = [i * 10 for i in movingavg]
+#    plt.plot(movingavg, 'r--')
     plt.ylabel('Qow (m^3/m)')
     
     # Shoreface Flux
@@ -1261,4 +1301,158 @@ def plot_AlongshoreDuneHeight(DuneDomain):
      
 
 
-         
+#===================================================
+# 23: Calculate shoreline change periodicity
+    
+def calc_ShorelinePeriodicity(TMAX, x_s_TS):
+
+    from scipy import signal
+
+    ### Shoreline Change & Change Rate Over Time    
+    scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS]
+        
+    ### Filter
+    HitDown = []
+    HitUp = []
+    
+    if TMAX > 35:
+        if TMAX > 81:
+            win = 81
+        else:
+            win = 35
+
+        poly = 3 #3
+        der1 = (signal.savgol_filter(scts, win, poly, deriv=1))
+        der2 = (signal.savgol_filter(scts, win, poly, deriv=2))
+        
+        window1 = 35
+        window2 = 35 #25
+        thresh1 = 0.50 # Max slope for slow periods
+        thresh2 = 0.50 # Max slope for average of forward window
+        thresh3 = 0.25 # Minimum slope change
+        Tbuffer = window1
+        
+        der2_2 = (signal.savgol_filter(scts, window1, poly, deriv=2))
+        der2 = np.concatenate((der2_2[0:win], der2[win+1:TMAX-win], der2_2[TMAX-win+1:TMAX]), axis=0)
+        
+        ### Find slow-downs
+        der_under = np.where(der1 < thresh1)[0]                                             # der1
+        if len(der_under) > 0:                                       
+            gaps = np.diff(der_under) > window1
+            peak_start = np.insert(der_under[1:][gaps], 0, der_under[0])
+            peak_stop = np.append(der_under[:-1][gaps], der_under[-1])
+        
+            for p in range(len(peak_start)):
+                if peak_stop[p] > TMAX-Tbuffer: peak_stop[p] = TMAX-Tbuffer
+                if peak_start[p] < peak_stop[p]:
+                    hit = np.argmin(der2[peak_start[p]:peak_stop[p]]) + peak_start[p]       # der2
+                    if hit >= Tbuffer and hit <= TMAX - Tbuffer:
+                        # Second filter: slope change                
+                        if len(HitUp) > 0:
+                            window2_min = HitUp[-1]
+                        else:
+                            window2_min = max(hit-window2, Tbuffer)
+                        window2_max = min(hit+window2, TMAX-Tbuffer)  
+                        slopeF = np.mean(der1[hit:window2_max])
+                        slopeB = np.mean(der1[window2_min:hit])
+                        print('Hit Up: ', hit, ', F: ', slopeF, ', Diff: ', slopeB - slopeF)
+        
+                        if slopeB - slopeF > thresh3: #and slopeF < thresh2:
+                            ### Find speed up
+                            under = True
+                            k = hit + 1
+                            while under and k < TMAX-2:
+                                if der1[k] > thresh2:
+                                    under = False
+                                    hit2 = k
+                                else:
+                                    k += 1   
+                            if under == False:
+                                if hit2 - hit > window1:
+                                    HitDown.append(hit)                                        
+                                    if hit2 <= TMAX-Tbuffer:
+                                        HitUp.append(hit2)
+                                        print('Hit Down: ', hit2, ', TDiff: ', hit2 - hit)
+                            else:
+                                if hit < TMAX-Tbuffer:
+                                    HitDown.append(hit)
+            ### Second pass for speed-ups before first slow-down
+            if len(HitDown) > 0:        
+                over = True
+                k = HitDown[0] - 1
+                while over and k > 1:
+                    window2_min = max(k-window2, 0)                             # Need to check if slow period before is greater than minimum
+                    window2_max = min(k+window2, TMAX)
+                    slopeF = np.mean(der1[hit:window2_max])
+                    slopeB = np.mean(der1[window2_min:hit])          
+                    if der1[k] < thresh1:# and slopeF - slopeB > thresh3:
+                        over = False
+                        hit = k
+                        if HitDown[0] - hit > window1 and hit >= Tbuffer:
+                            under = True
+                            kk = hit - 1
+                            while under and kk > Tbuffer: # or 0?
+                                if der1[kk] > thresh2:
+                                    under = False
+                                else:
+                                    kk -= 1 
+                            hit2 = kk
+                            if hit - hit2 > window1:
+                                HitUp.insert(0,hit)
+                    else:
+                        k -= 1
+            
+     
+    ### CALCULATE STATS      
+            
+    Jumps = len(HitDown)
+    Slows = len(HitUp)
+    SlowDur = []
+    FastDur = []
+    
+    if Jumps > 0 and Slows > 0:
+        DownFirst = HitDown[0] < HitUp[0]
+    elif Jumps == 0 and Slows > 1:
+        DownFirst = True
+    else:
+        DownFirst = False
+    
+    if Jumps >= 2 or Slows >= 2:
+        if Jumps >= 2 and Slows >= 2:
+            Periodicity = (np.mean(np.diff(HitDown)) + np.mean(np.diff(HitUp))) / 2
+        elif Jumps >= Slows:
+            Periodicity = np.mean(np.diff(HitDown))  
+        else:
+            Periodicity = np.mean(np.diff(HitUp))
+        if DownFirst:
+            for n in range(Slows):            
+                SlowDur.append(HitUp[n] - HitDown[n])
+            for n in range(Jumps - 1):
+                FastDur.append(HitDown[n+1] - HitUp[n])        
+        else:
+            for n in range(Slows-1):
+                SlowDur.append(HitUp[n+1] - HitDown[n])
+            for n in range(Jumps):            
+                FastDur.append(HitDown[n] - HitUp[n])   
+    else:
+        Periodicity = 0
+        if Jumps == 1 and Slows == 1:
+            if DownFirst:
+                SlowDur.append(HitUp[0] - HitDown[0])
+            else:
+                FastDur.append(HitDown[0] - HitUp[0])  
+    
+    AvgFastDur = np.mean(FastDur)
+    if np.isnan(AvgFastDur):
+        AvgFastDur = 0
+    AvgSlowDur = np.mean(SlowDur)
+    if np.isnan(AvgSlowDur):
+        AvgSlowDur = 0
+            
+    
+    return Periodicity, AvgFastDur, AvgSlowDur
+    
+
+
+
+
