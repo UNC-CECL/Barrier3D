@@ -93,7 +93,7 @@ def DuneGaps(DuneDomain, Dow, bermel, Rhigh):
     
 def WaterLevels(numstorm, MHW):   
     
-    from Barrier3D_Parameters_2 import (surge_tide_m, surge_tide_sd, height_mu, height_sigma, period_m, period_sd, beta, duration_mu, duration_sigma)
+    from Barrier3D_Parameters import (surge_tide_m, surge_tide_sd, height_mu, height_sigma, period_m, period_sd, beta, duration_mu, duration_sigma)
     
     ### Generate storm water levels
     Rhigh = []
@@ -169,7 +169,7 @@ def WaterLevels(numstorm, MHW):
 
 def SeaLevel(InteriorDomain, DuneDomain, t):
     
-    from Barrier3D_Parameters_2 import (RSLR, BayDepth)
+    from Barrier3D_Parameters import (RSLR, BayDepth)
     
     # Decrease all elevation this year by RSLR increment
     InteriorDomain = InteriorDomain - RSLR
@@ -189,7 +189,7 @@ def SeaLevel(InteriorDomain, DuneDomain, t):
 
 def DuneGrowth(DuneDomain, t):
     
-    from Barrier3D_Parameters_2 import (Dmaxel, BermEl, growthparam, DuneWidth, BarrierLength)
+    from Barrier3D_Parameters import (Dmaxel, BermEl, growthparam, DuneWidth, BarrierLength)
     
     # Set max dune height - depends on beach width according to relationship gathered from VCR data
     Dmax = Dmaxel - BermEl # (dam) Max dune height 
@@ -218,7 +218,7 @@ def DuneGrowth(DuneDomain, t):
 
 def DuneGrowthBatch(DuneDomain, t, growthparam):
     
-    from Barrier3D_Parameters_2 import (Dmaxel, BermEl, DuneWidth, BarrierLength)
+    from Barrier3D_Parameters import (Dmaxel, BermEl, DuneWidth, BarrierLength)
     
     growthparam = growthparam[0:BarrierLength]
     
@@ -249,7 +249,7 @@ def DuneGrowthBatch(DuneDomain, t, growthparam):
     
 def DiffuseDunes(DuneDomain, t):
     
-    from Barrier3D_Parameters_2 import (HdDiffu, BarrierLength, DuneWidth)
+    from Barrier3D_Parameters import (HdDiffu, BarrierLength, DuneWidth)
     
     for w in range(DuneWidth):
         # Alongshore direction 
@@ -279,7 +279,7 @@ def DiffuseDunes(DuneDomain, t):
     
 def FindWidths(InteriorDomain, SL):
     
-    from Barrier3D_Parameters_2 import (BarrierLength)
+    from Barrier3D_Parameters import (BarrierLength)
     
     DomainWidth = np.shape(InteriorDomain)[0] # (dam) analysis:ignore
     InteriorWidth = [0] * BarrierLength
@@ -303,7 +303,7 @@ def FindWidths(InteriorDomain, SL):
 
 def LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, DShoreface, k_sf, s_sf_eq, RSLR, Qat)
+    from Barrier3D_Parameters import (BarrierLength, DShoreface, k_sf, s_sf_eq, RSLR, Qat)
     
     # Find volume of shoreface/beach/dune sand deposited in island interior and back-barrier
     Qow = (OWloss) / (BarrierLength) # (dam^3/dam) Volume of sediment lost from shoreface/beach by overwash
@@ -354,7 +354,7 @@ def LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_
     
 def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth, ShrubDomainDead):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, Dshrub, BermEl, Female, ShrubEl_min, ShrubEl_max, BurialLimit, UprootLimit, TimeFruit, Seedmin, Seedmax, GermRate, disp_mu, disp_sigma)    
+    from Barrier3D_Parameters import (BarrierLength, Dshrub, BermEl, Female, ShrubEl_min, ShrubEl_max, BurialLimit, UprootLimit, TimeFruit, Seedmin, Seedmax, GermRate, disp_mu, disp_sigma)    
     
     ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
     
@@ -482,7 +482,7 @@ def Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMal
     
 def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead):
     
-    from Barrier3D_Parameters_2 import (BarrierLength)
+    from Barrier3D_Parameters import (BarrierLength)
 
 
     if DomainWidth > ShrubDomainWidth:
@@ -515,7 +515,7 @@ def UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDo
     
 def SalineFlooding(ShrubDomainWidth, ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead, d, i, Q0):
                    
-    from Barrier3D_Parameters_2 import (BarrierLength, SalineLimit)
+    from Barrier3D_Parameters import (BarrierLength, SalineLimit)
     
     if d < (ShrubDomainWidth-1) and i < (BarrierLength - 1):
         if Q0 >= SalineLimit and ShrubDomainAll[d,i] == 1:
@@ -552,7 +552,7 @@ def UpdateBurial(BurialDomain, ElevationChange, ShrubDomainWidth, ShrubDomainAll
     
 def CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, ShrubArea, t):
 
-    from Barrier3D_Parameters_2 import PC
+    from Barrier3D_Parameters import PC
     
     Allshrub_t = ShrubDomainAll.astype('int64')
     Deadshrub_t = ShrubDomainDead.astype('int64')
@@ -600,7 +600,7 @@ def plot_DuneHeight(DuneDomain):
 
 def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
     
-    from Barrier3D_Parameters_2 import (BermEl)
+    from Barrier3D_Parameters import (BermEl)
     
     if TMAX > t:
         TMAX = t
@@ -655,7 +655,7 @@ def plot_ElevFrames(TMAX, DomainTS):
 
 def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, ShrubDeadTS):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, BermEl, DuneWidth)
+    from Barrier3D_Parameters import (BarrierLength, BermEl, DuneWidth)
         
     BeachWidth = 6
     OriginY = 10
@@ -730,7 +730,7 @@ def plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomai
   
 def plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX):
     
-    from Barrier3D_Parameters_2 import (BarrierLength, BermEl)
+    from Barrier3D_Parameters import (BarrierLength, BermEl)
 
     # Build beach elevation
     BW = 6 # beach width (dam) for illustration purposes
@@ -822,7 +822,7 @@ def plot_RuInCount(RunUpCount, InundationCount):
 
 def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
 
-    from Barrier3D_Parameters_2 import (RSLR, BermEl, DShoreface, BayDepth)
+    from Barrier3D_Parameters import (RSLR, BermEl, DShoreface, BayDepth)
     
     ymin = -11
     ymax = SL + RSLR * TMAX + 4
@@ -947,7 +947,7 @@ def plot_OverwashFlux(QowTS):
 
 def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS):
     
-    from Barrier3D_Parameters_2 import (s_sf_eq)
+    from Barrier3D_Parameters import (s_sf_eq)
     
     plt.figure()
     fig = plt.gcf()
@@ -1007,7 +1007,7 @@ def plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, 
 
 def plot_3DElevTMAX(TMAX, t, SL, DuneDomain, DomainTS):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, BermEl, DuneWidth)
+    from Barrier3D_Parameters import (BarrierLength, BermEl, DuneWidth)
     
     if TMAX > t:
        TMAX = t   
@@ -1065,7 +1065,7 @@ def plot_3DElevTMAX(TMAX, t, SL, DuneDomain, DomainTS):
 
 def plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, BermEl, DuneWidth)
+    from Barrier3D_Parameters import (BarrierLength, BermEl, DuneWidth)
     
     for t in range(0,len(DomainTS)):
         # Build beach elevation domain
@@ -1122,7 +1122,7 @@ def plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain):
 
 def plot_3DElevAnimation(DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, ShorelineChange):
 
-    from Barrier3D_Parameters_2 import (BarrierLength, BermEl, DuneWidth)
+    from Barrier3D_Parameters import (BarrierLength, BermEl, DuneWidth)
     
     BW = 6   
     AniDomainWidth = DomainWidth + round(BW) + 12 + abs(ShorelineChange)
@@ -1193,7 +1193,7 @@ def plot_3DElevAnimation(DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, Sh
 
 def plot_ShrubAgeTMAX(ShrubDomainAll):
     
-    from Barrier3D_Parameters_2 import Shrub_ON
+    from Barrier3D_Parameters import Shrub_ON
 
     if Shrub_ON == 1:
         ShrubAll = ShrubDomainAll
@@ -1216,7 +1216,7 @@ def plot_ShrubAgeTMAX(ShrubDomainAll):
 
 def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX):
 
-    from Barrier3D_Parameters_2 import Shrub_ON
+    from Barrier3D_Parameters import Shrub_ON
     
     if Shrub_ON == 1:
         ShrubPC = PercentCoverTS[TMAX-1]
@@ -1241,7 +1241,7 @@ def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX):
     
 def plot_ShrubArea(ShrubArea):    
     
-    from Barrier3D_Parameters_2 import Shrub_ON
+    from Barrier3D_Parameters import Shrub_ON
     
     if Shrub_ON == 1:
         area = ShrubArea
@@ -1280,7 +1280,7 @@ def plot_StormCount(StormCount):
 
 def plot_AlongshoreDuneHeight(DuneDomain):
     
-    from Barrier3D_Parameters_2 import (BarrierLength)
+    from Barrier3D_Parameters import (BarrierLength)
     
     Dunes = DuneDomain.max(axis=2)
 
