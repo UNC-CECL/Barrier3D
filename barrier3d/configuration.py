@@ -465,23 +465,6 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
         base_dir / path_to_elevations, fmt="csv" if fmt != "xlsx" else "xlsx"
     )
 
-    # if fmt == "yaml":
-    #     fmts = ("yaml", "csv")
-    # elif fmt == "xlsx":
-    #     fmts = ("xlsx", "xlsx")
-    # else:
-    #     raise ValueError(
-    #         "unrecognized format for input files ({fmt} not in {fmts})".format(
-    #             fmt=fmt, fmts=", ".join(fmts)
-    #         )
-    #     )
-
-    # path_to_config = path_to_folder / (prefix + "." + fmts[0])
-    # path_to_elevation = path_to_folder / (prefix + "." + fmts[1])
-
-    # params = load_configuration(path_to_config, fmt=fmts[0])
-    # params["InteriorDomain"] = load_elevation(path_to_elevation, fmt=fmts[1])
-
     return _process(params)
 
 
@@ -510,6 +493,7 @@ def load_storms(path_to_file, fmt="csv"):
                 "duration": int,
             },
             comment="#",
+            header=0,
         )
         data = np.hstack(
             (
@@ -534,7 +518,7 @@ def load_dunes(path_to_file, fmt="csv"):
         data = np.load(path_to_file)
     elif fmt == "csv":
         data = pandas.read_csv(
-            path_to_file, names=("DuneStart",), dtype=float, comment="#",
+            path_to_file, names=("DuneStart",), dtype=float, comment="#", header=0
         )["DuneStart"].values
     else:
         fmts = ", ".join(["npy", "csv"])
@@ -550,7 +534,7 @@ def load_growth_param(path_to_file, fmt="csv"):
         data = np.load(path_to_file)
     elif fmt == "csv":
         data = pandas.read_csv(
-            path_to_file, names=("growth_param",), dtype=float, comment="#",
+            path_to_file, names=("growth_param",), dtype=float, comment="#", header=0
         )["growth_param"].values
     else:
         fmts = ", ".join(["npy", "csv"])
@@ -601,7 +585,8 @@ def _load_initial_elevation_csv(path_to_csv):
         path_to_csv,
         names=("x", "y", "z"),
         dtype={"x": int, "y": int, "z": float},
-        comment="#"
+        comment="#",
+        header=0,
     )
 
 
