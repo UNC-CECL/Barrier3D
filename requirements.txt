@@ -1,3 +1,7 @@
+bmipy
+click
+exconfig
 numpy
+pandas
 pyyaml
 xlrd
