@@ -16,11 +16,9 @@ class Barrier3d:
         # Decrease all elevation this year by RSLR increment
         InteriorDomain = InteriorDomain - self._RSLR
         DuneDomain[t - 1] = DuneDomain[t - 1] - self._RSLR
-        InteriorDomain[
-            InteriorDomain < -self._BayDepth
-        ] = (
-            -self._BayDepth
-        )  # Bay can't be deeper than BayDepth (assumes equilibrium depth maintained)
+
+        # Bay can't be deeper than BayDepth (roughly equivalent to constant back-barrier slope)
+        InteriorDomain[InteriorDomain < -self._BayDepth] = -self._BayDepth
 
         return InteriorDomain, DuneDomain
 
@@ -566,6 +564,7 @@ class Barrier3d:
         self._C2 = kwds.pop("C2")
         self._Cbb_i = kwds.pop("Cbb_i")
         self._Cbb_r = kwds.pop("Cbb_r")
+        self._Cx = kwds.pop("Cx")
         self._disp_mu = kwds.pop("disp_mu")
         self._disp_sigma = kwds.pop("disp_sigma")
         self._Dmaxel = kwds.pop("Dmaxel")
@@ -594,10 +593,13 @@ class Barrier3d:
         self._MHW = kwds.pop("MHW")
         self._nn = kwds.pop("nn")
         self._numstorm = kwds.pop("numstorm")
+        self._OWss_i = kwds.pop("OWss_i")
+        self._OWss_r = kwds.pop("OWss_r")
         self._PC = kwds.pop("PC")
         self._period_m = kwds.pop("period_m")
         self._period_sd = kwds.pop("period_sd")
         self._Qat = kwds.pop("Qat")
+        self._Qs_bb_min = kwds.pop("Qs_bb_min")
         self._Qs_min = kwds.pop("Qs_min")
         self._Qshrub_max = kwds.pop("Qshrub_max")
         self._Rin_i = kwds.pop("Rin_i")
@@ -680,6 +682,9 @@ class Barrier3d:
         self._Hd_AverageTS = [Dstart]
         self._QsfTS = [0]  # (m^3/m)
 
+        # Dune height loss exclusively from vertical storm erosion
+        self._Hd_Loss_TS = np.zeros([self._TMAX, self._BarrierLength])
+
         self._time_index = 1
 
     @classmethod
@@ -704,13 +709,13 @@ class Barrier3d:
         )
 
         # ### Find DomainWidth and InteriorWidth
-        self._DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
+        DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
             self._InteriorDomain, self._SL
         )
 
         # ### Check for drowning
         # Barrier drowns if interior width thins to 10 m or fewer or all interior cells are below SL
-        if InteriorWidth_Avg < 1:  # if max(InteriorWidth) <= 1:
+        if max(InteriorWidth) <= 1:
             print(
                 "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years!"
             )
@@ -731,14 +736,16 @@ class Barrier3d:
         DuneDomainCrest = self._DuneDomain[self._time_index, :, :].max(
             axis=1
         )  # Maximum height of each row in DuneDomain
+        DuneDomainCrest[DuneDomainCrest < 0.005] = 0.005
+
         self._Hd_AverageTS.append(
             np.mean(DuneDomainCrest)
         )  # Store average pre-storms dune-heigh for time step
 
-        # ##########################################
+        # ###########################################
         # ### Shrubs
 
-        if self._Shrub_ON:
+        if self._Shrub_ON == 1:
 
             (
                 ShrubDomainAll,
@@ -754,7 +761,7 @@ class Barrier3d:
                 self._ShrubDomainMale,
                 self._BurialDomain,
                 InteriorWidth_Avg,
-                self._DomainWidth,
+                DomainWidth,
                 self._ShrubDomainDead,
             )
 
@@ -766,10 +773,6 @@ class Barrier3d:
 
         if self._time_index >= self._StormStart:
             # Select number of storms for this time step from normal distribution
-            # self._numstorm = int(self._numstorm)
-            # self._numstorm = round(
-            #     np.random.normal(self._mean_storm, self._SD_storm)
-            # )  # analysis:ignore # Comment out this line if using pre-specified static number of storms per year
             if self._StormTimeSeries:
                 TSloc = np.argwhere(self._StormSeries[:, 0] == self._time_index)
                 self._numstorm = int(len(TSloc))  # analysis:ignore
@@ -780,8 +783,6 @@ class Barrier3d:
                 )  # analysis:ignore # Comment out this line if using pre-specified static number of storms per year
 
             if self._numstorm > 0:
-                # Draw statistics for each storm
-                # Rhigh, Rlow, period, dur = self.WaterLevels(self._numstorm, self._MHW)
                 if self._StormTimeSeries:
                     TSloc = np.argwhere(self._StormSeries[:, 0] == self._time_index)
                     start = TSloc[0, 0]
@@ -790,11 +791,10 @@ class Barrier3d:
                     Rlow = self._StormSeries[start:stop, 2]
                     period = self._StormSeries[start:stop, 3]
                     dur = np.array(self._StormSeries[start:stop, 4], dtype="int")
+
                 else:
                     # Draw statistics for each storm
-                    Rhigh, Rlow, period, dur = self.WaterLevels(
-                        self._numstorm, self._MHW
-                    )
+                    Rhigh, Rlow, period, dur = self.WaterLevels(self._numstorm, self._MHW)
 
                 # ### Individual Storm Impacts
                 for n in range(self._numstorm):  # Loop through each individual storm
@@ -868,6 +868,10 @@ class Barrier3d:
                         DuneChange.max(axis=1) / dur[n]
                     )  # Average height of dune loss for each substep during storm
 
+                    self._Hd_Loss_TS[self._time_index, :] = self._Hd_Loss_TS[
+                        self._time_index, :
+                    ] + DuneChange.max(axis=1)
+
                     # ###########################################
                     # ### Overwash
 
@@ -887,34 +891,20 @@ class Barrier3d:
                             Iow += 1
 
                     # Dertermine Sediment And Water Routing Rules
+
                     if (
                         len(gaps) > 0 and Iow / len(gaps) >= self._threshold_in
-                    ):  # If greater than 25% of dune gaps are in unundation regime, use inundation regime routing
+                    ):  # If greater than threshold % of dune gaps are in unundation regime, use inundation regime routing
                         inundation = 1
-                        #                        #### Calc substep
-                        #                        Smax = 0
-                        #                        Smin = 0
-                        #                        for l in range(self._BarrierLength):
-                        #                            for w in range(InteriorWidth[l]):
-                        #                                slope = self._InteriorDomain[w,l] - self._InteriorDomain[w+1,l]
-                        #                                if slope > Smax:
-                        #                                    Smax = slope
-                        #                        calc maxQ
-                        #                        accrete = f(maxQ, smax)
-                        #                        ceil(accrete / (Smax *2)) = substep
-                        #                        ####
-                        # substep = 15  # pre 14Jan20: 5, ~20 needed?
-                        substep = 1
+                        substep = self._OWss_i
                         self._InundationCount += 1
                     else:
                         inundation = 0
-                        # NOTE: surges is never used
-                        surges = (1 / period[n]) * 60 * 60  # Number of surges per hour
-                        substep = 1
+                        substep = self._OWss_r
                         self._RunUpCount += 1
 
                     # Set Domain
-                    add = 25
+                    add = 15
                     duration = dur[n] * substep
                     width = (
                         np.shape(self._InteriorDomain)[0] + 1 + add
@@ -930,9 +920,8 @@ class Barrier3d:
                     SedFluxOut = np.zeros([duration, width, self._BarrierLength])
 
                     Rin = 0  # (dam^3/t) Infiltration Rate, volume of overwash flow lost per m cross-shore per time
-                    # inundation = 0
 
-                    # Set Water and Sediment at Dune Crest
+                    # Set Water at Dune Crest
                     for q in range(len(gaps)):
                         start = gaps[q][0]
                         stop = gaps[q][1]
@@ -951,27 +940,24 @@ class Barrier3d:
 
                         if inundation == 1:  # Inundation regime
                             Rin = self._Rin_i
-                            # slopes = []
-                            # # Find average slope of interior
-                            # for u in range(1, width - 1):
-                            #     for v in range(self._BarrierLength):
-                            #         if (
-                            #             Elevation[0, u, v] > self._SL
-                            #             and Elevation[0, u + 1, v] > self._SL
-                            #         ):
-                            #             SS = Elevation[0, u, v] - Elevation[0, u + 1, v]
-                            #             slopes.append(SS)
-                            # AvgSlope = sum(slopes) / len(slopes)
-                            # C = 2 * AvgSlope
-                            # SedFluxIn[:, 0, start:stop] = (
-                            #     self._Ki * (Qdune * (AvgSlope + C)) ** self._mm
-                            # )
-                            # Set sediment at dune gap
-                            SedFluxIn[:, 0, start:stop] = self._Ki * Qdune
+
+                            slopes = []
+                            # Find average slope of interior
+                            for u in range(1, width - 1):
+                                for v in range(self._BarrierLength):
+                                    if (
+                                        Elevation[0, u, v] > self._SL
+                                        and Elevation[0, u + 1, v] > self._SL
+                                    ):
+                                        SS = Elevation[0, u, v] - Elevation[0, u + 1, v]
+                                        slopes.append(SS)
+                            AvgSlope = sum(slopes) / len(slopes)
+                            C = (
+                                self._Cx * AvgSlope
+                            )  # About 2-3 times the average slope (Murray and Paola, 1994/97)
+
                         else:  # Run-up regime
                             Rin = self._Rin_r
-                            # Set sediment at dune gap
-                            SedFluxIn[:, 0, start:stop] = self._Kr * Qdune
 
                     # ### Run Flow Routing Algorithm
                     for TS in range(duration):
@@ -982,8 +968,8 @@ class Barrier3d:
                             Elevation[TS, 1:, :] = Elevation[
                                 TS - 1, 1:, :
                             ]  # Begin timestep with elevation from end of last
-                            Elevation[TS, 0, :] = (
-                                Dunes - Hd_TSloss * TS
+                            Elevation[TS, 0, :] = Dunes - (
+                                Hd_TSloss * TS
                             )  # Reduce dune in height linearly over course of storm
 
                         for d in range(width - 1):
@@ -1124,8 +1110,25 @@ class Barrier3d:
                                         Q2 = np.nan_to_num(Q2)
                                         Q3 = np.nan_to_num(Q3)
 
+                                        MaxUpSlope = 0.25  # dam
+
+                                        if S1 > MaxUpSlope:
+                                            Q1 = 0
+                                        else:
+                                            Q1 = Q1 * (1 - (abs(S1) / MaxUpSlope))
+
+                                        if S2 > MaxUpSlope:
+                                            Q2 = 0
+                                        else:
+                                            Q2 = Q2 * (1 - (abs(S2) / MaxUpSlope))
+
+                                        if S3 > MaxUpSlope:
+                                            Q3 = 0
+                                        else:
+                                            Q3 = Q3 * (1 - (abs(S3) / MaxUpSlope))
+
                                     # ### Reduce Overwash Through Shrub Cells and Save Discharge
-                                    if self._Shrub_ON:
+                                    if self._Shrub_ON == 1:
                                         # Cell 1
                                         if i > 0:
                                             if d < (ShrubDomainWidth):
@@ -1189,7 +1192,9 @@ class Barrier3d:
                                             )
 
                                     # ### Calculate Sed Movement
-                                    # Run-up regime
+                                    fluxLimit = Dmax
+
+                                    # Run-up Regime
                                     if inundation == 0:
                                         if Q1 > self._Qs_min and S1 >= 0:
                                             Qs1 = self._Kr * Q1
@@ -1206,47 +1211,72 @@ class Barrier3d:
                                         else:
                                             Qs3 = 0
 
-                                    # Inundation Regime (Murray and Paola (1994, 1997) Rule 3)
-                                    else:
-                                        # if Q1 > self._Qs_min:
-                                        #     Qs1 = self._Ki * (Q1 * (S1 + C)) ** self._mm
-                                        if Q1 > self._Qs_min and S1 >= 0:
-                                            Qs1 = self._Ki * Q1
-                                        else:
-                                            Qs1 = 0
-
-                                        # if Q2 > self._Qs_min:
-                                        #     Qs2 = self._Ki * (Q2 * (S2 + C)) ** self._mm
-                                        if Q2 > self._Qs_min and S2 >= 0:
-                                            Qs2 = self._Ki * Q2
-                                        else:
-                                            Qs2 = 0
-
-                                        # if Q3 > self._Qs_min:
-                                        #     Qs3 = self._Ki * (Q3 * (S3 + C)) ** self._mm
-                                        if Q3 > self._Qs_min and S3 >= 0:
-                                            Qs3 = self._Ki * Q3
-                                        else:
-                                            Qs3 = 0
-
-                                    #                                    # Inundation Regime (Murray and Paola (1994, 1997) Rule 5)
+                                    #                                    # Inundation Regime - Murray and Paola (1994, 1997) Rule 3
                                     #                                    else:
-                                    #                                        Qt = np.mean(Discharge[0,0,:]) # Typical discharge
-                                    #                                        St = AvgSlope # Typical slope
-                                    #                                        ThD = 2 # Threshold denomenator, threshold therefore around half of the typical stream power
-                                    #                                        Th = Qt * St / ThD
                                     #                                        if Q1 > self._Qs_min:
-                                    #                                            Qs1 = self._Ki * (Q1 * (S1 + C) - Th)**self._mm
+                                    #                                            Qs1 = self._Ki * (Q1*(S1 + C))**self._mm
+                                    #                                            if Qs1 < 0:
+                                    #                                                Qs1 = 0
                                     #                                        else:
                                     #                                            Qs1 = 0
                                     #
                                     #                                        if Q2 > self._Qs_min:
-                                    #                                            Qs2 = self._Ki * (Q2 * (S2 + C) - Th)**self._mm
+                                    #                                            Qs2 = self._Ki * (Q2*(S2 + C))**self._mm
+                                    #                                            if Qs2 < 0:
+                                    #                                                Qs2 = 0
                                     #                                        else:
                                     #                                            Qs2 = 0
                                     #
                                     #                                        if Q3 > self._Qs_min:
-                                    #                                            Qs3 = self._Ki * (Q3 * (S3 + C) - Th)**self._mm
+                                    #                                            Qs3 = self._Ki * (Q3*(S3 + C))**self._mm
+                                    #                                            if Qs3 < 0:
+                                    #                                                Qs3 = 0
+                                    #                                        else:
+                                    #                                            Qs3 = 0
+
+                                    # Inundation Regime - Murray and Paola (1994, 1997) Rule 3 with flux limiter
+                                    else:
+                                        if Q1 > self._Qs_min:
+                                            Qs1 = self._Ki * (Q1 * (S1 + C)) ** self._mm
+                                            if Qs1 < 0:
+                                                Qs1 = 0
+                                            elif Qs1 > fluxLimit:
+                                                Qs1 = fluxLimit
+                                        else:
+                                            Qs1 = 0
+
+                                        if Q2 > self._Qs_min:
+                                            Qs2 = self._Ki * (Q2 * (S2 + C)) ** self._mm
+                                            if Qs2 < 0:
+                                                Qs2 = 0
+                                            elif Qs2 > fluxLimit:
+                                                Qs2 = fluxLimit
+                                        else:
+                                            Qs2 = 0
+
+                                        if Q3 > self._Qs_min:
+                                            Qs3 = self._Ki * (Q3 * (S3 + C)) ** self._mm
+                                            if Qs3 < 0:
+                                                Qs3 = 0
+                                            elif Qs3 > fluxLimit:
+                                                Qs3 = fluxLimit
+                                        else:
+                                            Qs3 = 0
+
+                                    #                                    # Inundation Regime - Same transport as run-up regime
+                                    #                                    else:
+                                    #                                        if Q1 > self._Qs_min and S1 >= 0:
+                                    #                                            Qs1 = self._Ki * Q1
+                                    #                                        else:
+                                    #                                            Qs1 = 0
+                                    #
+                                    #                                        if Q2 > self._Qs_min and S2 >= 0:
+                                    #                                            Qs2 = self._Ki * Q2
+                                    #                                        else:
+                                    #                                            Qs2 = 0
+                                    #
+                                    #                                        if Q3 > self._Qs_min and S3 >= 0:
+                                    #                                            Qs3 = self._Ki * Q3
                                     #                                        else:
                                     #                                            Qs3 = 0
 
@@ -1266,64 +1296,45 @@ class Barrier3d:
                                         SedFluxOut[TS, d, i] = Qs_out
 
                                     else:  # If cell is subaqeous, exponentially decay deposition of remaining sediment across bay
-                                        Qs_bb_min = 0.0001  # Assumes sediment flux less than this threshold can be ignored
-                                        # if inundation == 1:  # Inundation regime
 
-                                        #     SedFluxOut[TS, d, i] = (
-                                        #         SedFluxIn[TS, d, i] * self._Cbb_i
-                                        #     )
-                                        #     Qs0 = SedFluxOut[TS, d, i]
-
-                                        #     Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
-                                        #     Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
-                                        #     Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
-                                        # NOTE: Cbb is never used
                                         if inundation == 0:
                                             Cbb = self._Cbb_r
                                         else:
                                             Cbb = self._Cbb_i
 
-                                            # if i > 0 and Qs1 > Qs_bb_min:
-                                            #     SedFluxIn[TS, d + 1, i - 1] += Qs1
+                                        Qs0 = SedFluxIn[TS, d, i] * Cbb
 
-                                            # if Qs1 > Qs_bb_min:
-                                            #     SedFluxIn[TS, d + 1, i] += Qs2
-
-                                            # if (
-                                            #     i < (self._BarrierLength - 1)
-                                            #     and Qs1 > Qs_bb_min
-                                            # ):
-                                            #     SedFluxIn[TS, d + 1, i + 1] += Qs3
-                                        SedFluxOut[TS, d, i] = (
-                                            SedFluxIn[TS, d, i] * self._Cbb_i
-                                        )
-                                        Qs0 = SedFluxOut[TS, d, i]
-
-                                        # else:  # Run-up regime
                                         Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
                                         Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
                                         Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
 
-                                        # SedFluxOut[TS, d, i] = (
-                                        #     SedFluxIn[TS, d, i] * self._Cbb_r
-                                        # )
-                                        # Qs0 = SedFluxOut[TS, d, i]
+                                        Qs1 = np.nan_to_num(Qs1)
+                                        Qs2 = np.nan_to_num(Qs2)
+                                        Qs3 = np.nan_to_num(Qs3)
 
-                                        # Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
-                                        # Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
-                                        # Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
+                                        if Qs1 < self._Qs_bb_min:
+                                            Qs1 = 0
+                                        elif Qs1 > fluxLimit:
+                                            Qs1 = fluxLimit
+                                        if Qs2 < self._Qs_bb_min:
+                                            Qs2 = 0
+                                        elif Qs2 > fluxLimit:
+                                            Qs2 = fluxLimit
+                                        if Qs3 < self._Qs_bb_min:
+                                            Qs3 = 0
+                                        elif Qs3 > fluxLimit:
+                                            Qs3 = fluxLimit
 
-                                        if i > 0 and Qs1 > Qs_bb_min:
+                                        if i > 0:
                                             SedFluxIn[TS, d + 1, i - 1] += Qs1
 
-                                        if Qs1 > Qs_bb_min:
-                                            SedFluxIn[TS, d + 1, i] += Qs2
+                                        SedFluxIn[TS, d + 1, i] += Qs2
 
-                                        if (
-                                            i < (self._BarrierLength - 1)
-                                            and Qs1 > Qs_bb_min
-                                        ):
+                                        if i < (self._BarrierLength - 1):
                                             SedFluxIn[TS, d + 1, i + 1] += Qs3
+
+                                        Qs_out = Qs1 + Qs2 + Qs3
+                                        SedFluxOut[TS, d, i] = Qs_out
 
                                     # ### Saline Flooding
                                     (
@@ -1349,11 +1360,14 @@ class Barrier3d:
                         else:
                             ElevationChange = (
                                 SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
-                            ) / substep  # / surges #?
+                            ) / substep
                         Elevation[TS, :, :] = Elevation[TS, :, :] + ElevationChange
 
-                        # Calculate and save volume of sedimen deposited on/behind the island for every hour
-                        OWloss = OWloss + np.sum(ElevationChange[1:, :])
+                        # Calculate and save volume of sediment deposited on/behind the island for every hour (all four methods below should equal the same!)
+                        # OWloss = OWloss + np.sum(ElevationChange[1:,:])
+                        # OWloss = OWloss + (np.sum(SedFluxIn[TS,1:,:]) - np.sum(SedFluxOut[TS,1:,:])) / substep
+                        # OWloss = OWloss + np.sum(SedFluxIn[TS,1,:]) / substep
+                        OWloss = OWloss + np.sum(SedFluxOut[TS, 0, :]) / substep
 
                         # Update amount of burial/erosion for each shrub
                         self._BurialDomain = self.UpdateBurial(
@@ -1378,7 +1392,7 @@ class Barrier3d:
                     self._InteriorDomain = InteriorUpdate
 
                     # Update Domain widths
-                    self._DomainWidth = np.shape(self._InteriorDomain)[0]
+                    DomainWidth = np.shape(self._InteriorDomain)[0]
                     (
                         self._ShrubDomainFemale,
                         self._ShrubDomainMale,
@@ -1387,7 +1401,7 @@ class Barrier3d:
                         self._BurialDomain,
                         self._ShrubDomainDead,
                     ) = self.UpdateShrubDomains(
-                        self._DomainWidth,
+                        DomainWidth,
                         ShrubDomainWidth,
                         self._ShrubDomainFemale,
                         self._ShrubDomainMale,
@@ -1450,9 +1464,9 @@ class Barrier3d:
                             self._InteriorDomain,
                         ]
                     )  # New interior row added with elevation of previous dune field (i.e. previous dune row now part of interior)
-                    if not self._StormTimeSeries:
+                    if self._StormTimeSeries == 0:
                         newDuneHeight = np.ones([self._BarrierLength]) * (
-                            0.01
+                            0.005
                             + (
                                 -0.005
                                 + (0.005 - (-0.005))
@@ -1461,13 +1475,6 @@ class Barrier3d:
                         )
                     else:
                         newDuneHeight = np.ones([self._BarrierLength]) * 0.01
-                    # newDuneHeight = np.ones([self._BarrierLength]) * (
-                    #     0.01
-                    #     + (
-                    #         -0.005
-                    #         + (0.005 - (-0.005)) * np.random.rand(self._BarrierLength)
-                    #     )
-                    # )
                     self._DuneDomain[self._time_index, :, :] = np.roll(
                         self._DuneDomain[self._time_index, :, :], 1, axis=1
                     )
@@ -1489,9 +1496,7 @@ class Barrier3d:
                     self._BurialDomain = np.concatenate(
                         (np.zeros([1, self._BarrierLength]), self._BurialDomain)
                     )
-                self._DomainWidth = (
-                    self._DomainWidth + sc
-                )  # Update width of interior domain
+                DomainWidth = DomainWidth + sc  # Update width of interior domain
                 self._ShorelineChange = self._ShorelineChange + sc
                 self._ShorelineChangeTS.append(+sc)
                 self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
@@ -1507,7 +1512,7 @@ class Barrier3d:
                     self._InteriorDomain = np.delete(self._InteriorDomain, (0), axis=0)
                     if np.shape(self._InteriorDomain)[0] <= 0:
                         drown_break = 1
-                        return
+                        break
                     self._DuneDomain[self._time_index, :, :] = np.roll(
                         self._DuneDomain[self._time_index, :, :], -1, axis=1
                     )
@@ -1527,9 +1532,7 @@ class Barrier3d:
                         self._ShrubPercentCover, (0), axis=0
                     )
                     self._BurialDomain = np.delete(self._BurialDomain, (0), axis=0)
-                self._DomainWidth = (
-                    self._DomainWidth - sc
-                )  # Update width of interior domain
+                DomainWidth = DomainWidth - sc  # Update width of interior domain
                 self._ShorelineChange = self._ShorelineChange - sc
                 self._ShorelineChangeTS.append(-sc)
                 self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
@@ -1551,7 +1554,7 @@ class Barrier3d:
             return
 
         # ### Recalculate and save DomainWidth and InteriorWidth
-        self._DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
+        DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
             self._InteriorDomain, self._SL
         )
         self._InteriorWidth_AvgTS.append(InteriorWidth_Avg)
@@ -1559,11 +1562,7 @@ class Barrier3d:
         # ###########################################
         # ### Save domains of this timestep
         self._DomainTS[self._time_index] = self._InteriorDomain
-
-        # self._ShrubFemaleTS[self._time_index] = self._ShrubDomainFemale
-        # self._ShrubMaleTS[self._time_index] = self._ShrubDomainMale
-        # ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
-        zero = np.zeros([self._DomainWidth, self._BarrierLength])
+        zero = np.zeros([DomainWidth, self._BarrierLength])
         self._ShrubFemaleTS[self._time_index] = (
             self._ShrubDomainFemale + zero
         )  # Correctly saves domain to list only if array of zeros are added to domain first, no clue why - 4Mar20
@@ -1571,9 +1570,6 @@ class Barrier3d:
         self._ShrubDeadTS[self._time_index] = self._ShrubDomainDead + zero
 
         # Calculate Percent Cover and Area
-        # self._ShrubPercentCover, self._PercentCoverTS, self._ShrubArea = self.CalcPC(
-        #     ShrubDomainAll, self._PercentCoverTS, self._ShrubArea, self._time_index
-        # )
         ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
         self._ShrubPercentCover, self._PercentCoverTS, self._ShrubArea = self.CalcPC(
             ShrubDomainAll,
