@@ -29,7 +29,7 @@ period_sd: 2.76                 # Standard deviation of storm wave periods
 duration_mu: 2.9249             # [hr] Mu storm duration (lognormal distribution)
 duration_sigma: 0.638673        # [hr] Sigma storm duration (lognormal distribution)
 beta: 0.04                      # Beach slope for runup calculations
-StormTimeSeries: false          # Storms will come from a time series
+StormTimeSeries: true           # Storms will come from a time series
 StormSeries: []                 # Time series of storms
 nn: 0.5                         # Flow routing constant
 mm: 2.0                         # Exponent constant for sediment transport
