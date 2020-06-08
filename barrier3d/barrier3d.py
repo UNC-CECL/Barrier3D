@@ -1,10 +1,14 @@
 import math
-import random
+# import random
 
 import numpy as np
 
 # from .parameters import Barrier3dParameters
-from .configuration import load_inputs
+from .load_input import load_inputs
+
+
+class Barrier3dError(Exception):
+    pass
 
 
 class Barrier3d:
@@ -137,8 +141,10 @@ class Barrier3d:
         ShrubDomainMale[ShrubDomainMale > 0] += 1
 
         # ### Randomly drop a seed onto the island each time step
-        randX = np.random.randint(0, self._BarrierLength)
-        randY = np.random.randint(0, InteriorWidth_Avg)
+        # randX = np.random.randint(0, self._BarrierLength)
+        # randY = np.random.randint(0, InteriorWidth_Avg)
+        randX = self._RNG.integers(0, self._BarrierLength)
+        randY = self._RNG.integers(0, InteriorWidth_Avg)
         if (
             ShrubDomainFemale[randY, randX] == 0
             and ShrubDomainMale[randY, randX] == 0
@@ -146,7 +152,8 @@ class Barrier3d:
             and InteriorDomain[randY, randX] >= self._ShrubEl_min
             and InteriorDomain[randY, randX] <= self._ShrubEl_max
         ):
-            if random.random() > self._Female:
+            # if random.random() > self._Female:
+            if self._RNG.uniform() > self._Female:
                 ShrubDomainFemale[randY, randX] = 1
             else:
                 ShrubDomainMale[randY, randX] = 1
@@ -166,22 +173,26 @@ class Barrier3d:
                 ]
                 numShrubCells = len(I)
                 # Determine how many seeds in each cell
-                Seedspercell = np.random.randint(
+                # Seedspercell = np.random.randint(
+                Seedspercell = self._RNG.integers(
                     self._Seedmin, high=self._Seedmax, size=numShrubCells
                 )
                 # For each shrub cell, determine survival rate for the cell in this year
-                SeedSurvYear = self._GermRate * np.random.rand(numShrubCells)
+                SeedSurvYear = self._GermRate * self._RNG.random(numShrubCells)
+                # SeedSurvYear = self._GermRate * np.random.rand(numShrubCells)
 
                 for i in range(numShrubCells):
                     # For each shrub cell producing seeds, generate a random # of random numbers each representing a single seed
-                    randseeds = np.random.rand(Seedspercell[i])
+                    randseeds = self._RNG.random(Seedspercell[i])
+                    # randseeds = np.random.rand(Seedspercell[i])
                     # Find how many seeds produced in each cell actually survive
                     Survivors = len(randseeds[randseeds < SeedSurvYear[i]])
 
                     # Determine distance, rounding to nearest integer
                     if Survivors > 0:
                         DispDist = np.round(
-                            np.random.lognormal(
+                            # np.random.lognormal(
+                            self._RNG.lognormal(
                                 self._disp_mu, self._disp_sigma, Survivors
                             )
                         )
@@ -220,7 +231,8 @@ class Barrier3d:
                                     targetY = originX
                                     targetX = originY
                                 else:
-                                    xx = random.randint(0, (len(col)) - 1)
+                                    # xx = random.randint(0, (len(col)) - 1)
+                                    xx = self._RNG.integers(0, (len(col)) - 1)
                                     matTargetX = col[xx]
                                     matTargetY = row[xx]
 
@@ -249,7 +261,8 @@ class Barrier3d:
                                     and ShrubDomainDead[targetY, targetX] < 1
                                 ):
                                     # Decide if the tree wll be a female or male
-                                    if random.random() > self._Female:
+                                    # if random.random() > self._Female:
+                                    if self._RNG.uniform() > self._Female:
                                         ShrubDomainFemale[targetY, targetX] = 1
                                     else:
                                         ShrubDomainMale[targetY, targetX] = 1
@@ -278,22 +291,26 @@ class Barrier3d:
         for n in range(numstorm):
             # ### Draw statistics for this storm from normal distributions
 
-            surge_tide = np.random.normal(self._surge_tide_m, self._surge_tide_sd)
+            # surge_tide = np.random.normal(self._surge_tide_m, self._surge_tide_sd)
+            surge_tide = self._RNG.normal(self._surge_tide_m, self._surge_tide_sd)
             if surge_tide < 0:
                 surge_tide = 0.01
 
-            height = np.random.lognormal(self._height_mu, self._height_sigma)
+            # height = np.random.lognormal(self._height_mu, self._height_sigma)
+            height = self._RNG.lognormal(self._height_mu, self._height_sigma)
             if height < 0:
                 height = 0.01
 
-            T = np.random.normal(self._period_m, self._period_sd)
+            # T = np.random.normal(self._period_m, self._period_sd)
+            T = self._RNG.normal(self._period_m, self._period_sd)
             if T < 0:
                 T = 0.01
             L0 = (9.8 * T ** 2) / (2 * math.pi)  # Wavelength
             if L0 < 0:
                 L0 = 0.01
 
-            dur = round(np.random.lognormal(self._duration_mu, self._duration_sigma))
+            # dur = round(np.random.lognormal(self._duration_mu, self._duration_sigma))
+            dur = round(self._RNG.lognormal(self._duration_mu, self._duration_sigma))
             if dur < 8:
                 dur = 8
 
@@ -553,6 +570,8 @@ class Barrier3d:
         return ShrubPercentCover, PercentCoverTS, ShrubArea
 
     def __init__(self, **kwds):
+        self._RNG = kwds.pop("RNG")
+
         self._SL = 0  # Does not change (Lagrangian frame of reference)
 
         self._BarrierLength = kwds.pop("BarrierLength")
@@ -720,13 +739,21 @@ class Barrier3d:
                 "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years!"
             )
             self._TMAX = self._time_index - 1
-            return
+            raise Barrier3dError(
+                "Barrier has WIDTH DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
+            )
         if all(j <= self._SL for j in self._InteriorDomain[0, :]):
             print(
                 "Barrier has HEIGHT DROWNED at t = " + str(self._time_index) + " years!"
             )
             self._TMAX = self._time_index - 1
-            return
+            raise Barrier3dError(
+                "Barrier has HEIGHT DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
+            )
 
         # ### Grow Dunes
         self._DuneDomain, Dmax, Qdg = self.DuneGrowth(
@@ -745,10 +772,10 @@ class Barrier3d:
         # ###########################################
         # ### Shrubs
 
-        if self._Shrub_ON == 1:
-
+        # if self._Shrub_ON == 1:
+        if self._Shrub_ON:
             (
-                ShrubDomainAll,
+                self._ShrubDomainAll,
                 self._ShrubDomainFemale,
                 self._ShrubDomainMale,
                 self._BurialDomain,
@@ -779,7 +806,8 @@ class Barrier3d:
             else:
                 self._numstorm = int(self._numstorm)
                 self._numstorm = round(
-                    np.random.normal(self._mean_storm, self._SD_storm)
+                    self._RNG.normal(self._mean_storm, self._SD_storm)
+                    # np.random.normal(self._mean_storm, self._SD_storm)
                 )  # analysis:ignore # Comment out this line if using pre-specified static number of storms per year
 
             if self._numstorm > 0:
@@ -1128,7 +1156,8 @@ class Barrier3d:
                                             Q3 = Q3 * (1 - (abs(S3) / MaxUpSlope))
 
                                     # ### Reduce Overwash Through Shrub Cells and Save Discharge
-                                    if self._Shrub_ON == 1:
+                                    # if self._Shrub_ON == 1:
+                                    if self._Shrub_ON:
                                         # Cell 1
                                         if i > 0:
                                             if d < (ShrubDomainWidth):
@@ -1343,7 +1372,7 @@ class Barrier3d:
                                         self._ShrubDomainDead,
                                     ) = self.SalineFlooding(
                                         ShrubDomainWidth,
-                                        ShrubDomainAll,
+                                        self._ShrubDomainAll,
                                         self._ShrubDomainFemale,
                                         self._ShrubDomainMale,
                                         self._ShrubDomainDead,
@@ -1374,7 +1403,7 @@ class Barrier3d:
                             self._BurialDomain,
                             ElevationChange,
                             ShrubDomainWidth,
-                            ShrubDomainAll,
+                            self._ShrubDomainAll,
                         )
 
                     # ### Update Interior Domain After Every Storm
@@ -1396,7 +1425,7 @@ class Barrier3d:
                     (
                         self._ShrubDomainFemale,
                         self._ShrubDomainMale,
-                        ShrubDomainAll,
+                        self._ShrubDomainAll,
                         self._ShrubPercentCover,
                         self._BurialDomain,
                         self._ShrubDomainDead,
@@ -1405,7 +1434,7 @@ class Barrier3d:
                         ShrubDomainWidth,
                         self._ShrubDomainFemale,
                         self._ShrubDomainMale,
-                        ShrubDomainAll,
+                        self._ShrubDomainAll,
                         self._ShrubPercentCover,
                         self._BurialDomain,
                         self._ShrubDomainDead,
@@ -1470,7 +1499,8 @@ class Barrier3d:
                             + (
                                 -0.005
                                 + (0.005 - (-0.005))
-                                * np.random.rand(self._BarrierLength)
+                                * self._RNG.random(self._BarrierLength)
+                                # * np.random.rand(self._BarrierLength)
                             )
                         )
                     else:
@@ -1545,13 +1575,21 @@ class Barrier3d:
                 "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years"
             )
             self._TMAX = self._time_index - 1
-            return
+            raise Barrier3dError(
+                "Barrier has WIDTH DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
+            )
         elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
             print(
                 "Barrier has HEIGHT DROWNED at t = " + str(self._time_index) + " years"
             )
             self._TMAX = self._time_index - 1
-            return
+            raise Barrier3dError(
+                "Barrier has HEIGHT DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
+            )
 
         # ### Recalculate and save DomainWidth and InteriorWidth
         DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
@@ -1570,14 +1608,16 @@ class Barrier3d:
         self._ShrubDeadTS[self._time_index] = self._ShrubDomainDead + zero
 
         # Calculate Percent Cover and Area
-        ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
+        self._ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
         self._ShrubPercentCover, self._PercentCoverTS, self._ShrubArea = self.CalcPC(
-            ShrubDomainAll,
+            self._ShrubDomainAll,
             self._PercentCoverTS,
             self._ShrubDomainDead,
             self._ShrubArea,
             self._time_index,
         )
+
+        self._time_index += 1
 
     @property
     def QowTS(self):
