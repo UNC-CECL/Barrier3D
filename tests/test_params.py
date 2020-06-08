@@ -1,43 +1,68 @@
+import importlib
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from barrier3d import Barrier3d, Barrier3dConfiguration, load_inputs
-from barrier3d.parameters import _from_xlsx
+from barrier3d.load_input import as_cwd
 
 
-def test_from_xlsx(datadir):
-    params = _from_xlsx(datadir / "barrier3d.xlsx")
-    assert isinstance(params, dict)
+def test_parameters_to_expected(datadir):
+    with as_cwd(datadir):
+        mod = importlib.import_module("barrier3d-parameters-expected")
+        expected = dict(
+            [(k, v) for k, v in mod.__dict__.items() if not k.startswith("_")]
+        )
+        actual = load_inputs(datadir, prefix="barrier3d", fmt="yaml")
+
+    for key in actual:
+        assert key in expected
+        try:
+            assert actual[key] == expected[key], key
+        except ValueError:
+            assert_array_almost_equal(actual[key], expected[key], err_msg=key)
+    # assert actual == expected
 
 
-def test_barrier3d_configuration(datadir, fmt):
+def test_barrier3d_configuration(datadir):
     expected = load_inputs(datadir, prefix="barrier3d", fmt="py")
-    actual = load_inputs(datadir, prefix="barrier3d", fmt=fmt)
-
-    # expected.update({"StormTimeSeries": 0, "StormSeries": []})
+    actual = load_inputs(datadir, prefix="barrier3d", fmt="yaml")
 
     assert set(actual.keys()) - set(expected.keys()) == set()
     assert set(expected.keys()) - set(actual.keys()) == set()
 
     actual = dict(actual.items())
 
-    assert_array_almost_equal(actual.pop("InteriorDomain"), expected.pop("InteriorDomain"))
+    assert_array_almost_equal(
+        actual.pop("InteriorDomain"), expected.pop("InteriorDomain")
+    )
     assert_array_almost_equal(actual.pop("PC"), expected.pop("PC"))
     assert_array_almost_equal(actual.pop("growthparam"), expected.pop("growthparam"))
     assert_array_almost_equal(actual.pop("DuneDomain"), expected.pop("DuneDomain"))
     assert_array_almost_equal(actual.pop("StormSeries"), expected.pop("StormSeries"))
 
-    # These are arrays filled with random numbers
-    # assert actual.pop("growthparam").shape == expected.pop("growthparam").shape
-    # assert actual.pop("DuneDomain").shape == expected.pop("DuneDomain").shape
-
     assert actual == expected
+
+
+def test_bad_input_format(datadir):
+    with pytest.raises(ValueError):
+        load_inputs(datadir, prefix="barrier3d", fmt="xlsx")
+
+
+@pytest.mark.parametrize("fmt", ["yaml", "py"])
+def test_missing_file(datadir, fmt):
+    with pytest.raises(FileNotFoundError, match=f"missing-prefix-parameters.{fmt}"):
+        load_inputs(datadir, prefix="missing-prefix", fmt=fmt)
+
+
+def test_missing_folder(datadir):
+    with pytest.raises(FileNotFoundError, match="missing-folder"):
+        load_inputs("missing-folder", fmt="yaml")
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
 def test_barrier3d_init(datadir, fmt):
-    # params = Barrier3dParameters.from_xlsx(datadir / "barrier3d.xlsx")
     params = load_inputs(datadir, prefix="barrier3d", fmt=fmt)
     barrier3d = Barrier3d(**params)
 
