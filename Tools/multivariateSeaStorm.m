@@ -16,7 +16,7 @@
 % (they used offshore wave buoy in 28 m water depth, 1980-2013)
 % for VCR - Wis ST63183 - the water depth is 22 m
 
-cd /Users/KatherineAnardeWheels/Research/BARis/UNC/VCR/SyntheticStorms
+%cd /Users/KatherineAnardeWheels/Research/BARis/UNC/VCR/SyntheticStorms
 rData = load('ST63183_v03.onlns');
 dtH   = datetime(string(rData(:,1)),'InputFormat','yyyyMMddHHmmss');
 rHs   = rData(:,10);
@@ -250,8 +250,13 @@ for iYear = 1 : nYrs
 end
 
 % identify Hs threshold to qualify as a storm event, round nearest 0.05 m
+rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)
 nHs_min = min(rHs_over_yearly);
 nHs_threshold = floor(nHs_min / 0.05) * 0.05     
+
+% Alternative method: Define Hs from lower 2 sigma of all TWL exceedances
+% nHs_min = mean(rHH(rTT > rBermEl)) - 2 * std(rHH(rTT > rBermEl));
+% nHs_threshold = floor(nHs_min / 0.05) * 0.05
 
 % visual check of threshold and drivers (this is hard coded to 1980, will 
 % need to be changed for NC)
@@ -270,15 +275,17 @@ ylabel('Hs')
 
 % Find storms (translated from Ian Reeves); use corrected data only
 [iStormStart, iStormStop, dtStormStart, dtStormStop, cStormHs, ...
-    cStormDur, cStormTWL, cStormTp, cStormNTR, cStormAT, ...
-    cStormWavD, cStormNegSurgeDT, cStormNegSurgeNTR] = deal(cell(0));
+    cStormDur, cStormTWL, cStormRlow, cStormTp, cStormNTR, cStormAT, ...
+    cStormWavD, cStormNegSurgeDT, cStormNegSurgeNTR, dtYear] = deal(cell(0));
 
 t = 1 ;
+
+dtH_yr = year(dtH);
 
 while t <= length(dtH)
     % discard storms where simultaneous surge is negative (will want to
     % check if we omit any, note that this omits many storms b/c of nans)
-    if rHs_corr(t) >= nHs_threshold && rNTR_nan(t) >=0 
+    if rHs_corr(t) >= nHs_threshold && rNTR_nan(t) >=0
         stormStart = t;
         dur = 1;
         t = t + 1;
@@ -293,9 +300,8 @@ while t <= length(dtH)
                 t = t + 1;
             end
         end
-        % KA: so we are using a minimum of an 8 hr storm? Need reference
-        % here (Magliocca et al., ???)
-        if dur > 8   
+        % Minimum of an 8 hr storm (Magliocca et al., 2011)
+        if dur > 8  
             stormStop = t;
             iStormStart{end+1}  = stormStart;
             iStormStop{end+1}   = stormStop;
@@ -304,10 +310,12 @@ while t <= length(dtH)
             cStormHs{end+1}     = max(rHs_corr(stormStart:stormStop));
             cStormDur{end+1}    = dur;
             cStormTWL{end+1}    = max(rTWL(stormStart:stormStop));
+            cStormRlow{end+1}   = max(rRlow(stormStart:stormStop));
             cStormTp{end+1}     = max(rTp_corr(stormStart:stormStop));
             cStormNTR{end+1}    = max(rNTR_nan(stormStart:stormStop));
             cStormAT{end+1}     = max(rAT_nan(stormStart:stormStop));
             cStormWavD{end+1}   = max(rWavD(stormStart:stormStop));
+            dtYear{end+1}       = dtH_yr(stormStart);
         end
         
         t = t + 1;  % KA: need to check this 
@@ -335,11 +343,33 @@ end
 
 % convert cells back to arrays
 rStormTWL = cell2mat(cStormTWL)';
+rStormRlow = cell2mat(cStormRlow);
 rStormHs  = cell2mat(cStormHs)';
 rStormDur = cell2mat(cStormDur)';
 rStormTp  = cell2mat(cStormTp)';
 rStormNTR = cell2mat(cStormNTR)';
 rStormAT  = cell2mat(cStormAT)';
+rStormStart  = cell2mat(iStormStart)';
+rStormStop  = cell2mat(iStormStop)';
+rStormStart_dt  = cell2mat(dtStormStart)';
+rStormStop_dt  = cell2mat(dtStormStop)';
+rYear  = cell2mat(dtYear)';
+
+% Create matrix of all storms and parameters
+[len, wid] = size(rStormTWL);
+Storms = zeros(len, 12);
+Storms(:,1) = rStormStart;
+Storms(:,2) = rStormStop;
+Storms(:,3) = rStormStart_dt;
+Storms(:,4) = rStormStop_dt;
+Storms(:,5) = rStormHs;
+Storms(:,6) = rStormDur;
+Storms(:,7) = rStormTWL;
+Storms(:,8) = rStormNTR;
+Storms(:,9) = rStormTp;
+Storms(:,10) = rStormAT;
+Storms(:,11) = rStormRlow;
+Storms(:,12) = rYear;
 
 % print number of storms
 nStorms = length(rStormTWL)
@@ -493,15 +523,3 @@ plotFancyAxis
 subplot(2,3,6)
 % not simulated
 plotFancyAxis
-
-
-
-
-
-
-
-
-
-
-
-
