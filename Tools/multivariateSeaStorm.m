@@ -8,6 +8,7 @@
 %       Date            Programmer          Description of Change
 %       =========================================================
 %       07/09/20        KAnarde             Original code
+%       07/29/20        IReeves             Tidal sampling & simulation TWL calculations
 %
 %% load data
 
@@ -250,7 +251,7 @@ for iYear = 1 : nYrs
 end
 
 % identify Hs threshold to qualify as a storm event, round nearest 0.05 m
-rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)
+% rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)
 nHs_min = min(rHs_over_yearly);
 nHs_threshold = floor(nHs_min / 0.05) * 0.05     
 
@@ -278,10 +279,13 @@ ylabel('Hs')
     cStormDur, cStormTWL, cStormRlow, cStormTp, cStormNTR, cStormAT, ...
     cStormWavD, cStormNegSurgeDT, cStormNegSurgeNTR, dtYear] = deal(cell(0));
 
-t = 1 ;
-
+Hs_max = 0.5 * sqrt(2) * 22; % m, Wahl et al. (2016)
+Tp_max = 30;
+dur_min = 8; % hr, Magliocca et al. (2011)
+dur_max = 192; % hr, Wahl et al. (2016)
 dtH_yr = year(dtH);
 
+t = 1 ;
 while t <= length(dtH)
     % discard storms where simultaneous surge is negative (will want to
     % check if we omit any, note that this omits many storms b/c of nans)
@@ -301,17 +305,17 @@ while t <= length(dtH)
             end
         end
         % Minimum of an 8 hr storm (Magliocca et al., 2011)
-        if dur > 8  
+        if dur > dur_min
             stormStop = t;
             iStormStart{end+1}  = stormStart;
             iStormStop{end+1}   = stormStop;
             dtStormStart{end+1} = datenum(dtH(stormStart));
             dtStormStop{end+1}  = datenum(dtH(stormStop));
-            cStormHs{end+1}     = max(rHs_corr(stormStart:stormStop));
-            cStormDur{end+1}    = dur;
+            cStormHs{end+1}     = min([max(rHs_corr(stormStart:stormStop)), Hs_max]);
+            cStormDur{end+1}    = min([dur, dur_max]);
             cStormTWL{end+1}    = max(rTWL(stormStart:stormStop));
             cStormRlow{end+1}   = max(rRlow(stormStart:stormStop));
-            cStormTp{end+1}     = max(rTp_corr(stormStart:stormStop));
+            cStormTp{end+1}     = min([max(rTp_corr(stormStart:stormStop)), Tp_max]);
             cStormNTR{end+1}    = max(rNTR_nan(stormStart:stormStop));
             cStormAT{end+1}     = max(rAT_nan(stormStart:stormStop));
             cStormWavD{end+1}   = max(rWavD(stormStart:stormStop));
@@ -380,33 +384,33 @@ subplot(2,3,1)
 hist(rStormTWL, 50)
 ylabel('Storm TWL [m NAVD88]')
 title('Berm Elev = 2 m NAVD88')  % hard-coded: will need to make more modular for NC
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,2)
 hist(rStormHs, 50)
 ylabel('Storm Hs [m]')
 title('1980 - 2014')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,3)
 hist(rStormDur, 50)
 ylabel('Storm Dur [hrs]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,4)
 hist(rStormTp, 50)
 ylabel('Storm Tp [s]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,5)
 hist(rStormNTR, 50)
 ylabel('Storm \eta_{NTR} [m]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,6)
 hist(rStormAT, 50)
 ylabel('Storm \eta_{A} [m NAVD88]')
-plotFancyAxis
+%plotFancyAxis
 
 %% USE COPULAS TO MODEL INTERDEPENDENCY BETWEEN VARIABLES
 
@@ -418,24 +422,28 @@ plotFancyAxis
 [stD_U2, stPD_U2] = allfitdist(rStormHs, 'PDF');  % Fit a distribution to Hs
 [stD_U3, stPD_U3] = allfitdist(rStormTp, 'PDF');  % Fit a distribution to Tp
 [stD_U4, stPD_U4] = allfitdist(rStormDur, 'PDF'); % Fit a distribution to D
+[stD_U5, stPD_U5] = allfitdist(rStormAT, 'PDF'); % Fit a distribution to AT
 
 % Compute fitted marginal probability (i.e., compute the CDF, [0,1] space)
 rEP1 = cdf(stPD_U1{1},rStormNTR);  % Rayleigh
 rEP2 = cdf(stPD_U2{1},rStormHs);   % Generalized Pareto
 rEP3 = cdf(stPD_U3{1},rStormTp);   % Generalized Extreme Value
 rEP4 = cdf(stPD_U4{1},rStormDur);  % Generalized Pareto
+rEP5 = cdf(stPD_U5{1},rStormAT);
 
 % Check if inverse is also OK
 rIEP1 = icdf(stPD_U1{1},rEP1);
 rIEP2 = icdf(stPD_U2{1},rEP2);
 rIEP3 = icdf(stPD_U3{1},rEP3);
 rIEP4 = icdf(stPD_U4{1},rEP4);
+rIEP5 = icdf(stPD_U5{1},rEP5);
 
 % check if any have nans or infinities
 any( isnan(rEP1) | isinf(rEP1) | isnan(rIEP1) | isinf(rIEP1) )
 any( isnan(rEP2) | isinf(rEP2) | isnan(rIEP2) | isinf(rIEP2) )
 any( isnan(rEP3) | isinf(rEP3) | isnan(rIEP3) | isinf(rIEP3) )
 any( isnan(rEP4) | isinf(rEP4) | isnan(rIEP4) | isinf(rIEP4) )
+any( isnan(rEP5) | isinf(rEP5) | isnan(rIEP5) | isinf(rIEP5) )
 
 % evaluate goodness of fit of the marginal distributions (KA: future)
 
@@ -480,7 +488,8 @@ rRho = copulaparam('Gaussian', rTau);
 % Use a Gaussian copula to generate a 4-column matrix of dependent random
 % values; each column contains 100 random values between 0 and 1, sampled 
 % from a continuous uniform distribution
-rU = copularnd('Gaussian', rRho, 1000);
+SimNum = 10000; % Number of simulated storms to create
+rU = copularnd('Gaussian', rRho, SimNum);
 
 % Simulate data from the 4D distribution; use the inverse of the fitted 
 % marginal CDFs to transform the simulated data from the unit hypercube space to real units
@@ -489,37 +498,73 @@ rSimHs  = icdf(stPD_U2{1}, rU(:,2));
 rSimTp  = icdf(stPD_U3{1}, rU(:,3));
 rSimDur = icdf(stPD_U4{1}, rU(:,4));
 
-% this workflow simulated 1000 quadruplets of NTR, Hs, Tp, and Dur in the 
+% Draw tide from inverse cdf
+[len, wid] = size(rIEP5);
+randAT = randi(len,SimNum,1);
+rSimAT = rIEP5(randAT);
+
+% this workflow simulated 10000 quadruplets of NTR, Hs, Tp, and Dur in the 
 % unit hypercube (preserves the interdependencies between variables)
+
+
+
+%% calculate simulated R2% and add to SL to get the simulated TWL
+
+rBeta = 0.04;                      % beach slope, Hog Island    
+rSimL0   = (9.8 * rSimTp.^2) / (2 * pi); % wavelength       
+
+rSimSetup = 0.35 * rBeta * sqrt(rSimHs .* rSimL0); 
+rSimSin   = 0.75 * rBeta * sqrt(rSimHs .* rSimL0);  % incident band swash
+rSimSig   = 0.06 * sqrt(rSimHs .* rSimL0) ;         % infragravity band swash
+rSimSwash = sqrt((rSimSin.^2) + (rSimSig.^2));      % total swash
+rSimR2    = 1.1 * (rSimSetup + (rSimSwash/2));      % R2%
+
+% KA: not clear from Wahl if the TWL is the corrected SL+R2...do both?
+rSimTWL  = rSimNTR + rSimR2 + rSimAT;       
+rSimRlow = (rSimTWL - (rSimSwash/2));  
 
 
 % Plot storm TWL, Hs, Dur, Tp, NTR, AT histogram
 figure
 subplot(2,3,1)
-% no TWL
-plotFancyAxis
+hist(rSimTWL, 50)
+ylabel('Simulated TWL [m]')
+title('5000 storms')
+%plotFancyAxis
 
 subplot(2,3,2)
 hist(rSimHs, 50)
 ylabel('Simulated Hs [m]')
-title('1000 storms')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,3)
 hist(rSimDur, 50)
 ylabel('Simulated Dur [hrs]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,4)
 hist(rSimTp, 50)
 ylabel('Simulated Tp [s]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,5)
 hist(rSimNTR, 50)
 ylabel('Simulated \eta_{NTR} [m]')
-plotFancyAxis
+%plotFancyAxis
 
 subplot(2,3,6)
-% not simulated
-plotFancyAxis
+hist(rSimAT, 50)
+ylabel('Simulated \eta_{AT} [m]')
+%plotFancyAxis
+
+% Create matrix of all simulated storms and parameters
+[len, wid] = size(rSimTWL);
+SimStorms = zeros(len, 7);
+SimStorms(:,1) = rSimHs;
+SimStorms(:,2) = rSimDur;
+SimStorms(:,3) = rSimTWL;
+SimStorms(:,4) = rSimNTR;
+SimStorms(:,5) = rSimTp;
+SimStorms(:,6) = rSimAT;
+SimStorms(:,7) = rSimRlow;
+
