@@ -12,8 +12,8 @@
 - You should have received a copy of the GNU General Public License along with this program; if not, see <https://www.gnu.org/licenses/>.                                                                                                         -
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"""
 
-# Version Number: 4
-# Updated: 28 May 2020
+# Version Number: 5
+# Updated: 16 July 2020
 
 
 # Barrier3D_Parameters.py and Barrier3D_Functions.py must be located in same directory as this main runfile
@@ -57,18 +57,60 @@ Time = time.time()
 #==============================================================================================================================================
 
 ### Load Input Parameters
-from Barrier3D_Parameters import (BarrierLength, BayDepth, BermEl, DomainWidth, DuneDomain, Dstart, DuneWidth, DShoreface, InteriorDomain, LShoreface, MHW, SD_storm, StormStart, StormTimeSeries, StormSeries,
-                                      TMAX, mean_storm, numstorm, Shrub_ON, Qshrub_max, C1, C2, DuneRestart, nn, mm, threshold_in, Rin_r, Rin_i, Qs_min, Kr, Ki, Cbb_r, Cbb_i, Qs_bb_min, Cx, OWss_i, OWss_r)
+from Barrier3D_Parameters import (
+                                  BarrierLength, 
+                                  BayDepth, 
+                                  BermEl, 
+                                  DomainWidth, 
+                                  DuneDomain, 
+                                  Dstart, 
+                                  DuneWidth, 
+                                  DShoreface, 
+                                  InteriorDomain, 
+                                  LShoreface, 
+                                  MHW, 
+                                  SD_storm, 
+                                  StormStart, 
+                                  StormTimeSeries, 
+                                  StormSeries,
+                                  TMAX, 
+                                  mean_storm, 
+                                  numstorm, 
+                                  Shrub_ON, 
+                                  Qshrub_max, 
+                                  C1, 
+                                  C2, 
+                                  DuneRestart, 
+                                  nn, 
+                                  mm,
+                                  MaxUpSlope,
+                                  threshold_in, 
+                                  Rin_r, 
+                                  Rin_i, 
+                                  Qs_min, 
+                                  Kr, 
+                                  Ki, 
+                                  Cbb_r, 
+                                  Cbb_i, 
+                                  Qs_bb_min, 
+                                  Cx, 
+                                  OWss_i, 
+                                  OWss_r,
+                                  SimParams
+                                  )
 
 
-### Sea Level
+### Set variables
 SL = 0 # Does not change (Lagrangian frame of reference)
-
+MaxAvgSlope = BermEl / 10
+fluxLimit = 100 # Initialize
 
 ### Initialize Shrubs
 if Shrub_ON ==1: print('Shrubs ON')
 PercentCoverTS = [None] * TMAX
 PercentCoverTS[0] = np.zeros([DomainWidth, BarrierLength])
+DeadPercentCoverTS = [None] * TMAX
+DeadPercentCoverTS[0] = np.zeros([DomainWidth, BarrierLength])
 ShrubFemaleTS = [None] * TMAX
 ShrubFemaleTS[0] = np.zeros([DomainWidth, BarrierLength])
 ShrubMaleTS = [None] * TMAX
@@ -79,9 +121,9 @@ ShrubDomainFemale = np.zeros([DomainWidth, BarrierLength])
 ShrubDomainMale = np.zeros([DomainWidth, BarrierLength])
 ShrubDomainDead = np.zeros([DomainWidth, BarrierLength])
 ShrubPercentCover = PercentCoverTS[0]
+DeadPercentCover = DeadPercentCoverTS[0]
 BurialDomain = np.zeros([DomainWidth, BarrierLength])
 ShrubArea = [0]
-
 
 ### Initialize variables 
 DomainTS = [None] * TMAX # Stores the elevation domain for each timestep
@@ -100,11 +142,11 @@ x_s = x_t + LShoreface # (dam) Start location of shoreline
 x_t_TS = [x_t] # (dam) Shoreface toe locations for each time step
 x_s_TS = [x_s] # (dam) Shoreline locations for each time step
 x_b_TS = [(x_s + DomainWidth)] # (dam) Bay shoreline locations for each time step
-h_b_TS = [BermEl] # (dam) Berm Elevation over time
 s_sf_TS = [(DShoreface/LShoreface)]
 Hd_AverageTS = [Dstart]
 QsfTS = [0] # (m^3/m)
 Hd_Loss_TS = np.zeros([TMAX,BarrierLength]) # Dune height loss exclusively from vertical storm erosion
+
 
 
 #==============================================================================================================================================
@@ -141,7 +183,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     DuneDomain, Dmax, Qdg = func.DuneGrowth(DuneDomain, t)
 
     DuneDomainCrest = DuneDomain[t,:,:].max(axis=1) # Maximum height of each row in DuneDomain    
-    DuneDomainCrest[DuneDomainCrest < 0.005] = 0.005
+    DuneDomainCrest[DuneDomainCrest < DuneRestart] = DuneRestart
         
     Hd_AverageTS.append(np.mean(DuneDomainCrest)) # Store average pre-storms dune-heigh for time step
     
@@ -221,6 +263,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
 
                 # Dune Height Diffusion
                 DuneDomain = func.DiffuseDunes(DuneDomain, t)
+                DuneDomain[DuneDomain < SL] = DuneRestart
                 
                 DuneLoss = np.sum(DuneChange)/BarrierLength
                 Hd_TSloss = DuneChange.max(axis=1) / dur[n] # Average height of dune loss for each substep during storm
@@ -255,8 +298,8 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                     RunUpCount += 1
                                 
                 # Set Domain
-                add = 15
-                duration = dur[n] * substep
+                add = 10
+                duration = dur[n] * substep 
                 width = np.shape(InteriorDomain)[0] + 1 + add # (dam) Add one for Dunes and 25 for bay
                 Elevation = np.zeros([duration, width, BarrierLength])                
                 Dunes = Dunes_prestorm + BermEl
@@ -288,15 +331,13 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                     if inundation == 1: # Inundation regime       
                         Rin = Rin_i
                         
-                        slopes = []
                         # Find average slope of interior
-                        for u in range(1,width-1):
-                            for v in range(BarrierLength):                            
-                                if Elevation[0,u,v] > SL and Elevation[0,u+1,v] > SL:
-                                    SS = Elevation[0,u,v] - Elevation[0,u+1,v]
-                                    slopes.append(SS)
-                        AvgSlope = sum(slopes) / len(slopes)
-                        C = Cx * AvgSlope # About 2-3 times the average slope (Murray and Paola, 1994/97)
+                        AvgSlope = BermEl / InteriorWidth_Avg
+                        
+                        # Enforce max average interior slope
+                        AvgSlope = min(MaxAvgSlope, AvgSlope)
+                        
+                        C = Cx * AvgSlope # Momentum constant
 
                     else: # Run-up regime
                         Rin = Rin_r 
@@ -305,11 +346,12 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 for TS in range(duration):
                     
                     ShrubDomainWidth = np.shape(ShrubDomainFemale)[0]
+                    DeadDomainWidth = np.shape(ShrubDomainDead)[0]
                              
                     if TS > 0:                      
                         Elevation[TS,1:,:] = Elevation[TS-1,1:,:] # Begin timestep with elevation from end of last                                    
-                        Elevation[TS,0,:] = Dunes - (Hd_TSloss * TS) # Reduce dune in height linearly over course of storm
-
+                        Elevation[TS,0,:] = Dunes - ((Hd_TSloss/substep) * TS) # Reduce dune in height linearly over course of storm
+                        
                     for d in range(width-1):                                              
                         # Reduce discharge across row via infiltration  
                         if d > 0:  
@@ -394,7 +436,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                     Q2 = np.nan_to_num(Q2)
                                     Q3 = np.nan_to_num(Q3)  
                                 
-                                    MaxUpSlope = 0.25 # dam
+                                    #MaxUpSlope = 0.25 # dam
 
                                     if S1 > MaxUpSlope:
                                         Q1 = 0
@@ -416,22 +458,25 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                 if Shrub_ON == 1:             
                                     # Cell 1
                                     if i > 0:
-                                        if d < (ShrubDomainWidth):
-                                            if ShrubPercentCover[d,i-1] > 0: 
-                                                Q1 =  Q1 * (Qshrub_max * ShrubPercentCover[d,i-1])                                    
+                                        if d < ShrubDomainWidth and ShrubPercentCover[d,i-1] > 0:
+                                            Q1 =  Q1 * ((1 - Qshrub_max) * ShrubPercentCover[d,i-1])   
+                                        elif d < (DeadDomainWidth) and DeadPercentCover[d,i-1] > 0: 
+                                            Q1 =  Q1 * ((1 - Qshrub_max * 0.66) * DeadPercentCover[d,i-1]) # Dead shrubs block 2/3 of what living shrubs block
                                         Discharge[TS,d+1,i-1] = Discharge[TS,d+1,i-1] + Q1
                                         
                                     # Cell 2                                    
-                                    if d < (ShrubDomainWidth - 1):
-                                        if ShrubPercentCover[d,i] > 0:
-                                            Q2 =  Q2 * (Qshrub_max * ShrubPercentCover[d,i])
+                                    if d < ShrubDomainWidth and ShrubPercentCover[d,i] > 0: # (ShrubDomainWidth - 1)?
+                                        Q2 =  Q2 * ((1 - Qshrub_max) * ShrubPercentCover[d,i])
+                                    elif d < (DeadDomainWidth) and DeadPercentCover[d,i] > 0:
+                                        Q2 =  Q2 * ((1 - Qshrub_max * 0.66) * DeadPercentCover[d,i])
                                     Discharge[TS,d+1,i] = Discharge[TS,d+1,i] + Q2         
                                     
                                     # Cell 3
                                     if i < (BarrierLength-1):
-                                        if d < (ShrubDomainWidth):
-                                            if ShrubPercentCover[d,i+1] > 0:
-                                                Q3 =  Q3 * (Qshrub_max * ShrubPercentCover[d,i+1])                                         
+                                        if d < ShrubDomainWidth and ShrubPercentCover[d,i+1] > 0:
+                                            Q3 =  Q3 * ((1 - Qshrub_max) * ShrubPercentCover[d,i+1])  
+                                        elif d < (DeadDomainWidth) and DeadPercentCover[d,i+1] > 0:
+                                            Q3 =  Q3 * ((1 - Qshrub_max * 0.66) * DeadPercentCover[d,i+1])
                                         Discharge[TS,d+1,i+1] = Discharge[TS,d+1,i+1] + Q3                                   
                                 else:
                                     # Cell 1
@@ -450,44 +495,27 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                 fluxLimit = Dmax                                                                                      
                                 
                                 # Run-up Regime  
-                                if inundation == 0:                                
+                                if inundation == 0:
                                     if Q1 > Qs_min and S1 >= 0:
                                         Qs1 = Kr * Q1
+                                        if Qs1 > fluxLimit:
+                                            Qs1 = fluxLimit
                                     else:
                                         Qs1 = 0
                                         
                                     if Q2 > Qs_min and S2 >= 0:
                                         Qs2 = Kr * Q2
+                                        if Qs2 > fluxLimit:
+                                            Qs2 = fluxLimit
                                     else:
                                         Qs2 = 0
                                         
                                     if Q3 > Qs_min and S3 >= 0:
                                         Qs3 = Kr * Q3
+                                        if Qs3 > fluxLimit:
+                                            Qs3 = fluxLimit
                                     else:
-                                        Qs3 = 0
-                                
-#                                # Inundation Regime - Murray and Paola (1994, 1997) Rule 3
-#                                else:   
-#                                    if Q1 > Qs_min:
-#                                        Qs1 = Ki * (Q1*(S1 + C))**mm
-#                                        if Qs1 < 0: 
-#                                            Qs1 = 0
-#                                    else:
-#                                        Qs1 = 0
-#                                        
-#                                    if Q2 > Qs_min:
-#                                        Qs2 = Ki * (Q2*(S2 + C))**mm
-#                                        if Qs2 < 0: 
-#                                            Qs2 = 0
-#                                    else:
-#                                        Qs2 = 0
-#                                        
-#                                    if Q3 > Qs_min:
-#                                        Qs3 = Ki * (Q3*(S3 + C))**mm
-#                                        if Qs3 < 0: 
-#                                            Qs3 = 0
-#                                    else:
-#                                        Qs3 = 0
+                                        Qs3 = 0                           
                                 
                                 # Inundation Regime - Murray and Paola (1994, 1997) Rule 3 with flux limiter
                                 else:   
@@ -517,24 +545,10 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                             Qs3 = fluxLimit
                                     else:
                                         Qs3 = 0                                
-                                        
-#                                # Inundation Regime - Same transport as run-up regime
-#                                else:      
-#                                    if Q1 > Qs_min and S1 >= 0:
-#                                        Qs1 = Ki * Q1
-#                                    else:
-#                                        Qs1 = 0
-#                                        
-#                                    if Q2 > Qs_min and S2 >= 0:
-#                                        Qs2 = Ki * Q2
-#                                    else:
-#                                        Qs2 = 0
-#                                        
-#                                    if Q3 > Qs_min and S3 >= 0:
-#                                        Qs3 = Ki * Q3
-#                                    else:
-#                                        Qs3 = 0
-                                        
+                                                                    
+                                Qs1 = np.nan_to_num(Qs1)
+                                Qs2 = np.nan_to_num(Qs2)
+                                Qs3 = np.nan_to_num(Qs3)          
                                         
                                 ### Calculate Net Erosion/Accretion
                                 if Elevation[TS,d,i] > SL: # If cell is subaerial, elevation change is determined by difference between flux in vs. flux out
@@ -621,13 +635,14 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                         InteriorUpdate = np.delete(InteriorUpdate,(-1), axis=0)
                     else:
                         check = 0        
-                
+
                 # Update interior domain
                 InteriorDomain = InteriorUpdate                
                 
                 # Update Domain widths
                 DomainWidth = np.shape(InteriorDomain)[0]
-                ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead = func.UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead)
+                ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, ShrubPercentCover, BurialDomain, ShrubDomainDead, DeadPercentCover = func.UpdateShrubDomains(DomainWidth, ShrubDomainWidth, ShrubDomainFemale, ShrubDomainMale, ShrubDomainAll, 
+                                                                                                                                                                 ShrubPercentCover, BurialDomain, ShrubDomainDead, DeadPercentCover)
                                   
     # Record storm data
     StormCount.append(numstorm)
@@ -638,7 +653,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     ### Ocean Shoreline Change
     
     ### Calculate shoreline/shoreface position change following Lorenzo-Trueba and Ashton (2014)  
-    SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS = func.LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS)
+    SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS = func.LTA_SC(InteriorDomain, OWloss, Qdg, DuneLoss, x_s, x_s_TS, x_t, x_t_TS, x_b_TS, s_sf_TS, InteriorWidth_Avg, SL, QowTS, QsfTS, t)
 
     
     ### Erode/Prograde Ocean Shoreline
@@ -663,6 +678,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 ShrubDomainMale = np.concatenate((np.zeros([1,BarrierLength]), ShrubDomainMale))
                 ShrubDomainDead = np.concatenate((np.zeros([1,BarrierLength]), ShrubDomainDead))
                 ShrubPercentCover = np.concatenate((np.zeros([1,BarrierLength]), ShrubPercentCover))
+                DeadPercentCover = np.concatenate((np.zeros([1,BarrierLength]), DeadPercentCover))
                 BurialDomain = np.concatenate((np.zeros([1,BarrierLength]), BurialDomain))
             DomainWidth = DomainWidth + sc # Update width of interior domain
             ShorelineChange = ShorelineChange + sc
@@ -685,6 +701,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                 ShrubDomainMale = np.delete(ShrubDomainMale,(0), axis=0)
                 ShrubDomainDead = np.delete(ShrubDomainDead,(0), axis=0)
                 ShrubPercentCover = np.delete(ShrubPercentCover,(0), axis=0)
+                DeadPercentCover = np.delete(DeadPercentCover,(0), axis=0)
                 BurialDomain = np.delete(BurialDomain,(0), axis=0)
             DomainWidth = DomainWidth - sc # Update width of interior domain
             ShorelineChange = ShorelineChange - sc
@@ -718,7 +735,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     
     # Calculate Percent Cover and Area
     ShrubDomainAll = ShrubDomainMale + ShrubDomainFemale
-    ShrubPercentCover, PercentCoverTS, ShrubArea = func.CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, ShrubArea, t)
+    ShrubPercentCover, PercentCoverTS, ShrubArea, DeadPercentCover, DeadPercentCoverTS = func.CalcPC(ShrubDomainAll, PercentCoverTS, ShrubDomainDead, DeadPercentCoverTS, ShrubArea, t)
 
 
 ###########################################     
@@ -744,9 +761,9 @@ outpath = 'Output/'
 if not os.path.exists(outpath):
     os.makedirs(outpath)
 filename = 'Output/SimData.npz'
-np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS,
-         QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS, PercentCoverTS = PercentCoverTS, ShrubArea = ShrubArea, ShrubDomainAll = ShrubDomainAll, StormCount = StormCount, TMAX = TMAX, t = t, Shrub_ON = Shrub_ON, RunUpCount = RunUpCount,
-         InundationCount = InundationCount, SL = SL, ShorelineChange = ShorelineChange, Hd_Loss_TS = Hd_Loss_TS)
+np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS, QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS, 
+         PercentCoverTS = PercentCoverTS, DeadPercentCoverTS = DeadPercentCoverTS, ShrubArea = ShrubArea, ShrubDomainAll = ShrubDomainAll, ShrubDeadTS = ShrubDeadTS, StormCount = StormCount, t = t, RunUpCount = RunUpCount, InundationCount = InundationCount, 
+         ShorelineChange = ShorelineChange, Hd_Loss_TS = Hd_Loss_TS, SimDuration = SimDuration, StormSeries = StormSeries, Dmax = Dmax, SL = SL, MaxAvgSlope = MaxAvgSlope, fluxLimit = fluxLimit, SimParams = SimParams)
 
 
 
@@ -756,7 +773,7 @@ np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS
 
 
 # 1: Dune Height Over Time
-func.plot_DuneHeight(DuneDomain)
+func.plot_DuneHeight(DuneDomain, Dmax)
 
 
 # 2: Elevation Domain For Last Time Step
@@ -768,7 +785,7 @@ func.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS)
 
 
 ## 4: Animation Frames of Barrier and Dune Elevation
-#func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, ShrubDeadTS)
+#func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
 
 
 # 5: Cross-Shore Transect Every 100 m Alongshore For Last Time Step
@@ -784,7 +801,7 @@ func.plot_ShorelinePositions(x_s_TS, x_b_TS)
     
 
 ## 8: OW vs IN count
-#func.plot_RuInCount(RunUpCount, InundationCount)
+func.plot_RuInCount(RunUpCount, InundationCount)
 
 
 ## 9: Shoreface LTA14 transects over time
@@ -824,22 +841,22 @@ func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS,
 
 
 ## 18: Shrub Age Domain at Simulation End
-#func.plot_ShrubAgeTMAX(ShrubDomainAll)
+func.plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS)
 
 
 ## 19: Percent Cover Domain at Simulation End
-#func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX)
+func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS)
 
 
 # 20: Shrub Area Over Time
-#func.plot_ShrubArea(ShrubArea)
+func.plot_ShrubArea(ShrubArea)
 
 
 # 21: Storm count over time
-#func.plot_StormCount(StormCount)
+func.plot_StormCount(StormCount)
 
 
-# 22: Average Interior Width Over Time
+# 22: Alongshore Dune Height Over Time
 #func.plot_AlongshoreDuneHeight(DuneDomain)
 
 
@@ -847,4 +864,15 @@ func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS,
 #SCperiod, AvgFastDur, AvgSlowDur = func.calc_ShorelinePeriodicity(TMAX, x_s_TS)
 #print('SCperiod: ', SCperiod)
 
+
+#24: Average dune height with storm TWLs
+func.plot_DuneStorm(Hd_AverageTS, StormSeries, TMAX)
+
+
+#25: Seabed Profile
+func.plot_SeabedProfile(SL, TMAX, x_t_TS)
+
+
+#26: Shrub Island Animation
+#func.plot_ShrubAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
 
