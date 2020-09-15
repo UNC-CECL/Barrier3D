@@ -47,7 +47,7 @@ dtSL_nan(idLoc) = datenum(dtSL(1:length(idLoc))); % this is for t-tide only
 
 % KA: Wahl et al., 2016 - 30 (or 365) day running medians
 %N = 24 * 30;  % For 30 day running mean
-N = 24 * 365; % For 1 yr running mean
+N = 24 * 365;  % For 1 yr running mean
 
 %rSL_rm = movmean(rSL_nan, N, 'includenan');
 rSL_rm = rSL_nan - movmedian(rSL_nan, N, 'omitnan');
@@ -251,7 +251,7 @@ for iYear = 1 : nYrs
 end
 
 % identify Hs threshold to qualify as a storm event, round nearest 0.05 m
-% rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)
+% rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)?
 nHs_min = min(rHs_over_yearly);
 nHs_threshold = floor(nHs_min / 0.05) * 0.05     
 
@@ -279,11 +279,11 @@ ylabel('Hs')
     cStormDur, cStormTWL, cStormRlow, cStormTp, cStormNTR, cStormAT, ...
     cStormWavD, cStormNegSurgeDT, cStormNegSurgeNTR, dtYear] = deal(cell(0));
 
-Hs_max = 0.5 * sqrt(2) * 22; % m, Wahl et al. (2016)
-Tp_max = 30;
-dur_min = 8; % hr, Magliocca et al. (2011)
-dur_max = 192; % hr, Wahl et al. (2016)
-dtH_yr = year(dtH);
+% NOTE for Ian, our storms are all significantly under these max thresholds; 
+% these thresholds are important for the synthetic storms (see new bit
+% of code in the copula section - deleted here)
+dur_min = 8;   % hr, Magliocca et al. (2011)
+dtH_yr  = year(dtH);
 
 t = 1 ;
 while t <= length(dtH)
@@ -311,14 +311,21 @@ while t <= length(dtH)
             iStormStop{end+1}   = stormStop;
             dtStormStart{end+1} = datenum(dtH(stormStart));
             dtStormStop{end+1}  = datenum(dtH(stormStop));
-            cStormHs{end+1}     = min([max(rHs_corr(stormStart:stormStop)), Hs_max]);
-            cStormDur{end+1}    = min([dur, dur_max]);
+            cStormDur{end+1}    = dur;
             cStormTWL{end+1}    = max(rTWL(stormStart:stormStop));
             cStormRlow{end+1}   = max(rRlow(stormStart:stormStop));
-            cStormTp{end+1}     = min([max(rTp_corr(stormStart:stormStop)), Tp_max]);
-            cStormNTR{end+1}    = max(rNTR_nan(stormStart:stormStop));
-            cStormAT{end+1}     = max(rAT_nan(stormStart:stormStop));
-            cStormWavD{end+1}   = max(rWavD(stormStart:stormStop));
+            % Ian, note that you need to find the max Hs and simultaneous
+            % (not max Tp and WavD)
+            [cStormHs{end+1}, iHs] = max(rHs_corr(stormStart:stormStop));
+            tmpTp   = rTp_corr(stormStart:stormStop);
+            tmpWavD = rWavD(stormStart:stormStop);
+            cStormTp{end+1}     = tmpTp(iHs);
+            cStormWavD{end+1}   = tmpWavD(iHs);
+            % Ian, same here: find the max NTR and simultaneous AT,
+            % otherwise you will only have positive tidal values
+            [cStormNTR{end+1}, iNTR] = max(rNTR_nan(stormStart:stormStop));
+            tmpAT   = rAT_nan(stormStart:stormStop);
+            cStormAT{end+1}     = tmpAT(iNTR);  
             dtYear{end+1}       = dtH_yr(stormStart);
         end
         
@@ -333,6 +340,9 @@ while t <= length(dtH)
             cStormNegSurgeDT{end+1}  = datenum(dtH(t));
             cStormNegSurgeNTR{end+1} = rNTR_nan(t);
             
+            % takeaway: indeed, there are many large wave events with
+            % negative surge or nearly zero surge
+            
         end
         
         t = t + 1;
@@ -342,7 +352,7 @@ while t <= length(dtH)
 end         
 
 % for debugging
-%figure; scatter(datetime(cell2mat(cStormNegSurgeDT), 'ConvertFrom', 'datenum'), ...
+% figure; scatter(datetime(cell2mat(cStormNegSurgeDT), 'ConvertFrom', 'datenum'), ...
 %    cell2mat(cStormNegSurgeNTR))
 
 % convert cells back to arrays
@@ -353,14 +363,14 @@ rStormDur = cell2mat(cStormDur)';
 rStormTp  = cell2mat(cStormTp)';
 rStormNTR = cell2mat(cStormNTR)';
 rStormAT  = cell2mat(cStormAT)';
-rStormStart  = cell2mat(iStormStart)';
+rStormStart = cell2mat(iStormStart)';
 rStormStop  = cell2mat(iStormStop)';
-rStormStart_dt  = cell2mat(dtStormStart)';
+rStormStart_dt = cell2mat(dtStormStart)';
 rStormStop_dt  = cell2mat(dtStormStop)';
-rYear  = cell2mat(dtYear)';
+rYear = cell2mat(dtYear)';
 
 % Create matrix of all storms and parameters
-[len, wid] = size(rStormTWL);
+[len, ~] = size(rStormTWL);
 Storms = zeros(len, 12);
 Storms(:,1) = rStormStart;
 Storms(:,2) = rStormStop;
@@ -414,7 +424,17 @@ ylabel('Storm \eta_{A} [m NAVD88]')
 
 %% USE COPULAS TO MODEL INTERDEPENDENCY BETWEEN VARIABLES
 
-% find the best distribution to fit each variable using MvCAT functions
+% From Matlab: To generate data Xsim with a distribution "just like" 
+% (in terms of marginal distributions and correlations) the distribution of 
+% data in the matrix X, you need to: 
+%       1) fit marginal distributions to the columns of X
+%       2) use appropriate cdf functions to transform X to U ([0,1] space) 
+%       3) use copulafit to fit a copula to U 
+%       4) generate new data Usim from the copula
+%       5) use appropriate inverse cdf functions to transform Usim to Xsim
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% STEP 1: fit marginal distributions to each variable 
 
 % From MvCAT: struct D of fitted distributions/parameters, and struct PD  
 % representing the fitted distributions (ProbDist class). 
@@ -422,40 +442,25 @@ ylabel('Storm \eta_{A} [m NAVD88]')
 [stD_U2, stPD_U2] = allfitdist(rStormHs, 'PDF');  % Fit a distribution to Hs
 [stD_U3, stPD_U3] = allfitdist(rStormTp, 'PDF');  % Fit a distribution to Tp
 [stD_U4, stPD_U4] = allfitdist(rStormDur, 'PDF'); % Fit a distribution to D
-[stD_U5, stPD_U5] = allfitdist(rStormAT, 'PDF'); % Fit a distribution to AT
-
-% Compute fitted marginal probability (i.e., compute the CDF, [0,1] space)
-rEP1 = cdf(stPD_U1{1},rStormNTR);  % Rayleigh
-rEP2 = cdf(stPD_U2{1},rStormHs);   % Generalized Pareto
-rEP3 = cdf(stPD_U3{1},rStormTp);   % Generalized Extreme Value
-rEP4 = cdf(stPD_U4{1},rStormDur);  % Generalized Pareto
-rEP5 = cdf(stPD_U5{1},rStormAT);
-
-% Check if inverse is also OK
-rIEP1 = icdf(stPD_U1{1},rEP1);
-rIEP2 = icdf(stPD_U2{1},rEP2);
-rIEP3 = icdf(stPD_U3{1},rEP3);
-rIEP4 = icdf(stPD_U4{1},rEP4);
-rIEP5 = icdf(stPD_U5{1},rEP5);
-
-% check if any have nans or infinities
-any( isnan(rEP1) | isinf(rEP1) | isnan(rIEP1) | isinf(rIEP1) )
-any( isnan(rEP2) | isinf(rEP2) | isnan(rIEP2) | isinf(rIEP2) )
-any( isnan(rEP3) | isinf(rEP3) | isnan(rIEP3) | isinf(rIEP3) )
-any( isnan(rEP4) | isinf(rEP4) | isnan(rIEP4) | isinf(rIEP4) )
-any( isnan(rEP5) | isinf(rEP5) | isnan(rIEP5) | isinf(rIEP5) )
-
-% evaluate goodness of fit of the marginal distributions (KA: future)
+[stD_U5, stPD_U5] = allfitdist(rStormAT, 'PDF');  % Fit a distribution to AT
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% STEP 2: use appropriate cdf functions to transform X to U ([0,1] space) %
 
-% What are the dependencies between variables?
-% from Wahl, we expect NTR, Hs, Tp, and D to share >95% sig dependencies
+% KA: Matlab example transforms the data to the copula scale (unit square)
+% using a kernal estimator, which provide a smooth estimate of the CDF,
+% however my gut (and I think what Wahl did) says to use the empirical CDF
+% (below) -- try both?
+rEP1 = cdf(stPD_U1{1}, rStormNTR);  % Rayleigh
+rEP2 = cdf(stPD_U2{1}, rStormHs);   % Generalized Pareto
+rEP3 = cdf(stPD_U3{1}, rStormTp);   % Generalized Extreme Value
+rEP4 = cdf(stPD_U4{1}, rStormDur);  % Generalized Pareto
+rEP5 = cdf(stPD_U5{1}, rStormAT);   % Nakagami Distribution? basically normal
 
-% Length of data
-n = length(rStormNTR);
+% the following code produces the same result as ecdf() function 
 
 % Find data ranks
+n    = length(rStormNTR); 
 data = [rStormNTR, rStormHs, rStormTp, rStormDur];
 [rR1, rR2, rR3, rR4] = deal(nan(n,1));
 
@@ -466,14 +471,28 @@ for i = 1:n
     rR4(i,1) = sum(data(:,4) >= data(i,4));
 end
 
-% Transform to uniform marginals 
+% Transform to uniform marginals (the empirical CDF)
 rU1 = (n-rR1+0.5)./n;
 rU2 = (n-rR2+0.5)./n;
 rU3 = (n-rR3+0.5)./n;
 rU4 = (n-rR4+0.5)./n;
 
-% Compute Kendal's Corelation Coefficient for each pair
-rTau = corr([rU1, rU2, rU3, rU4], 'type', 'kendall');
+% for debugging, prove that ecdf() is the same as above and that the 
+figure
+ecdf(rStormNTR)
+hold on
+scatter(rStormNTR,rU1)
+hold on
+scatter(rStormNTR, rEP1)  % the CDF estimate from the marginal distribution
+
+% Compute Kendal's Corelation Coefficient for each pair using the ECDF
+% NOTE: if pval(a,b) is small (less than 0.05), then the correlation 
+% rho(a,b) is significantly different from zero
+[rTau, pval] = corr([rU1, rU2, rU3, rU4], 'type', 'kendall');
+%[rTau, pval] = corr(data, 'type', 'kendall'); % exactly the same as above
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% STEP 3: use copulafit to fit a copula to U 
 
 % To account for interdependencies, fit copulas to the transformed 
 % four-dimensional data sets. Copulas are great b/c we can mix various 
@@ -482,89 +501,356 @@ rTau = corr([rU1, rU2, rU3, rU4], 'type', 'kendall');
 % we should try Vine, Archimedian, or EV copulas)...but they are easily 
 % transformed to 4 dimensions (i.e., NTR, Hs, Tp, and Dur)
 
-% Compute the linear correlation parameter from the rank correlation value
-rRho = copulaparam('Gaussian', rTau);
+% for fitting vine copula models in R
+dlmwrite('U_mssmVCR.txt',[rU1, rU2, rU3, rU4],'delimiter','\t','precision',12)
 
-% Use a Gaussian copula to generate a 4-column matrix of dependent random
-% values; each column contains 100 random values between 0 and 1, sampled 
-% from a continuous uniform distribution
-SimNum = 10000; % Number of simulated storms to create
-rU = copularnd('Gaussian', rRho, SimNum);
+% returns an estimate, rhohat, of the matrix of linear correlation 
+% parameters for a gaussian and t copula, and an estimate of the dof parameter, nuhat, 
+% given the data in [0,1] space
+%rRhoHat = copulafit('Gaussian',[rEP1 rEP2 rEP3 rEP4]); 
+%rRhoHat = copulafit('Gaussian',[rU1, rU2, rU3, rU4]);  % the tau values look better for this (the ecdf, what Wahl did)
+%[rRhoHat, rNuHat, rNuCI] = copulafit('t',[rU1, rU2, rU3, rU4]); % the tau values look best (of elliptical) for this
 
-% Simulate data from the 4D distribution; use the inverse of the fitted 
-% marginal CDFs to transform the simulated data from the unit hypercube space to real units
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% STEP 4: generate new data Usim from the copula
+
+% Generate random samples from the copula ([0,1] space, sampled 
+% from a continuous uniform distribution)
+nSimNum = 10000; % Number of simulated storms to create
+%rU = copularnd('Gaussian', rRhoHat, nSimNum);  % gaussian copula, elliptical
+%rU = copularnd('t', rRhoHat, rNuHat, nSimNum); % t-student copula, also elliptical
+                  
+% load outputs from vine model in R
+rU = load('Usim_mssmVCR-Cvine.mat', 'uSim');
+rU = rU.uSim;  % best tau values (closest to empirical)
+
+% kendall's coefficient for the simulated data
+rTauSim = corr([rU(:,1), rU(:,2), rU(:,3), rU(:,4)],'type','Kendall');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% STEP 5: use appropriate inverse cdf functions to transform Usim to Xsim
+
+% use the inverse of the fitted marginal CDFs to transform the simulated 
+% data from the unit hypercube space back to the original scale of the data
 rSimNTR = icdf(stPD_U1{1}, rU(:,1));
 rSimHs  = icdf(stPD_U2{1}, rU(:,2));
 rSimTp  = icdf(stPD_U3{1}, rU(:,3));
 rSimDur = icdf(stPD_U4{1}, rU(:,4));
 
-% Draw tide from inverse cdf
-[len, wid] = size(rIEP5);
-randAT = randi(len,SimNum,1);
-rSimAT = rIEP5(randAT);
-
 % this workflow simulated 10000 quadruplets of NTR, Hs, Tp, and Dur in the 
 % unit hypercube (preserves the interdependencies between variables)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Now, simulate the tide randomly from its ecdf
+
+% KA: Ian, so really they just sample randomly from the empirical cdf 
+% (observations)...we were making it complicated
+[f,rU5] = ecdf(rStormAT);
+randAT  = randi(length(rU5), nSimNum, 1);
+rSimAT  = rU5(randAT);
+%[len, ~] = size(rIEP5);
+%randAT = randi(len,nSimNum,1);
+%rSimAT = rIEP5(randAT);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% plot Wahl Figure 6
+figure
+subplot(5,6,1)
+hist(rStormNTR, 50)
+ylabel('\eta_{NTR} [m]')
+subplot(5,6,2)
+hist(rSimNTR, 50)
+ylabel('\etaSim_{NTR} [m]')
+
+subplot(5,6,7)
+scatter(rSimNTR, rSimAT)
+hold on
+scatter(rStormNTR, rStormAT)
+ylabel('\eta_{AT} [m]')
+%scatterhist(rStormNTR, rStormHs, 'Direction', 'out')
+
+subplot(5,6,13)
+scatter(rSimNTR, rSimHs)
+hold on
+scatter(rStormNTR, rStormHs)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,1)))
+ylabel('Hs [m]')
+
+subplot(5,6,19)
+scatter(rSimNTR, rSimTp)
+hold on
+scatter(rStormNTR, rStormTp)
+text(0.5,1,sprintf('t = %0.2f', rTau(3,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(3,1)))
+ylabel('Tp [s]')
+
+subplot(5,6,25)
+scatter(rSimNTR, rSimDur)
+hold on
+scatter(rStormNTR, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(4,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(4,1)))
+ylabel('D [h]')
+xlabel('\eta_{NTR} [m]')
+
+subplot(5,6,8)
+hist(rStormAT, 50)
+ylabel('\eta_{AT} [m]')
+subplot(5,6,9)
+hist(rSimAT, 50)
+ylabel('\etaSim_{AT} [m]')
+
+subplot(5,6,14)
+scatter(rSimAT, rSimHs)
+hold on
+scatter(rStormAT, rStormHs)
+ylabel('Hs [m]')
+
+subplot(5,6,20)
+scatter(rSimAT, rSimTp)
+hold on
+scatter(rStormAT, rStormTp)
+ylabel('Tp [s]')
+
+subplot(5,6,26)
+scatter(rSimAT, rSimDur)
+hold on
+scatter(rStormAT, rStormDur)
+ylabel('D [h]')
+xlabel('\eta_{AT} [m]')
+
+subplot(5,6,15)
+hist(rStormHs, 50)
+ylabel('Hs [m]')
+subplot(5,6,16)
+hist(rSimHs, 50)
+ylabel('HsSim [m]')
+
+subplot(5,6,21)
+scatter(rSimHs, rSimTp)
+hold on
+scatter(rStormHs, rStormTp)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,3)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,3)))
+ylabel('Tp [s]')
+
+subplot(5,6,27)
+scatter(rSimHs, rSimDur)
+hold on
+scatter(rStormHs, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,4)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,4)))
+ylabel('D [h]')
+xlabel('Hs [m]')
+
+subplot(5,6,22)
+hist(rStormTp, 50)
+ylabel('Tp [s]')
+subplot(5,6,23)
+hist(rSimTp, 50)
+ylabel('TpSim [s]')
+
+subplot(5,6,28)
+scatter(rSimTp, rSimDur)
+hold on
+scatter(rStormTp, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(3,4)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(3,4)))
+ylabel('D [h]')
+xlabel('Tp [s]')
+
+subplot(5,6,29)
+hist(rStormDur, 50)
+ylabel('D [h]')
+xlabel('D [h]')
+subplot(5,6,30)
+hist(rSimDur, 50)
+ylabel('D [h]')
+xlabel('D [h]')
 
 %% calculate simulated R2% and add to SL to get the simulated TWL
 
-rBeta = 0.04;                      % beach slope, Hog Island    
+rBeta    = 0.04;                         % beach slope, Hog Island    
 rSimL0   = (9.8 * rSimTp.^2) / (2 * pi); % wavelength       
-
 rSimSetup = 0.35 * rBeta * sqrt(rSimHs .* rSimL0); 
 rSimSin   = 0.75 * rBeta * sqrt(rSimHs .* rSimL0);  % incident band swash
 rSimSig   = 0.06 * sqrt(rSimHs .* rSimL0) ;         % infragravity band swash
 rSimSwash = sqrt((rSimSin.^2) + (rSimSig.^2));      % total swash
 rSimR2    = 1.1 * (rSimSetup + (rSimSwash/2));      % R2%
 
-% KA: not clear from Wahl if the TWL is the corrected SL+R2...do both?
 rSimTWL  = rSimNTR + rSimR2 + rSimAT;       
 rSimRlow = (rSimTWL - (rSimSwash/2));  
 
+%% Lastly, apply max thresholds for synthetics
 
-% Plot storm TWL, Hs, Dur, Tp, NTR, AT histogram
-figure
-subplot(2,3,1)
-hist(rSimTWL, 50)
-ylabel('Simulated TWL [m]')
-title('5000 storms')
-%plotFancyAxis
+nZ = 22; % m
+nHs_max  = 0.5 * sqrt(2) * nZ; % m, Thorton and Guza [1982]
+nTp_max  = 30;
+nDur_max = 240; % hr, Wahl et al. (2016) (NOTE, this seems arbitrary to me)
 
-subplot(2,3,2)
-hist(rSimHs, 50)
-ylabel('Simulated Hs [m]')
-%plotFancyAxis
+% only save synthetic storms below thresholds
+% Find storms (translated from Ian Reeves); use corrected data only
+[cSimHs, cSimDur, cSimTp, cSimNTR, cSimAT, cSimRlow, cSimTWL] = deal(cell(0));
 
-subplot(2,3,3)
-hist(rSimDur, 50)
-ylabel('Simulated Dur [hrs]')
-%plotFancyAxis
-
-subplot(2,3,4)
-hist(rSimTp, 50)
-ylabel('Simulated Tp [s]')
-%plotFancyAxis
-
-subplot(2,3,5)
-hist(rSimNTR, 50)
-ylabel('Simulated \eta_{NTR} [m]')
-%plotFancyAxis
-
-subplot(2,3,6)
-hist(rSimAT, 50)
-ylabel('Simulated \eta_{AT} [m]')
-%plotFancyAxis
+for iSim = 1 : length(rSimDur)
+    if rSimHs(iSim)<nHs_max && rSimTp(iSim)<nTp_max && rSimDur(iSim)<nDur_max
+        
+        cSimHs{end+1} = rSimHs(iSim);
+        cSimTp{end+1} = rSimTp(iSim);
+        cSimDur{end+1} = rSimDur(iSim);
+        cSimNTR{end+1} = rSimNTR(iSim);
+        cSimAT{end+1}  = rSimAT(iSim);
+        cSimRlow{end+1} = rSimRlow(iSim);
+        cSimTWL{end+1}  = rSimTWL(iSim);
+        
+    end
+end
 
 % Create matrix of all simulated storms and parameters
-[len, wid] = size(rSimTWL);
-SimStorms = zeros(len, 7);
-SimStorms(:,1) = rSimHs;
-SimStorms(:,2) = rSimDur;
-SimStorms(:,3) = rSimTWL;
-SimStorms(:,4) = rSimNTR;
-SimStorms(:,5) = rSimTp;
-SimStorms(:,6) = rSimAT;
-SimStorms(:,7) = rSimRlow;
+SimStorms = zeros(length(cSimTWL), 7);
 
+SimStorms(:,1) = cell2mat(cSimHs);
+SimStorms(:,2) = cell2mat(cSimDur);
+SimStorms(:,3) = cell2mat(cSimTWL);
+SimStorms(:,4) = cell2mat(cSimNTR);
+SimStorms(:,5) = cell2mat(cSimTp);
+SimStorms(:,6) = cell2mat(cSimAT);
+SimStorms(:,7) = cell2mat(cSimRlow);
+
+% % Plot final storm TWL, Hs, Dur, Tp, NTR, AT histogram
+% figure
+% subplot(2,3,1)
+% hist(SimStorms(:,3), 50)
+% ylabel('Simulated TWL [m]')
+% title('10,000 storms')
+% 
+% subplot(2,3,2)
+% hist(SimStorms(:,1), 50)
+% ylabel('Simulated Hs [m]')
+% 
+% subplot(2,3,3)
+% hist(SimStorms(:,2), 50)
+% ylabel('Simulated Dur [hrs]')
+% 
+% subplot(2,3,4)
+% hist(SimStorms(:,5), 50)
+% ylabel('Simulated Tp [s]')
+
+% plot Wahl Figure 6 (again)
+figure
+subplot(5,6,1)
+hist(rStormNTR, 50)
+ylabel('\eta_{NTR} [m]')
+subplot(5,6,2)
+hist(SimStorms(:,4), 50)
+ylabel('\etaSim_{NTR} [m]')
+
+subplot(5,6,7)
+scatter(SimStorms(:,4), SimStorms(:,6))
+hold on
+scatter(rStormNTR, rStormAT)
+ylabel('\eta_{AT} [m]')
+%scatterhist(rStormNTR, rStormHs, 'Direction', 'out')
+
+subplot(5,6,13)
+scatter(SimStorms(:,4), SimStorms(:,1))
+hold on
+scatter(rStormNTR, rStormHs)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,1)))
+ylabel('Hs [m]')
+
+subplot(5,6,19)
+scatter(SimStorms(:,4), SimStorms(:,5))
+hold on
+scatter(rStormNTR, rStormTp)
+text(0.5,1,sprintf('t = %0.2f', rTau(3,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(3,1)))
+ylabel('Tp [s]')
+
+subplot(5,6,25)
+scatter(SimStorms(:,4), SimStorms(:,2))
+hold on
+scatter(rStormNTR, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(4,1)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(4,1)))
+ylabel('D [h]')
+xlabel('\eta_{NTR} [m]')
+
+subplot(5,6,8)
+hist(rStormAT, 50)
+ylabel('\eta_{AT} [m]')
+subplot(5,6,9)
+hist(SimStorms(:,6), 50)
+ylabel('\etaSim_{AT} [m]')
+
+subplot(5,6,14)
+scatter(SimStorms(:,6), SimStorms(:,1))
+hold on
+scatter(rStormAT, rStormHs)
+ylabel('Hs [m]')
+
+subplot(5,6,20)
+scatter(SimStorms(:,6), SimStorms(:,5))
+hold on
+scatter(rStormAT, rStormTp)
+ylabel('Tp [s]')
+
+subplot(5,6,26)
+scatter(SimStorms(:,6), SimStorms(:,2))
+hold on
+scatter(rStormAT, rStormDur)
+ylabel('D [h]')
+xlabel('\eta_{AT} [m]')
+
+subplot(5,6,15)
+hist(rStormHs, 50)
+ylabel('Hs [m]')
+subplot(5,6,16)
+hist(SimStorms(:,1), 50)
+ylabel('HsSim [m]')
+
+subplot(5,6,21)
+scatter(SimStorms(:,1), SimStorms(:,5))
+hold on
+scatter(rStormHs, rStormTp)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,3)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,3)))
+ylabel('Tp [s]')
+
+subplot(5,6,27)
+scatter(SimStorms(:,1), SimStorms(:,2))
+hold on
+scatter(rStormHs, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(2,4)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(2,4)))
+ylabel('D [h]')
+xlabel('Hs [m]')
+
+subplot(5,6,22)
+hist(rStormTp, 50)
+ylabel('Tp [s]')
+subplot(5,6,23)
+hist(SimStorms(:,5), 50)
+ylabel('TpSim [s]')
+
+subplot(5,6,28)
+scatter(SimStorms(:,5), SimStorms(:,2))
+hold on
+scatter(rStormTp, rStormDur)
+text(0.5,1,sprintf('t = %0.2f', rTau(3,4)))
+text(1.5,1, sprintf('t_{sim} = %0.2f', rTauSim(3,4)))
+ylabel('D [h]')
+xlabel('Tp [s]')
+
+subplot(5,6,29)
+hist(rStormDur, 50)
+ylabel('D [h]')
+xlabel('D [h]')
+subplot(5,6,30)
+hist(SimStorms(:,2), 50)
+ylabel('D [h]')
+xlabel('D [h]')
