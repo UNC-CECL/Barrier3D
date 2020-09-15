@@ -2,6 +2,7 @@
 
 # NOTE to Ian: to get the command-line interface to work you need to % make install
 # NOTE to Eric:  RuntimeWarning: invalid value encountered in double_scalars using command line interface
+# Q for Eric: in the command-line, where does the information come from for the parameter yaml file?
 
 # import 1) the new class, Barrier3D, which is the model
 #        2) load_input: readers for input files, which include the parameter file as well as data files for elev.,
@@ -9,10 +10,10 @@
 #        "from_path" function
 from barrier3d import Barrier3d, load_inputs
 
-# specify data directory with initial conditions and use load_inputs function to import
+# specify data directory with initial conditions and use load_inputs function: processes input parameters for a barrier3d simulation
 datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/tests/test_params"
-fmt = "yaml"
-params = load_inputs(datadir, prefix="barrier3d", fmt=fmt)
+fmt = "yaml"  # alternatively "py", but I can't get "py" to work
+params = load_inputs(datadir, prefix="barrier3d", fmt=fmt)  # can save this to np or whatever for initial conditions
 # NOTE to Eric: the above throws and error: FutureWarning: Support for multi-dimensional indexing (e.g. `obj[:, None]`)
 # # is deprecated and will be removed in a future version.  Convert to a numpy array before indexing instead.
 

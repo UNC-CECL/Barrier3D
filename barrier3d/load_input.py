@@ -4,6 +4,7 @@ import pathlib
 
 import numpy as np
 import pandas
+import math
 
 from .configuration import Barrier3dConfiguration
 
@@ -47,6 +48,7 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
             raise FileNotFoundError(parameter_file.absolute())
 
         params = load_parameters(parameter_file, fmt=fmt)
+        # KA: this is what I tried, among other things, to debug .npy
         params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.csv")
         if params["StormTimeSeries"]:
             params["StormSeries"] = load_storms(f"{prefix}-storms.csv")
@@ -272,17 +274,39 @@ def _process_raw_input(params):
     params.pop("Rat")
 
     # Relative Sea Level Rise Rate
-    params["RSLR"] /= 10.0
+    # params["RSLR"] /= 10.0
+    if params["RSLR_Constant"]:
+        # Constant RSLR
+        params["RSLR_const"] /= 10.0
+        params["RSLR"] = params["RSLR_const"] * params["TMAX"]
+    else:
+        # Logistic RSLR rate projection - Rohling et al. (2013)
+        params["RSLR"] = []
+        alpha = 0.75  # m/yr -- probability maximum = 0.75, 68% upper bound = 2.0
+        beta = alpha / 0.003 - 1  # constant
+        gamma = 350  # yr -- probability maximum = 350, 68% upper bound = 900
+        C = 12  # constant
+        for t in range(150, params["TMAX"] + 150):
+            delta = alpha / (1 + beta * math.exp(-t / gamma * C)) / 10000 * 10  # Convert from m/cy to dam/yr
+            params["RSLR"].append(delta)
 
-    params["surge_tide_m"] -= params["MHW"] * 10.0
-
+    # Shrubs
     params["Dshrub"] /= 10.0
     params["ShrubEl_min"] = params["ShrubEl_min"] / 10.0 - params["MHW"]
     params["ShrubEl_max"] = params["ShrubEl_max"] / 10.0 - params["MHW"]
+    params["TideAmp"] /= 10.0
+    params["SprayDist"] /= 10.0
 
-    # Overwash Interaction
+    # Shrub height (with age as proxy)
+    SH = np.linspace(0, 0.3, 10)
+    addend = np.ones(params["TMAX"] + 50)  # (years 10+)
+    params["SH"] = np.append(SH, addend)
+
+    # Overwash Interaction (convert to decameters)
     params["BurialLimit"] /= 10.0
     params["UprootLimit"] /= 10.0
+    params["Qs_min"] /= 1000
+    params["Qs_bb_min"] /= 1000
 
     # Percent cover change (years 0-9)
     PC = np.array([0, 0.04, 0.08, 0.10, 0.15, 0.15, 0.20, 0.35, 0.80, 1])

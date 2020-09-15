@@ -14,9 +14,11 @@ import matplotlib.pyplot as plt
 
 ################################################################
 ### Load WIS data 1980-2014
+### KA: from Wahl et al., 2016 - need Hs, Tp, and direction theta (they used offshore wave buoy in 28m water depth, 1980-2013)
 
-pathpre = ('C:\Barrier3D\Parameterization\Storms\WIS-63183')
-name = ('\ST63183_v03.onlns')
+#pathpre = ('C:\Barrier3D\Parameterization\Storms\WIS-63183')
+pathpre = ('/Users/KatherineAnardeWheels/Research/BARis/UNC/VCR/SyntheticStorms')
+name = ('/ST63183_v03.onlns')
 
 
 filename = pathpre + name
@@ -44,17 +46,21 @@ for n in range(len(DT)):
 
 ################################################################
 ### Load Water Level from CSV
+### KA: from Wahl et al., 2016 - need one hour time records of water level (they used tidal gauge)
+### KA: what are the decadal trends?
 filename2 = pathpre + '/Tide-8631044.csv'
 with open(filename2,newline='') as csvfile:
     sl = list(csv.reader(csvfile))
-sl = [float(i) for i in sl[0]]
+sl = [float(i) for i in sl[0]]  # KA: is this in m NAVD88?
 sl = sl[1:-1] # Trim off first and last readings from tide gauge to match waves
+# KA: are these in one hour time steps? Assuming so (other option for tidal gauges is 6 min)
 SL = np.asarray(sl)
 
 
 
 ################################################################
-### Running means
+### Running means (i.e., Pre-processing - remove non-stationarity)
+### KA: Wahl et al., 2016 - 30 day running medians (shifted by 1 h each time step)
 
 N = 24 * 30 # For 30 day running mean
 
@@ -64,15 +70,23 @@ Hs_rm = np.convolve(Hs, np.ones((N,))/N, mode='same')
 
 Tp_rm = np.convolve(Tp, np.ones((N,))/N, mode='same')
 
+# KA: need to check if wave direction is non-stationary over decades by plotting here
 
+# REMOVE THE RUNNING MEDIAN
+
+# WHAT IS THE MEDIAN OVER THE LAST THREE YEARS?
+
+# ADD THIS MEDIAN TO THE NEW CORRECTED TIME SERIES SO REPRESENTATIVE OF RECENT CLIMATE
 
 ################################################################
 ### Storm surge (non-tidal residuals) & astronomical tide
 
+# KA: From the corrected time series, use t-tide python to perform a year-by-year tidal analysis
+
 # Get from Matlab t_Tide for:
 
-    # NTR
-    # AT
+    # NTR - nontidal residual
+    # AT - tidal amplitude
 
 
 
@@ -82,8 +96,9 @@ beta = 0.04 # Beach slope, Hog Island
 L0 = (9.8 * Tp**2) / (2 * math.pi) # Wavelength       
 R2 = []
 Rlow = []
-TWL = []
+TWL = []  # KA: this is observed + R2 (not corrected + R2)
 
+# KA: is this Stockdon 2006 broken down into components?
 for n in range(len(L0)):
     # Setup
     setup = 0.35 * beta * math.sqrt(Hs[n] * L0[n]) 
@@ -102,7 +117,7 @@ for n in range(len(L0)):
     R2.append(r2)
     
     # TWL & Rlow
-    twl = SL[n] + r2
+    twl = SL[n] + r2  # KA: not clear from Wahl if this is observations and not corrected....try both?
     TWL.append(twl)
     Rlow.append(twl - (swash/2))
     
@@ -164,21 +179,31 @@ plt.show()
 ################################################################
 ### Find Storms
 
-# Find Hs threshold
+# for each year, find when the TWL exceeds an erosion threshold
+# From Wahl: they used the 5th percentile of dune toe heights (free parameter for dune erosion)
 BermEl = 1.7
+
+# find the annual average TWL from all threshold exceedances from a given year
+# calculate annual averages of MSL (here the 30 day running mean), tidal amplitude, residual,
+# and R2% during the TWL exceedances
 
 Hs_over_yearly = []
 for y in range(35):
     start = 365 * 24 * y
     stop = 365 * 24 * (y + 1)
-    hh = Hs[start:stop]
+    hh = Hs[start:stop]   # KA: update to include tidal and nontidal residual and MWL, R2
     tt = TWL[start:stop]
     Hs_over = hh[tt > BermEl]
     Hs_over_yearly.append(np.mean(Hs_over))
-   
+
+# KA: need to confirm that Hs really is driving the large TWL (likely)
+# KA: also check that we only consider events where the Hs thresholds were exceeded and the
+# simultaneous surge was positive (see comments below)
 Hs_min = min(Hs_over_yearly)
 Hs_threshold = math.floor(Hs_min / 0.05) * 0.05 # Threshold Hs needed to qualify as storm event, rounded to nearst 0.05 m    
-    
+
+# KA: separate the seasons (June through November)?
+
 # Plot yearly means
 plt.figure()
 x = np.linspace(1980,2014,35)
@@ -206,7 +231,7 @@ while t < len(hour):
                 t += 1
             else:
                 t += 1
-        if dur > 8:
+        if dur > 8:   # KA: this seems arbitrary, isn't this hours? need to check and see if he did this right (number of storms seem low)
             stormStop = t
             datenumStart = DT[stormStart]
             datenumStop =  DT[stormStop]

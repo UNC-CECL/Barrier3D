@@ -1,12 +1,12 @@
 import math
-# import random
+# import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing, may need to uncomment?
 
 import numpy as np
 
 # from .parameters import Barrier3dParameters
 from .load_input import load_inputs
 
-
+# KA: called within Barrier3d - does this force an exit from the program? replaces former "warnings" package?
 class Barrier3dError(Exception):
     pass
 

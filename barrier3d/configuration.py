@@ -13,7 +13,7 @@ from exconfig.validators import Range
 class Barrier3dConfiguration(Configuration):
     TMAX = IntegerField(
         "TMAX",
-        default=50,
+        default=150,
         units="y",
         description="Duration of simulation",
         validators=[Range(lower=0)],
@@ -27,7 +27,7 @@ class Barrier3dConfiguration(Configuration):
     )
     BarrierLength = FloatField(
         "BarrierLength",
-        default=300.0,
+        default=500.0,
         units="m",
         description="Static length (alongshore) of island segment",
         validators=[Range(lower=0)],
@@ -41,7 +41,7 @@ class Barrier3dConfiguration(Configuration):
     )
     LShoreface = FloatField(
         "LShoreface",
-        default=1000.0,
+        default=500.0,
         units="m",
         description="Length of shoreface",
         validators=[Range(lower=0)],
@@ -55,7 +55,7 @@ class Barrier3dConfiguration(Configuration):
     )
     BayDepth = FloatField(
         "BayDepth",
-        default=2.0,
+        default=3.0,
         units="m",
         description="Depth of bay benind island segment",
         validators=[Range(lower=0)],
@@ -69,38 +69,38 @@ class Barrier3dConfiguration(Configuration):
     )
     Dstart = FloatField(
         "Dstart",
-        default=0.25,
+        default=0.50,
         units="m",
         description="Initial height of dune domain above berm elevation",
         validators=[Range(lower=0)],
     )
     BermEl = FloatField(
         "BermEl",
-        default=1.7,
+        default=1.9,
         units="m",
         description="Static elevation of berm; berm elevation + dune height = dune elevation",
         validators=[Range(lower=0)],
     )
     rmin = FloatField(
         "rmin",
-        default=0.05,
+        default=0.35,
         description="Minimum growth rate for logistic dune growth",
     )
     rmax = FloatField(
         "rmax",
-        default=0.55,
+        default=0.85,
         description="Maximum growth rate for logistic dune growth",
     )
     HdDiffu = FloatField(
         "HdDiffu",
-        default=0.45,
+        default=0.75,
         units="m",
         description="Dune diffusion parameter (i.e. max height offset between adjacent dune cells)",
         validators=[Range(lower=0)],
     )
     Dmaxel = FloatField(
         "Dmaxel",
-        default=2.3,
+        default=3.4,
         units="m",
         description="Maximum elevation of dunes",
         validators=[Range(lower=0)],
@@ -119,7 +119,7 @@ class Barrier3dConfiguration(Configuration):
     )
     DuneRestart = FloatField(
         "DuneRestart",
-        default=0.05,
+        default=0.075,
         units="m",
         description="Restart height for dunes lowered to essentially zero",
         validators=[Range(lower=0)],
@@ -130,21 +130,26 @@ class Barrier3dConfiguration(Configuration):
         units="m / y",
         description="Rate of shoreline reatreat attributed to alongshore transport; (-) = erosion, (+) = accretion",
     )
-    RSLR = FloatField(
-        "RSLR",
+    RSLR_Constant = BooleanField(
+        "RSLR_Constant",
+        default=True,
+        description="Relative sea-level rise rate will be constant, otherwise logistic growth function used for time series",
+    )
+    RSLR_const = FloatField(
+        "RSLR_const",
         default=0.004,
         units="m / y",
         description="Relative sea-level rise rate",
     )
     mean_storm = FloatField(
         "mean_storm",
-        default=13.17,
+        default=8.3,
         description="For a random number of storms per year sampled from normal distribution",
         validators=[Range(lower=0)],
     )
     SD_storm = FloatField(
         "SD_storm",
-        default=5.16,
+        default=5.9,
         description="For a random number of storms per year sampled from normal distribution",
         validators=[Range(lower=0)],
     )
@@ -152,60 +157,6 @@ class Barrier3dConfiguration(Configuration):
         "numstorm",
         default=0,
         description="For a single constant number of storms per year",
-        validators=[Range(lower=0)],
-    )
-    surge_tide_m = FloatField(
-        "surge_tide_m",
-        default=0.0,
-        units="m",
-        description="Mean storm surge + tide water levels",
-        validators=[Range(lower=0)],
-    )
-    surge_tide_sd = FloatField(
-        "surge_tide_sd",
-        default=0.0,
-        units="m",
-        description="Standard deviation of surge + tide water levels",
-        validators=[Range(lower=0)],
-    )
-    height_mu = FloatField(
-        "height_mu",
-        default=0.0,
-        units="m",
-        description="Mu storm wave height (lognormal distribution)",
-        validators=[Range(lower=0)],
-    )
-    height_sigma = FloatField(
-        "height_sigma",
-        default=0.0,
-        units="m",
-        description="Sigma storm wave height (lognormal distribution)",
-        validators=[Range(lower=0)],
-    )
-    period_m = FloatField(
-        "period_m",
-        default=0.0,
-        description="Mean storm wave period",
-        validators=[Range(lower=0)],
-    )
-    period_sd = FloatField(
-        "period_sd",
-        default=0.0,
-        description="Standard deviation of storm wave periods",
-        validators=[Range(lower=0)],
-    )
-    duration_mu = FloatField(
-        "duration_mu",
-        default=0.0,
-        units="hr",
-        description="Mu storm duration (lognormal distribution)",
-        validators=[Range(lower=0)],
-    )
-    duration_sigma = FloatField(
-        "duration_sigma",
-        default=0.0,
-        units="hr",
-        description="Sigma storm duration (lognormal distribution)",
         validators=[Range(lower=0)],
     )
     beta = FloatField(
@@ -250,6 +201,12 @@ class Barrier3dConfiguration(Configuration):
         units="m^3 / hr",
         description="Minimum discharge needed for sediment transport",
     )
+    MaxUpSlope = FloatField(
+        "MaxUpSlope",
+        default=0.25,
+        units="m / m",
+        description="Maximum slope water can flow upward",
+    )
     threshold_in = FloatField(
         "threshold_in",
         default=0.25,
@@ -258,12 +215,12 @@ class Barrier3dConfiguration(Configuration):
     )
     Kr = FloatField(
         "Kr",
-        default=0.0003,
+        default=0.000075,
         description="Sediment flux constant, run-up regime",
     )
     Ki = FloatField(
         "Ki",
-        default=0.000075,
+        default=0.0000075,
         description="Sediment flux constant, inundation regime",
     )
     Cbb_r = FloatField(
@@ -282,16 +239,16 @@ class Barrier3dConfiguration(Configuration):
     )
     Qs_bb_min = FloatField(
         "Qs_bb_min",
-        default=0.0001,
-        units="",
-        description="",
+        default=1,
+        units="m^3 / hr",
+        description="Minimum sediment flux in back-barrier bay (below which sediment won't flux)",
         validators=[Range(lower=0)],
     )
     Cx = FloatField(
         "Cx",
-        default=2.0,
+        default=10.0,
         units="",
-        description="",
+        description="Multiplier with the average slope of the interior for constant C in inundation transport rule",
         validators=[Range(lower=0)],
     )
     OWss_i = IntegerField(
@@ -302,7 +259,7 @@ class Barrier3dConfiguration(Configuration):
     )
     OWss_r = IntegerField(
         "OWss_r",
-        default=2,
+        default=1,
         description="Overwash substep",
         validators=[Range(lower=1)],
     )
@@ -314,7 +271,7 @@ class Barrier3dConfiguration(Configuration):
     )
     s_sf_eq = FloatField(
         "s_sf_eq",
-        default=0.01,
+        default=0.02,
         units="",
         description="Equilibrium shoreface slope",
     )
@@ -387,6 +344,20 @@ class Barrier3dConfiguration(Configuration):
         default=2.3,
         units="m",
         description="Elevation range for shrub growth, maximum bound",
+        validators=[Range(lower=0)],
+    )
+    TideAmp = FloatField(
+        "TideAmp",
+        default=1.2,
+        units="m",
+        description="Tidal amplitude",
+        validators=[Range(lower=0)],
+    )
+    SprayDist = FloatField(
+        "SprayDist",
+        default=170,
+        units="m",
+        description="Distance from ocean shoreline that shrubs can establish",
         validators=[Range(lower=0)],
     )
     BurialLimit = FloatField(
