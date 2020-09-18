@@ -141,35 +141,17 @@ class Barrier3dConfiguration(Configuration):
         units="m / y",
         description="Relative sea-level rise rate",
     )
-    mean_storm = FloatField(
-        "mean_storm",
-        default=8.3,
-        description="For a random number of storms per year sampled from normal distribution",
-        validators=[Range(lower=0)],
-    )
-    SD_storm = FloatField(
-        "SD_storm",
-        default=5.9,
-        description="For a random number of storms per year sampled from normal distribution",
-        validators=[Range(lower=0)],
-    )
-    numstorm = IntegerField(
-        "numstorm",
-        default=0,
-        description="For a single constant number of storms per year",
-        validators=[Range(lower=0)],
-    )
     beta = FloatField(
         "beta",
         default=0.04,
         description="Beach slope for runup calculations",
         validators=[Range(lower=0)],
     )
-    StormTimeSeries = BooleanField(
-        "StormTimeSeries",
-        default=True,
-        description="Storms will come from a time series",
-    )
+#    StormTimeSeries = BooleanField(
+#        "StormTimeSeries",
+#        default=True,
+#        description="Storms will come from a time series",
+#    )
     StormSeries = ArrayField(
         "StormSeries",
         default=(),
@@ -387,6 +369,22 @@ class Barrier3dConfiguration(Configuration):
         units="",
         description="Maximum percentage of overwash reduction through a shrub cell with full percent cover",
         validators=[Range(lower=0, upper=1)],
+    )
+    DuneParamStart = BooleanField(
+        "DuneParamStart",
+        default=True,
+        description="Dune height will come from external file",
+    )
+    GrowthParamStart = BooleanField(
+        "GrowthParamStart",
+        default=True,
+        description="Dune growth parameters will come from external file",
+    )
+    MaxShrubHeight = FloatField(
+        "MaxShrubHeight",
+        default=3.5,
+        units="m",
+        description="Maximum shrub height",
     )
 
     @classmethod

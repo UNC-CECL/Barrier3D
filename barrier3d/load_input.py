@@ -48,12 +48,13 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
             raise FileNotFoundError(parameter_file.absolute())
 
         params = load_parameters(parameter_file, fmt=fmt)
-        # KA: this is what I tried, among other things, to debug .npy
-        params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.csv")
-        if params["StormTimeSeries"]:
-            params["StormSeries"] = load_storms(f"{prefix}-storms.csv")
-            params["DuneStart"] = load_dunes(f"{prefix}-dunes.csv")
-            params["GrowthParamStart"] = load_growth_param(f"{prefix}-growthparam.csv")
+        # KA: this is what I tried, among other things, to debug .npy - both csv and npy are hard coded
+        params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.npy")
+        params["StormSeries"] = load_storms(f"{prefix}-storms.npy")  # storms must come from a time series
+        if params["DuneParamStart"]:    # dune height will come from external file
+            params["DuneStart"] = load_dunes(f"{prefix}-dunes.npy")
+        if params["GrowthParamStart"]:  # growth parameters will come from external file
+            params["GrowthStart"] = load_growth_param(f"{prefix}-growthparam.npy")
 
         _process_raw_input(params)
 
@@ -69,9 +70,10 @@ def load_parameters(path_to_file, fmt="yaml"):
         return loader(path_to_file).data
 
 
-def load_elevation(path_to_file, fmt="csv"):
+def load_elevation(path_to_file, fmt="npy"):
+    # load_elevation(path_to_file, fmt="npy"):
     if fmt == "npy":
-        elevation = np.load(path_to_file)
+        elevation = np.load(path_to_file, allow_pickle=True)
     elif fmt == "csv":
         elevation = np.loadtxt(path_to_file, delimiter=",")
         # data = pandas.read_csv(
@@ -92,7 +94,7 @@ def load_elevation(path_to_file, fmt="csv"):
     return elevation
 
 
-def load_storms(path_to_file, fmt="csv"):
+def load_storms(path_to_file, fmt="npy"):
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
@@ -127,7 +129,7 @@ def load_storms(path_to_file, fmt="csv"):
     return data
 
 
-def load_dunes(path_to_file, fmt="csv"):
+def load_dunes(path_to_file, fmt="npy"):
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
@@ -143,7 +145,7 @@ def load_dunes(path_to_file, fmt="csv"):
     return data
 
 
-def load_growth_param(path_to_file, fmt="csv"):
+def load_growth_param(path_to_file, fmt="npy"):
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
@@ -246,9 +248,9 @@ def _process_raw_input(params):
         )
     params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
 
-    if "GrowthParamStart" in params:
-        params["growthparam"] = params["GrowthParamStart"][0: params["BarrierLength"]]
-        params.pop("GrowthParamStart")
+    if "GrowthStart" in params:
+        params["growthparam"] = params["GrowthStart"][0: params["BarrierLength"]]
+        params.pop("GrowthStart")
     else:
         params["growthparam"] = params["rmin"] + (
             params["rmax"] - params["rmin"]
@@ -278,7 +280,7 @@ def _process_raw_input(params):
     if params["RSLR_Constant"]:
         # Constant RSLR
         params["RSLR_const"] /= 10.0
-        params["RSLR"] = params["RSLR_const"] * params["TMAX"]
+        params["RSLR"] = [params["RSLR_const"]] * params["TMAX"]
     else:
         # Logistic RSLR rate projection - Rohling et al. (2013)
         params["RSLR"] = []
