@@ -42,7 +42,7 @@ BayDepth = 3 /10
 MHW = 0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters) 
-InteriorDomain = np.load('Parameterization/InitElev.npy')
+InteriorDomain = np.load('tests/test_params/barrier3d-elevations.npy')
 
 # Horizontal Dimensions
 BarrierLength = int(500 /10)
@@ -59,7 +59,7 @@ DuneWidth = int(20 /10)
 ################################
 ### Storm Time Series
 StormTimeSeries = True
-StormSeries = np.load('Parameterization/StormTimeSeries_1000yr.npy') # TEMP HARDWIRED
+StormSeries = np.load('tests/test_params/barrier3d-storms.npy') # TEMP HARDWIRED
 
 
 
@@ -72,13 +72,13 @@ Dstart = 0.5 /10
 BermEl = 1.9 /10 - MHW
 
 # Initialize dune crest height domain
-if StormTimeSeries:
+if StormTimeSeries == 0:
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0,:,0] = np.ones([1, BarrierLength]) * (Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1,BarrierLength)))
     for w in range(1,DuneWidth):
         DuneDomain[0,:,w] = DuneDomain[0,:,0]
 else:
-    DuneStart = np.load('Parameterization/DuneStart_1000dam.npy') # TEMP HARDWIRED
+    DuneStart = np.load('tests/test_params/barrier3d-dunes.npy') # TEMP HARDWIRED
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0,:,0] = DuneStart[0:BarrierLength]    
     for w in range(1,DuneWidth):
@@ -88,10 +88,10 @@ else:
 rmin = 0.35
 rmax = 0.85
 if StormTimeSeries:
-    growthparam = rmin + (rmax-rmin) * np.random.rand(1,BarrierLength)
-else:
-    growthparamstart = np.load('Parameterization/growthparam_1000dam.npy') # TEMP HARDWIRED
+    growthparamstart = np.load('tests/test_params/barrier3d-growthparam.npy') # TEMP HARDWIRED
     growthparam = growthparamstart[0:BarrierLength]
+else:
+    growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
 
 # Dune diffusion parameter
 HdDiffu = 0.75 /10
@@ -183,7 +183,7 @@ s_sf_eq = 0.02
 ################################
 ### SHRUBS
 
-# Dispersal
+# Dispersalm
 Shrub_ON = 0
 Seedmin = 100
 Seedmax = 1000

@@ -1,4 +1,4 @@
-TMAX: 150                       # [y] Duration of simulation
+TMAX: 151                       # [y] Duration of simulation
 StormStart: 2                   # [y] Year when storm can start occurring
 BarrierLength: 500.0            # [m] Static length (alongshore) of island segment
 DuneWidth: 20.0                 # [m] Width (cross-shore) of island dune field; for illustration purposes only

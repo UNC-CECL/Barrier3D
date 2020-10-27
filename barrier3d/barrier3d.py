@@ -590,18 +590,18 @@ class Barrier3d:
         # if Shrub_ON ==1: print('Shrubs ON')
 
         self._PercentCoverTS = [None] * self._TMAX
-        self._PercentCoverTS = np.zeros([self._DomainWidth, self._BarrierLength])
+        self._PercentCoverTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         self._DeadPercentCoverTS = [None] * self._TMAX
-        self._DeadPercentCoverTS = np.zeros([self._DomainWidth, self._BarrierLength])
+        self._DeadPercentCoverTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubFemaleTS = [None] * self._TMAX
-        self._ShrubFemaleTS = np.zeros([self._DomainWidth, self._BarrierLength])
+        self._ShrubFemaleTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubMaleTS = [None] * self._TMAX
-        self._ShrubMaleTS = np.zeros([self._DomainWidth, self._BarrierLength])
+        self._ShrubMaleTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         # self._ShrubDomainFemale = self._ShrubFemaleTS[0]
         # self._ShrubDomainMale = self._ShrubMaleTS[0]
 
         self._ShrubDeadTS = [None] * self._TMAX
-        self._ShrubDeadTS = np.zeros([self._DomainWidth, self._BarrierLength])
+        self._ShrubDeadTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubDomainFemale = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubDomainMale = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubDomainDead = np.zeros([self._DomainWidth, self._BarrierLength])
@@ -696,7 +696,7 @@ class Barrier3d:
             )
 
         # ### Grow Dunes
-        self._DuneDomain, Dmax, Qdg = self.DuneGrowth(
+        self._DuneDomain, self._Dmax, Qdg = self.DuneGrowth(
             self._DuneDomain, self._time_index
         )
 
@@ -807,14 +807,14 @@ class Barrier3d:
                                     self._DuneDomain[self._time_index, Dow[d], w]
                                     < self._DuneRestart
                             ):
-                                if self._DuneRestart < Dmax:
+                                if self._DuneRestart < self._Dmax:
                                     self._DuneDomain[
                                         self._time_index, Dow[d], w
                                     ] = self._DuneRestart
                                 else:
                                     self._DuneDomain[
                                         self._time_index, Dow[d], w
-                                    ] = Dmax  # Restart height can't be greater than Dmax
+                                    ] = self._Dmax  # Restart height can't be greater than Dmax
 
                     # Dune Height Diffusion
                     self._DuneDomain = self.DiffuseDunes(
@@ -1134,7 +1134,7 @@ class Barrier3d:
                                             )
 
                                     # ### Calculate Sed Movement
-                                    fluxLimit = Dmax
+                                    fluxLimit = self._Dmax
 
                                     # Run-up Regime
                                     if inundation == 0:
@@ -1193,8 +1193,9 @@ class Barrier3d:
                                     Qs3 = np.nan_to_num(Qs3)
 
                                     # ### Calculate Net Erosion/Accretion
+                                    # KA: note, Ian added bandaid by "or" statement here on 9/28/20
                                     if (
-                                            Elevation[TS, d, i] > self._SL
+                                            Elevation[TS, d, i] > self._SL or any(z > self._SL for z in Elevation[TS, d+1:d+10, i])
                                     ):  # If cell is subaerial, elevation change is determined by difference between
                                         # flux in vs. flux out
                                         if i > 0:
@@ -1494,7 +1495,12 @@ class Barrier3d:
 
         # ###########################################
         # ### Save domains of this timestep
+        # ###########################################
+
         self._DomainTS[self._time_index] = self._InteriorDomain
+
+        # Bandaid from KA: the shrub model was giving me errors so I turned it off and moved this into an if statement
+        #if self._Shrub_ON:
         zero = np.zeros([DomainWidth, self._BarrierLength])
         self._ShrubFemaleTS[self._time_index] = (
                 self._ShrubDomainFemale + zero
@@ -1503,7 +1509,7 @@ class Barrier3d:
         self._ShrubDeadTS[self._time_index] = self._ShrubDomainDead + zero
 
         # Calculate Percent Cover and Area
-        ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
+        self._ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
         (
             self._ShrubPercentCover,
             self._PercentCoverTS,
@@ -1511,11 +1517,11 @@ class Barrier3d:
             self._DeadPercentCover,
             self._DeadPercentCoverTS
         ) = self.CalcPC(
-            ShrubDomainAll,
+            self._ShrubDomainAll,
             self._PercentCoverTS,
             self._ShrubDomainDead,
-            self._ShrubArea,
             self._DeadPercentCoverTS,
+            self._ShrubArea,
             self._time_index,
         )
 
