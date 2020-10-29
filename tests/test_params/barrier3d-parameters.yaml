@@ -35,8 +35,8 @@ Cbb_r: 0.5                      # Coefficient for exponential decay of sediment 
 Cbb_i: 0.8                      # Coefficient for exponential decay of sediment load entering back-barrier bay in inundation regime
 Qs_bb_min: 1                    # [m^3 / hr] Minimum sediment flux in back-barrier bay (below which sediment won't flux)
 Cx: 10.0                        # Multiplier with the average slope of the interior for constant "C" in inundation transport rule
-OWss_i: 1                       # Overwash substep
-OWss_r: 2                       # Overwash substep
+OWss_i: 2                       # Overwash substep
+OWss_r: 1                       # Overwash substep
 k_sf: 5000.0                    # [m^3 / m / y] Shoreface flux rate constant
 s_sf_eq: 0.02                   # Equilibrium shoreface slope
 Shrub_ON: false                 # 1 = shrubs on in simulation, 0 = shrubs off

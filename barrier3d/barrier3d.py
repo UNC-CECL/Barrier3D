@@ -850,11 +850,11 @@ class Barrier3d:
                         if Rlow[n] > meandune:
                             Iow += 1
 
-                    # Dertermine Sediment And Water Routing Rules
+                    # Determine Sediment And Water Routing Rules
 
                     if (
                             len(gaps) > 0 and Iow / len(gaps) >= self._threshold_in
-                    ):  # If greater than threshold % of dune gaps are in unundation regime, use inun. regime routing
+                    ):  # If greater than threshold % of dune gaps are inunundation regime, use inun. regime routing
                         inundation = 1
                         substep = self._OWss_i
                         self._InundationCount += 1
@@ -1499,8 +1499,6 @@ class Barrier3d:
 
         self._DomainTS[self._time_index] = self._InteriorDomain
 
-        # Bandaid from KA: the shrub model was giving me errors so I turned it off and moved this into an if statement
-        #if self._Shrub_ON:
         zero = np.zeros([DomainWidth, self._BarrierLength])
         self._ShrubFemaleTS[self._time_index] = (
                 self._ShrubDomainFemale + zero

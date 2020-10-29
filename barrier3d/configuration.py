@@ -128,7 +128,7 @@ class Barrier3dConfiguration(Configuration):
         "Rat",
         default=0,
         units="m / y",
-        description="Rate of shoreline reatreat attributed to alongshore transport; (-) = erosion, (+) = accretion",
+        description="Rate of shoreline retreat attributed to alongshore transport; (-) = erosion, (+) = accretion",
     )
     RSLR_Constant = BooleanField(
         "RSLR_Constant",
