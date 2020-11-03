@@ -490,7 +490,7 @@ class Barrier3d:
                 x_s_dt * -1
         )  # (dam) Positive increase in x-location means shoreline erosion
 
-        return SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS
+        return SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS, x_s_dt, x_t_dt
 
     def CalcPC(self, ShrubDomainAll, PercentCoverTS, ShrubDomainDead, DeadPercentCoverTS, ShrubArea, t):
         """Calculates percent cover of shrub domain and shrub coverage area (dam^2)"""
