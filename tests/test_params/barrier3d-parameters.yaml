@@ -1,10 +1,10 @@
 TMAX: 151                       # [y] Duration of simulation
 StormStart: 2                   # [y] Year when storm can start occurring
 BarrierLength: 500.0            # [m] Static length (alongshore) of island segment
-DuneWidth: 20.0                 # [m] Width (cross-shore) of island dune field; for illustration purposes only
-LShoreface: 500.0               # [m] Length of shoreface
+DuneWidth: 20.0                 # [m] Width (cross-shore) of island dune field
+LShoreface: 500.0               # [m] Initial length of shoreface
 DShoreface: 10.0                # [m] Height of shoreface
-BayDepth: 3.0                   # [m] Depth of bay benind island segment
+BayDepth: 3.0                   # [m] Depth of bay behind island segment
 MHW: 0.46                       # [m] Elevation of Mean High Water
 DuneParamStart: True            # Dune height will come from external file
 Dstart: 0.5                     # [m] Initial height of dune domain above berm elevation
