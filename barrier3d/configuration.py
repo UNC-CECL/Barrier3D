@@ -386,6 +386,12 @@ class Barrier3dConfiguration(Configuration):
         units="m",
         description="Maximum shrub height",
     )
+    ShorefaceToe = FloatField(
+        "ShorefaceToe",
+        default=0,
+        units="m",
+        description="Start location of shoreface toe ",
+    )
 
     @classmethod
     def from_py(cls, path_to_py):

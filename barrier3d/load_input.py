@@ -292,6 +292,10 @@ def _process_raw_input(params):
             delta = alpha / (1 + beta * math.exp(-t / gamma * C)) / 10000 * 10  # Convert from m/cy to dam/yr
             params["RSLR"].append(delta)
 
+    # Shoreface
+    params["x_t"] = params["ShorefaceToe"] / 10.0
+    params.pop("ShorefaceToe")
+
     # Shrubs
     params["Dshrub"] /= 10.0
     params["ShrubEl_min"] = params["ShrubEl_min"] / 10.0 - params["MHW"]

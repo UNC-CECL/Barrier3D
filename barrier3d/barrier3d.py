@@ -440,6 +440,7 @@ class Barrier3d:
             QowTS,
             QsfTS,
             t,
+            h_b_TS,
     ):
         """Finds shoreline change for modeled year following Lorenzo-Trueba and Ashton (2014)"""
 
@@ -485,12 +486,9 @@ class Barrier3d:
         x_s_TS.append(x_s)
         x_b_TS.append(x_b)
         s_sf_TS.append(s_sf)
+        h_b_TS.append(h_b)
 
-        SCR = (
-                x_s_dt * -1
-        )  # (dam) Positive increase in x-location means shoreline erosion
-
-        return SCR, x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS, x_s_dt, x_t_dt
+        return x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS, h_b_TS
 
     def CalcPC(self, ShrubDomainAll, PercentCoverTS, ShrubDomainDead, DeadPercentCoverTS, ShrubArea, t):
         """Calculates percent cover of shrub domain and shrub coverage area (dam^2)"""
@@ -576,6 +574,7 @@ class Barrier3d:
         self._RSLR_Constant = kwds.pop("RSLR_Constant")
         self._RSLR_const = kwds.pop("RSLR_const")
         self._SH = kwds.pop("SH")
+        self._x_t = kwds.pop("x_t")
 
         if len(kwds) > 0:
             raise ValueError(
@@ -616,8 +615,6 @@ class Barrier3d:
                              None
                          ] * self._TMAX  # Stores the elevation domain for each timestep
         self._DomainTS[0] = self._InteriorDomain
-        # NOTE: SCR may not need to be initialized here
-        # SCR = 0  # (dam/yr) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
         self._SCRagg = 0  # Counter variable for shoreline change that is less than 1 cell size per year
         self._ShorelineChangeTS = [0]
         self._ShorelineChange = 0  # (dam) Total amount of shoreline change
@@ -630,13 +627,16 @@ class Barrier3d:
         self._RunUpCount = 0
         self._InteriorWidth_AvgTS = [self._DomainWidth]
         self._QowTS = [0]  # (m^3/m)
-        self._x_t = 0  # (dam) Start location of shoreface toe
+        # self._x_t = 0  # (dam) Start location of shoreface toe
         self._x_s = self._x_t + LShoreface  # (dam) Start location of shoreline
         self._x_t_TS = [self._x_t]  # (dam) Shoreface toe locations for each time step
         self._x_s_TS = [self._x_s]  # (dam) Shoreline locations for each time step
         self._x_b_TS = [
             (self._x_s + self._DomainWidth)
         ]  # (dam) Bay shoreline locations for each time step
+        self._h_b_TS = [
+            (np.average(self._InteriorDomain[self._InteriorDomain >= self._SL]))
+        ]  # (dam) average height of barrier for each time step
         self._s_sf_TS = [(self._DShoreface / LShoreface)]
         self._Hd_AverageTS = [Dstart]
         self._QsfTS = [0]  # (m^3/m)
@@ -662,6 +662,181 @@ class Barrier3d:
         # return cls(**Barrier3dParameters.from_yaml(path_to_yaml))
 
     def update(self):
+
+        if self._time_index > 1:
+            # update dune domain (erode/prograde) based on shoreline change from last time step
+            drown_break = 0
+
+            SCR = (
+                    (self._x_s_TS[-1] - self._x_s_TS[-2]) * -1
+            )  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
+
+            self._SCRagg = (
+                   self._SCRagg + SCR
+            )  # Account for any residual shoreline change (less than cell size) from previous time step
+
+            if abs(self._SCRagg) >= 1:
+                sc = math.floor(abs(self._SCRagg))
+
+                if (
+                       self._SCRagg > 0
+                ):  # Positive = prograde, add row(s) to front of interior domain
+                    for d in range(sc):
+                        # New interior row added with elev. of previous dune field
+                        # (i.e. previous dune row now part of int.)
+                        self._InteriorDomain = np.vstack(
+                            [
+                                self._DuneDomain[self._time_index-1, :, -1] + self._BermEl,
+                                self._InteriorDomain,
+                            ]
+                        )
+                        if self._DuneParamStart == 0:
+                            newDuneHeight = np.ones([self._BarrierLength]) * (
+                                    0.005
+                                    + (
+                                            -0.005
+                                            + (0.005 - (-0.005))
+                                            * self._RNG.random(self._BarrierLength)
+                                    )
+                            )
+                        else:
+                            newDuneHeight = np.ones([self._BarrierLength]) * 0.01
+
+                        self._DuneDomain[self._time_index-1, :, :] = np.roll(
+                            self._DuneDomain[self._time_index-1, :, :], 1, axis=1
+                        )
+                        self._DuneDomain[self._time_index-1, :, 0] = newDuneHeight
+
+                        # Update shrub domains too
+                        self._ShrubDomainFemale = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubDomainFemale)
+                        )
+                        self._ShrubDomainMale = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubDomainMale)
+                        )
+                        self._ShrubDomainDead = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubDomainDead)
+                        )
+                        self._ShrubPercentCover = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubPercentCover)
+                        )
+                        self._DeadPercentCover = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._DeadPercentCover)
+                        )
+                        self._BurialDomain = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._BurialDomain)
+                        )
+
+                    # DomainWidth = DomainWidth + sc  # Update width of interior domain
+                    self._ShorelineChange = self._ShorelineChange + sc
+                    self._ShorelineChangeTS.append(+sc)
+                    self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
+
+                elif (
+                        self._SCRagg < 0
+                ):  # Negative = erode, remove front row(s) of interior domain
+                    for d in range(sc):
+                        newDuneElev = self._InteriorDomain[
+                                      0, :
+                                      ]  # First row of interior will now become new part of active dune field
+                        newDuneHeight = newDuneElev - self._BermEl
+                        newDuneHeight[newDuneHeight < self._DuneRestart] = self._DuneRestart
+                        self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
+                        if np.shape(self._InteriorDomain)[0] <= 0:
+                            drown_break = 1
+                            break
+                        self._DuneDomain[self._time_index-1, :, :] = np.roll(
+                            self._DuneDomain[self._time_index-1, :, :], -1, axis=1
+                        )
+                        self._DuneDomain[self._time_index-1, :, -1] = newDuneHeight
+
+                        # Update shrub domains too
+                        self._ShrubDomainFemale = np.delete(
+                            self._ShrubDomainFemale, 0, axis=0
+                        )
+                        self._ShrubDomainMale = np.delete(
+                            self._ShrubDomainMale, 0, axis=0
+                        )
+                        self._ShrubDomainDead = np.delete(
+                            self._ShrubDomainDead, 0, axis=0
+                        )
+                        self._ShrubPercentCover = np.delete(
+                            self._ShrubPercentCover, 0, axis=0
+                        )
+                        self._DeadPercentCover = np.delete(
+                            self._DeadPercentCover, 0, axis=0
+                        )
+                        self._BurialDomain = np.delete(self._BurialDomain, 0, axis=0)
+
+                    # DomainWidth = DomainWidth - sc  # Update width of interior domain
+                    self._ShorelineChange = self._ShorelineChange - sc
+                    self._ShorelineChangeTS.append(-sc)
+                    self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
+            else:
+                self._ShorelineChangeTS.append(0)
+
+            # ### Check for drowning
+            if drown_break == 1:
+                print(
+                    "Barrier has WIDTH DROWNED at t = " + str(self._time_index-1) + " years"
+                )
+                self._TMAX = self._time_index - 2
+                raise Barrier3dError(
+                    "Barrier has WIDTH DROWNED at t = {time} years".format(
+                        time=self._time_index - 1
+                    )
+                )
+            elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
+                print(
+                    "Barrier has HEIGHT DROWNED at t = " + str(self._time_index-1) + " years"
+                )
+                self._TMAX = self._time_index - 2
+                raise Barrier3dError(
+                    "Barrier has HEIGHT DROWNED at t = {time} years".format(
+                        time=self._time_index - 1
+                    )
+                )
+
+            # ### Recalculate and save DomainWidth and InteriorWidth from previous time step
+            DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
+                self._InteriorDomain, self._SL
+            )
+            self._InteriorWidth_AvgTS.append(InteriorWidth_Avg)
+
+            # ###########################################
+            # ### Save domains of the previous timestep
+            # ###########################################
+
+            self._DomainTS[self._time_index-1] = self._InteriorDomain
+
+            zero = np.zeros([DomainWidth, self._BarrierLength])
+            self._ShrubFemaleTS[self._time_index-1] = (
+                    self._ShrubDomainFemale + zero
+            )  # Correctly saves domain to list only if array of zeros are added to domain first, no clue why - 4Mar20
+            self._ShrubMaleTS[self._time_index-1] = self._ShrubDomainMale + zero
+            self._ShrubDeadTS[self._time_index-1] = self._ShrubDomainDead + zero
+
+            # Calculate Percent Cover and Area
+            self._ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
+            (
+                self._ShrubPercentCover,
+                self._PercentCoverTS,
+                self._ShrubArea,
+                self._DeadPercentCover,
+                self._DeadPercentCoverTS
+            ) = self.CalcPC(
+                self._ShrubDomainAll,
+                self._PercentCoverTS,
+                self._ShrubDomainDead,
+                self._DeadPercentCoverTS,
+                self._ShrubArea,
+                self._time_index-1,
+            )
+
+        # ###########################################
+        # ### increase sea level and start new time step
+        # ###########################################
+
         # ### RSLR
         self._InteriorDomain, self._DuneDomain = self.SeaLevel(
             self._InteriorDomain, self._DuneDomain, self._time_index
@@ -672,28 +847,28 @@ class Barrier3d:
             self._InteriorDomain, self._SL
         )
 
-        # ### Check for drowning
-        # Barrier drowns if interior width thins to 10 m or fewer or all interior cells are below SL
-        if max(InteriorWidth) <= 1:
-            print(
-                "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years!"
-            )
-            self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has WIDTH DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
-            )
-        if all(j <= self._SL for j in self._InteriorDomain[0, :]):
-            print(
-                "Barrier has HEIGHT DROWNED at t = " + str(self._time_index) + " years!"
-            )
-            self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has HEIGHT DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
-            )
+        # # ### Check for drowning
+        # # Barrier drowns if interior width thins to 10 m or fewer or all interior cells are below SL
+        # if max(InteriorWidth) <= 1:
+        #     print(
+        #         "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years!"
+        #     )
+        #     self._TMAX = self._time_index - 1
+        #     raise Barrier3dError(
+        #         "Barrier has WIDTH DROWNED at t = {time} years".format(
+        #             time=self._time_index
+        #         )
+        #     )
+        # if all(j <= self._SL for j in self._InteriorDomain[0, :]):
+        #     print(
+        #         "Barrier has HEIGHT DROWNED at t = " + str(self._time_index) + " years!"
+        #     )
+        #     self._TMAX = self._time_index - 1
+        #     raise Barrier3dError(
+        #         "Barrier has HEIGHT DROWNED at t = {time} years".format(
+        #             time=self._time_index
+        #         )
+        #     )
 
         # ### Grow Dunes
         self._DuneDomain, self._Dmax, Qdg = self.DuneGrowth(
@@ -1096,7 +1271,7 @@ class Barrier3d:
                                             )
 
                                         # Cell 2
-                                            # (ShrubDomainWidth - 1)?
+                                        # (ShrubDomainWidth - 1)?
                                         if d < ShrubDomainWidth and self._ShrubPercentCover[d, i] > 0:
                                             Q2 = Q2 * ((1 - self._Qshrub_max) * self._ShrubPercentCover[d, i])
                                         elif d < DeadDomainWidth and self._DeadPercentCover[d, i] > 0:
@@ -1195,7 +1370,7 @@ class Barrier3d:
                                     # ### Calculate Net Erosion/Accretion
                                     # KA: note, Ian added bandaid by "or" statement here on 9/28/20
                                     if (
-                                            Elevation[TS, d, i] > self._SL or any(z > self._SL for z in Elevation[TS, d+1:d+10, i])
+                                            Elevation[TS, d, i] > self._SL or any(z > self._SL for z in Elevation[TS, d + 1:d + 10, i])
                                     ):  # If cell is subaerial, elevation change is determined by difference between
                                         # flux in vs. flux out
                                         if i > 0:
@@ -1336,7 +1511,6 @@ class Barrier3d:
 
         # ### Calculate shoreline/shoreface position change following Lorenzo-Trueba and Ashton (2014)
         (
-            SCR,
             self._x_s,
             self._x_t,
             self._x_s_TS,
@@ -1345,6 +1519,7 @@ class Barrier3d:
             self._s_sf_TS,
             self._QowTS,
             self._QsfTS,
+            self._h_b_TS,
         ) = self.LTA_SC(
             self._InteriorDomain,
             OWloss,
@@ -1361,169 +1536,16 @@ class Barrier3d:
             self._QowTS,
             self._QsfTS,
             self._time_index,
+            self._h_b_TS,
         )
 
-        # ### Erode/Prograde Ocean Shoreline
-        drown_break = 0
-
-        self._SCRagg = (
-                self._SCRagg + SCR
-        )  # Account for any residual shoreline change (less than cell size) from previous time step
-
-        if abs(self._SCRagg) >= 1:
-            sc = math.floor(abs(self._SCRagg))
-            if (
-                    self._SCRagg > 0
-            ):  # Positive = prograde, add row(s) to front of interior domain
-                for d in range(sc):
-                    # New interior row added with elev. of previous dune field (i.e. previous dune row now part of int.)
-                    self._InteriorDomain = np.vstack(
-                        [
-                            self._DuneDomain[self._time_index, :, -1] + self._BermEl,
-                            self._InteriorDomain,
-                        ]
-                    )
-                    if self._DuneParamStart == 0:  # Note, used to be StormTimeSeries
-                        newDuneHeight = np.ones([self._BarrierLength]) * (
-                                0.005
-                                + (
-                                        -0.005
-                                        + (0.005 - (-0.005))
-                                        * self._RNG.random(self._BarrierLength)
-                                        # * np.random.rand(self._BarrierLength)
-                                )
-                        )
-                    else:
-                        newDuneHeight = np.ones([self._BarrierLength]) * 0.01
-                    self._DuneDomain[self._time_index, :, :] = np.roll(
-                        self._DuneDomain[self._time_index, :, :], 1, axis=1
-                    )
-                    self._DuneDomain[self._time_index, :, 0] = newDuneHeight
-
-                    # Update shrub domains too
-                    self._ShrubDomainFemale = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainFemale)
-                    )
-                    self._ShrubDomainMale = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainMale)
-                    )
-                    self._ShrubDomainDead = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainDead)
-                    )
-                    self._ShrubPercentCover = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubPercentCover)
-                    )
-                    self._DeadPercentCover = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._DeadPercentCover)
-                    )
-                    self._BurialDomain = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._BurialDomain)
-                    )
-                DomainWidth = DomainWidth + sc  # Update width of interior domain
-                self._ShorelineChange = self._ShorelineChange + sc
-                self._ShorelineChangeTS.append(+sc)
-                self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
-            elif (
-                    self._SCRagg < 0
-            ):  # Negative = erode, remove front row(s) of interior domain
-                for d in range(sc):
-                    newDuneElev = self._InteriorDomain[
-                                  0, :
-                                  ]  # First row of interior will now become new part of active dune field
-                    newDuneHeight = newDuneElev - self._BermEl
-                    newDuneHeight[newDuneHeight < self._DuneRestart] = self._DuneRestart
-                    self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
-                    if np.shape(self._InteriorDomain)[0] <= 0:
-                        drown_break = 1
-                        break
-                    self._DuneDomain[self._time_index, :, :] = np.roll(
-                        self._DuneDomain[self._time_index, :, :], -1, axis=1
-                    )
-                    self._DuneDomain[self._time_index, :, -1] = newDuneHeight
-
-                    # Update shrub domains too
-                    self._ShrubDomainFemale = np.delete(
-                        self._ShrubDomainFemale, 0, axis=0
-                    )
-                    self._ShrubDomainMale = np.delete(
-                        self._ShrubDomainMale, 0, axis=0
-                    )
-                    self._ShrubDomainDead = np.delete(
-                        self._ShrubDomainDead, 0, axis=0
-                    )
-                    self._ShrubPercentCover = np.delete(
-                        self._ShrubPercentCover, 0, axis=0
-                    )
-                    self._DeadPercentCover = np.delete(
-                        self._DeadPercentCover, 0, axis=0
-                    )
-                    self._BurialDomain = np.delete(self._BurialDomain, 0, axis=0)
-                DomainWidth = DomainWidth - sc  # Update width of interior domain
-                self._ShorelineChange = self._ShorelineChange - sc
-                self._ShorelineChangeTS.append(-sc)
-                self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
-        else:
-            self._ShorelineChangeTS.append(0)
-
-        # ### Check for drowning
-        if drown_break == 1:
-            print(
-                "Barrier has WIDTH DROWNED at t = " + str(self._time_index) + " years"
-            )
-            self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has WIDTH DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
-            )
-        elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
-            print(
-                "Barrier has HEIGHT DROWNED at t = " + str(self._time_index) + " years"
-            )
-            self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has HEIGHT DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
-            )
-
-        # ### Recalculate and save DomainWidth and InteriorWidth
-        DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
-            self._InteriorDomain, self._SL
-        )
-        self._InteriorWidth_AvgTS.append(InteriorWidth_Avg)
-
-        # ###########################################
-        # ### Save domains of this timestep
-        # ###########################################
-
-        self._DomainTS[self._time_index] = self._InteriorDomain
-
-        zero = np.zeros([DomainWidth, self._BarrierLength])
-        self._ShrubFemaleTS[self._time_index] = (
-                self._ShrubDomainFemale + zero
-        )  # Correctly saves domain to list only if array of zeros are added to domain first, no clue why - 4Mar20
-        self._ShrubMaleTS[self._time_index] = self._ShrubDomainMale + zero
-        self._ShrubDeadTS[self._time_index] = self._ShrubDomainDead + zero
-
-        # Calculate Percent Cover and Area
-        self._ShrubDomainAll = self._ShrubDomainMale + self._ShrubDomainFemale
-        (
-            self._ShrubPercentCover,
-            self._PercentCoverTS,
-            self._ShrubArea,
-            self._DeadPercentCover,
-            self._DeadPercentCoverTS
-        ) = self.CalcPC(
-            self._ShrubDomainAll,
-            self._PercentCoverTS,
-            self._ShrubDomainDead,
-            self._DeadPercentCoverTS,
-            self._ShrubArea,
-            self._time_index,
-        )
+        # NOTE FROM KA: this may break now that I've moved the domain modifications to the beginning
 
         self._time_index += 1
+
+    @property
+    def time_index(self):
+        return self._time_index
 
     @property
     def QowTS(self):
@@ -1544,3 +1566,7 @@ class Barrier3d:
     @property
     def x_b_TS(self):
         return self._x_b_TS
+
+    @property
+    def h_b_TS(self):
+        return self._h_b_TS

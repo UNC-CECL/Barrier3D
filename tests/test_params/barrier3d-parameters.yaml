@@ -57,4 +57,4 @@ UprootLimit: -0.3               # [m] Shrubs eroded beyond this limit killed
 SalineLimit: 0.05               # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
 Qshrub_max: 0.15                # Maximum percentage of overwash reduction through a shrub cell with full percent cover
 MaxShrubHeight: 3.5             # [m] Maximum shrub height
-
+ShorefaceToe: 0                 # [m] Start location of shoreface toe

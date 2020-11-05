@@ -19,6 +19,7 @@ class Barrier3dBmi(Bmi):
         "shoreface_toe_position",
         "shoreline_position",
         "back_barrier_shoreline_position",
+        "height_of_barrier",
     )
 
     def __init__(self):
@@ -38,11 +39,12 @@ class Barrier3dBmi(Bmi):
         self._model = Barrier3d.from_path(filepath.parent, fmt="yaml")
 
         self._values = {
-            "overwash_flux": lambda: np.array(self._model.QowTS[-1]),
-            "shoreface_flux": lambda: np.array(self._model.QsfTS[-1]),
-            "shoreface_toe_position": lambda: np.array(self._model.x_t_TS[-1]),
-            "shoreline_position": lambda: np.array(self._model.x_s_TS[-1]),
-            "back_barrier_shoreline_position": lambda: np.array(self._model.x_b_TS[-1]),
+            "overwash_flux": lambda: np.array(self._model.QowTS[:]),
+            "shoreface_flux": lambda: np.array(self._model.QsfTS[:]),
+            "shoreface_toe_position": lambda: np.array(self._model.x_t_TS[:]),
+            "shoreline_position": lambda: np.array(self._model.x_s_TS[:]),
+            "back_barrier_shoreline_position": lambda: np.array(self._model.x_b_TS[:]),
+            "height_of_barrier": lambda: np.array(self._model.h_b_TS[:]),
         }
 
         self._var_units = {
@@ -51,6 +53,7 @@ class Barrier3dBmi(Bmi):
             "shoreface_toe_position": "dam",
             "shoreline_position": "dam",
             "back_barrier_shoreline_position": "dam",
+            "height_of_barrier": "dam",
         }
 
         self._var_type = {}
