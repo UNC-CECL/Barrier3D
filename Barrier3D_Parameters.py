@@ -39,10 +39,10 @@ StormStart = 2
 LShoreface = 500 / 10 #500 /10
 DShoreface = 10 / 10 #10 /10
 BayDepth = 3 /10
-MHW = 0.5 / 10 #0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
+MHW = 0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters) 
-InteriorDomain = np.load('tests/test_params/barrier3d-elevations.npy')
+InteriorDomain = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-elevations.npy')
 
 # Horizontal Dimensions
 BarrierLength = int(500 /10)
@@ -59,7 +59,7 @@ DuneWidth = int(20 /10)
 ################################
 ### Storm Time Series
 StormTimeSeries = True
-StormSeries = np.load('tests/test_params/barrier3d-storms.npy') # TEMP HARDWIRED
+StormSeries = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-storms.npy') # TEMP HARDWIRED
 
 
 
@@ -78,7 +78,7 @@ if StormTimeSeries == 0:
     for w in range(1,DuneWidth):
         DuneDomain[0,:,w] = DuneDomain[0,:,0]
 else:
-    DuneStart = np.load('tests/test_params/barrier3d-dunes.npy') # TEMP HARDWIRED
+    DuneStart = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-dunes.npy') # TEMP HARDWIRED
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0,:,0] = DuneStart[0:BarrierLength]    
     for w in range(1,DuneWidth):
@@ -88,7 +88,7 @@ else:
 rmin = 0.35
 rmax = 0.85
 if StormTimeSeries:
-    growthparamstart = np.load('tests/test_params/barrier3d-growthparam.npy') # TEMP HARDWIRED
+    growthparamstart = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-growthparam.npy') # TEMP HARDWIRED
     growthparam = growthparamstart[0:BarrierLength]
 else:
     growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
