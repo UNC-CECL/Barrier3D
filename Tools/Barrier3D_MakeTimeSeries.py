@@ -19,16 +19,17 @@ import matplotlib.pyplot as plt
 #####################################################################################################################
 ### Generate storm time series
 
+# KA, this needs to be updated for BMI (these units are already in dam, so I think this function would need to be added to load_inputs)
 from Barrier3D_Parameters import (mean_storm, SD_storm, MHW, StormStart, Dstart, rmin, rmax, BermEl)
 print()
 
-
 # Set-up input files
-StormList = np.load('C:/Barrier3D/Parameterization/StormList.npy')
+# StormList = np.load('C:/Barrier3D/Parameterization/VCRStormList.npy')
+StormList = np.load('/Users/KatherineAnardeWheels/PycharmProjects/CASCADE/B3D_Inputs/VCRStormList.npy')
 
 # Time series
 StormSeries = np.zeros([StormStart, 5])
-for t in range(StormStart, 1000):   
+for t in range(StormStart, numstorm):
     # Calculate number of storms in year
     numstorm = round(np.random.normal(mean_storm, SD_storm))
    
@@ -54,7 +55,8 @@ for t in range(StormStart, 1000):
     # Save
     StormSeries = np.vstack([StormSeries, stormTS])
     
-np.save('C:/Barrier3D/Parameterization/StormTimeSeries_1000yr.npy', StormSeries)
+# np.save('C:/Barrier3D/Parameterization/StormTimeSeries_1000yr.npy', StormSeries)
+np.save('/Users/KatherineAnardeWheels/PycharmProjects/CASCADE/B3D_Inputs/StormTimeSeries_3000yr.npy', StormSeries)
 
 ## Plots
 Bin = np.linspace(-1, 4.6, 57)
