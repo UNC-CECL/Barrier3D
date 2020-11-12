@@ -69,7 +69,7 @@ StormSeries = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/te
 
 # Dune height refers to heigh of dune above the static berm elevation
 Dstart = 0.5 /10
-BermEl = 2.0 /10 - MHW #1.9 /10 - MHW
+BermEl = 1.9 /10 - MHW
 
 # Initialize dune crest height domain
 if StormTimeSeries == 0:
@@ -118,7 +118,7 @@ Qat = Rat * DShoreface # dam^3/dam
 RSLR_Constant = True
 if RSLR_Constant:
     # Constant RSLR
-    RSLR_const = 0.002 / 10 #0.004 /10
+    RSLR_const = 0.004 /10
     RSLR = [RSLR_const] * TMAX 
 else:
     # Logistic RSLR rate projection - Rohling et al. (2013)
@@ -174,8 +174,8 @@ Cbb_i = 0.8
 ################################
 ### SHOREFACE DYNAMICS
 
-k_sf = 47137.75074362363 #5000
-s_sf_eq = 0.024955817979683454 #0.02
+k_sf = 5000
+s_sf_eq = 0.02
 
 
 
