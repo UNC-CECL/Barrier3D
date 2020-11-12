@@ -788,7 +788,7 @@ def plot_RuInCount(RunUpCount, InundationCount):
 #===================================================
 # 9: Shoreface LTA14 transects over time
 
-def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
+def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS, RSLR, DShoreface, BayDepth, BermEl):
     
 
     xmax = x_b_TS[TMAX-1] + 20
@@ -796,16 +796,16 @@ def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
     SFfig = plt.figure(figsize=(20,5))
     colors = plt.cm.jet(np.linspace(0,1,TMAX))
     
-    for t in range(0,TMAX,25): # Plots one transect every 25 years
+    for t in range(0,TMAX,5): # Plots one transect every 25 years
         # Create data points
         Tx = x_t_TS[t]
-        Ty = ((SL + (t * RSLR)) - DShoreface) *10
+        Ty = ((SL + (t * RSLR[t])) - DShoreface) *10
         Sx = x_s_TS[t]
-        Sy = (SL + (t * RSLR)) *10
+        Sy = (SL + (t * RSLR[t])) *10
         Bx = x_b_TS[t]
-        By = ((SL + (t * RSLR)) - BayDepth) *10
+        By = ((SL + (t * RSLR[t])) - BayDepth) *10
         Hx1 = Sx
-        Hy1 = ((t * RSLR) + BermEl) *10
+        Hy1 = ((t * RSLR[t]) + BermEl) *10
         Hx2 = Bx
         Hy2 = Hy1
         Mx = xmax

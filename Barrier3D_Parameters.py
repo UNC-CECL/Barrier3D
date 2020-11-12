@@ -26,7 +26,7 @@ import math
 ################################
 ### TIME
 
-TMAX = 150 + 1                 
+TMAX = 25 + 1
 StormStart = 2
 
 
@@ -36,10 +36,10 @@ StormStart = 2
 ### COMPUTATIONAL DOMAIN 
 
 # Vertical Dimensions
-LShoreface = 500 /10
-DShoreface = 10 /10
+LShoreface = 500 / 10 #500 /10
+DShoreface = 10 / 10 #10 /10
 BayDepth = 3 /10
-MHW = 0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
+MHW = 0.5 / 10 #0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters) 
 InteriorDomain = np.load('tests/test_params/barrier3d-elevations.npy')
@@ -69,7 +69,7 @@ StormSeries = np.load('tests/test_params/barrier3d-storms.npy') # TEMP HARDWIRED
 
 # Dune height refers to heigh of dune above the static berm elevation
 Dstart = 0.5 /10
-BermEl = 1.9 /10 - MHW
+BermEl = 2.0 /10 - MHW #1.9 /10 - MHW
 
 # Initialize dune crest height domain
 if StormTimeSeries == 0:
@@ -118,7 +118,7 @@ Qat = Rat * DShoreface # dam^3/dam
 RSLR_Constant = True
 if RSLR_Constant:
     # Constant RSLR
-    RSLR_const = 0.004 /10 
+    RSLR_const = 0.002 / 10 #0.004 /10
     RSLR = [RSLR_const] * TMAX 
 else:
     # Logistic RSLR rate projection - Rohling et al. (2013)
@@ -174,8 +174,8 @@ Cbb_i = 0.8
 ################################
 ### SHOREFACE DYNAMICS
 
-k_sf = 5000
-s_sf_eq = 0.02
+k_sf = 47137.75074362363 #5000
+s_sf_eq = 0.024955817979683454 #0.02
 
 
 
