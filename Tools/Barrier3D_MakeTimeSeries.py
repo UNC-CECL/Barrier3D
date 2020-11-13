@@ -23,13 +23,17 @@ import matplotlib.pyplot as plt
 from Barrier3D_Parameters import (mean_storm, SD_storm, MHW, StormStart, Dstart, rmin, rmax, BermEl)
 print()
 
+years = 3000
+
 # Set-up input files
 # StormList = np.load('C:/Barrier3D/Parameterization/VCRStormList.npy')
 StormList = np.load('/Users/KatherineAnardeWheels/PycharmProjects/CASCADE/B3D_Inputs/VCRStormList.npy')
 
 # Time series
 StormSeries = np.zeros([StormStart, 5])
-for t in range(StormStart, numstorm):
+
+for t in range(StormStart, years):
+
     # Calculate number of storms in year
     numstorm = round(np.random.normal(mean_storm, SD_storm))
    
@@ -76,7 +80,8 @@ fig = plt.gcf()
 fig.set_size_inches(16,4)
 plt.plot(twlcalc)
 plt.xlabel('Storm')
-plt.hlines(BermEl*10, 0, len(twlcalc),colors='red',linestyles='dashed')
+plt.hlines(BermEl*10, -5, len(twlcalc)+20, colors='red', linestyles='dashed')
+plt.show()
 plt.ylabel('TWL (m MHW)')
 
 print('Max TWL:          ', max(StormSeries[:,1])*10)
