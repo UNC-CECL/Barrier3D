@@ -625,14 +625,24 @@ class Barrier3d:
         self._StormCount = [0]
         self._InundationCount = 0
         self._RunUpCount = 0
-        self._InteriorWidth_AvgTS = [self._DomainWidth]
+
+        # Added by KA: use FindWidths to calculate the average interior width for setting initial back barrier shoreline
+        _, _, InteriorWidth_Avg = self.FindWidths(
+            self._InteriorDomain, self._SL
+        )
+
+        # self._InteriorWidth_AvgTS = [self._DomainWidth]
+        self._InteriorWidth_AvgTS = [InteriorWidth_Avg]
         self._QowTS = [0]  # (m^3/m)
         # self._x_t = 0  # (dam) Start location of shoreface toe
         self._x_s = self._x_t + LShoreface  # (dam) Start location of shoreline
         self._x_t_TS = [self._x_t]  # (dam) Shoreface toe locations for each time step
         self._x_s_TS = [self._x_s]  # (dam) Shoreline locations for each time step
+        # self._x_b_TS = [
+        #     (self._x_s + self._DomainWidth)
+        # ]  # (dam) Bay shoreline locations for each time step
         self._x_b_TS = [
-            (self._x_s + self._DomainWidth)
+            (self._x_s + InteriorWidth_Avg)
         ]  # (dam) Bay shoreline locations for each time step
         self._h_b_TS = [
             (np.average(self._InteriorDomain[self._InteriorDomain >= self._SL]))
@@ -802,6 +812,10 @@ class Barrier3d:
                 self._InteriorDomain, self._SL
             )
             self._InteriorWidth_AvgTS.append(InteriorWidth_Avg)
+
+            # Added by KA: replace value of x_b_TS from the last time step with new InteriorWidth_Avg
+            # (also from the last time step): note that this is just for completeness
+            self._x_b_TS[-1] = self._x_s_TS[-1] + self._InteriorWidth_AvgTS[-1]
 
             # ###########################################
             # ### Save domains of the previous timestep
