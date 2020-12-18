@@ -10,14 +10,18 @@
 %       07/09/20        KAnarde             Original code
 %       07/29/20        IReeves             Tidal sampling & simulation TWL calculations
 %
-%% load data
+%% preamble
+
+% NEED TO MAKE THIS HAVE MORE FUCNTIONATLITY BEFORE PUBLISHING: boolean for
+% different copulas, sub-functions, routines to get data from the WIS 
+% server etc.
 
 %%% load WIS data 1980-2014
 % KA: from Wahl et al., 2016 - need Hs, Tp, and direction theta 
 % (they used offshore wave buoy in 28 m water depth, 1980-2013)
 % for VCR - Wis ST63183 - the water depth is 22 m
 
-%cd /Users/KatherineAnardeWheels/Research/BARis/UNC/VCR/SyntheticStorms
+cd /Users/KatherineAnardeWheels/Research/BARis/UNC/VCR/SyntheticStorms
 rData = load('ST63183_v03.onlns');
 dtH   = datetime(string(rData(:,1)),'InputFormat','yyyyMMddHHmmss');
 rHs   = rData(:,10);
@@ -225,7 +229,7 @@ hold off
 rBermEl = 2.0;     % m NAVD88
 
 % find the annual average TWL from all threshold exceedances from a 
-% given year calculate annual averages of MSL (here 30 day running median), 
+% given year calculate annual averages of MSL (here 35-day mean), 
 % tidal amplitude, residual, and R2% during the TWL exceedances
 nYrs = floor(days(dtH(end) - dtH(1))/ 365);
 iStart = 1;
@@ -251,7 +255,7 @@ for iYear = 1 : nYrs
 end
 
 % identify Hs threshold to qualify as a storm event, round nearest 0.05 m
-% rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)?
+%rHs_over_yearly(28) = NaN; % Remove year 2007 (anonymously low)?
 nHs_min = min(rHs_over_yearly);
 nHs_threshold = floor(nHs_min / 0.05) * 0.05     
 
@@ -502,7 +506,7 @@ scatter(rStormNTR, rEP1)  % the CDF estimate from the marginal distribution
 % transformed to 4 dimensions (i.e., NTR, Hs, Tp, and Dur)
 
 % for fitting vine copula models in R
-dlmwrite('U_mssmVCR.txt',[rU1, rU2, rU3, rU4],'delimiter','\t','precision',12)
+dlmwrite('U_mssmVCR_2m.txt',[rU1, rU2, rU3, rU4],'delimiter','\t','precision',12)
 
 % returns an estimate, rhohat, of the matrix of linear correlation 
 % parameters for a gaussian and t copula, and an estimate of the dof parameter, nuhat, 
