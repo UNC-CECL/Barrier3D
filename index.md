@@ -158,12 +158,6 @@ simulation.  To run *Barrier3D* using this file::
   $ b3d run
 ```
 
-Commands can also be chained together. The following will setup a simulation and then run it
-
-```
-  $ mkdir example && b3d setup run 
-```
-
 Use the *--help* option to get help about other command line options.
 
 ## Further Reading
