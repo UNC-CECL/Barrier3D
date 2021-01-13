@@ -1,6 +1,8 @@
 # Barrier3D
 
-A spatially explicit model of barrier evolution.
+## A spatially explicit model of barrier evolution.
+
+![Barrier3D](https://github.com/UNC-CECL/Barrier3D/blob/gh-pages/Barrier3D.png)
 
 Updated: 13 Jan 2021
 
