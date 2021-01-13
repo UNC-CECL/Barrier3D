@@ -1,6 +1,7 @@
 
 ![Barrier3D](/images/Barrier3D.png)
 
+_Last Updated: 13 Jan 2021_
 
 ## About
 
