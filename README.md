@@ -9,39 +9,38 @@ additional dependencies for running *Barrier3D*'s tests to make sure
 that things are working as they should. These dependencies are listed
 in *requirements-testing.txt* and *requirements-development.txt*.
 
-Installation
-------------
+## Installation
 
 To install *Barrier3D*, first create a new environment in
 which *Barrier3D* will be installed. This, although not necessary, will
 isolate the installation so that there won't be conflicts with your
-base *Python* installation. This can be done with *conda* as::
+base *Python* installation. This can be done with *conda* as:
 
+```
   $ conda create -n barrier3d-env python=3
   $ conda activate barrier3d-env
+```
 
-From Source
-+++++++++++
+### From Source
 
 After downloading the *Barrier3D* source code, run the following from
 *Barrier3D*'s top-level folder (the one that contains *setup.py*) to
-install *Barrier3D* into the current environment::
+install *Barrier3D* into the current environment:
 
+```
   $ pip install -e .
+```
 
-Input Files
------------
+## Input Files
 
-Barrier3D Parameter File
-++++++++++++++++++++
+### Barrier3D Parameter File
 
 *Barrier3D* has several input files. The main input file is a yaml-formatted text file that lists
 parameter values for the various components. Running the following will
-print a sample *Barrier3D* parameter file::
+print a sample *Barrier3D* parameter file:
 
+```
   $ b3d show parameters
-
-.. code:: yaml
 
 TMAX: 150                       # [y] Duration of simulation
 StormStart: 2                   # [y] Year when storm can start occurring
@@ -103,10 +102,9 @@ DuneParamStart: true            # Dune height will come from external file
 GrowthParamStart: true          # Dune growth parameters will come from external file
 MaxShrubHeight: 3.5             # [m] Maximum shrub height
 ShorefaceToe: 0.0               # [m] Start location of shoreface toe
+```
 
-
-Output Files
-------------
+## Output Files
 
 There are three main sets of output files. These are writen to the 
 *output* folder as the model is running.
