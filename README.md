@@ -103,7 +103,17 @@ GrowthParamStart: true          # Dune growth parameters will come from external
 MaxShrubHeight: 3.5             # [m] Maximum shrub height
 ShorefaceToe: 0.0               # [m] Start location of shoreface toe
 ```
+Other input files include the initial dune domain, interior elevation, duen growth parameters, and list of multivariate storms: 
 
+```
+  $ b3d show [dunes|elevations|growthparam|parameters|storms]$
+```
+
+To create a folder with example input files:
+
+```
+  $ mkdir example && b3d setup
+```
 ## Output Files
 
 There are three main sets of output files. These are writen to the 
