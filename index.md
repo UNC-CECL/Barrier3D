@@ -2,7 +2,7 @@
 
 ### A spatially explicit model of barrier evolution.
 
-![Barrier3D](https://github.com/UNC-CECL/Barrier3D/blob/gh-pages/images/Barrier3D.png)
+![Barrier3D](/images/Barrier3D.png)
 
 Updated: 13 Jan 2021
 
