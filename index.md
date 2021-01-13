@@ -1,22 +1,23 @@
 
 ![Barrier3D](/images/Barrier3D.png)
 
-Updated: 13 Jan 2021
 
 ## About
 
-Barrier3D resolves cross-shore and alongshore topographic variations and simulates the morphological evolution of a barrier segment over time scales of years to centuries. The model explicitly yet efficiently simulates dune evolution, storm overwash, and a dynamically evolving shoreface in response to individual storm events and sea-level rise.
+*Barrier3D* resolves cross-shore and alongshore topographic variations and simulates the morphological evolution of a barrier segment over time scales of years to centuries. The model explicitly yet efficiently simulates dune evolution, storm overwash, and a dynamically evolving shoreface in response to individual storm events and sea-level rise.
 
 Barrier3D is built with the Basic Model Interface (BMI; https://bmi.readthedocs.io/).
 
+_Copyright (C) 2021 Ian R.B. Reeves (principal developer) licensed under the GNU General Public License v3.0_
+
 ## Requirements 
 
-Barrier3D requires Python 3, and the libraries listed in the project's *requirements.txt* file.
+Barrier3D requires Python 3, and the libraries listed in the project's `requirements.txt` file.
 
 If you are a developer of *Barrier3D* you will also want to install
 additional dependencies for running *Barrier3D*'s tests to make sure
 that things are working as they should. These dependencies are listed
-in *requirements-testing.txt* and *requirements-development.txt*.
+in `requirements-testing.txt` and `requirements-development.txt`.
 
 ## Installation
 
@@ -152,7 +153,7 @@ For example:
 ```
 
 This command has creates the input files listed above that you can then edit for your
-simulation.  To run *Barrier3D* using this file::
+simulation.  To run *Barrier3D* using this file:
 
 ```
   $ b3d run
