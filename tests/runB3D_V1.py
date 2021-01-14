@@ -2,11 +2,13 @@
 #
 # Written by K. Anarde
 #
+import os
+from V1_NoBMI import Barrier3D_Functions as B3Dfunc
+
+os.chdir('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI')
 
 # (starts running immediately)
 execfile('Barrier3D.py')
-
-import Barrier3D_Functions as B3Dfunc
 
 # Plot 1: Dune Height Over Time (input in decameter)
 B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
