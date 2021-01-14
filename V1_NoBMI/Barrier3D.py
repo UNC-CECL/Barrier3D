@@ -40,7 +40,8 @@
 # IMPORTS       
 #==============================================================================================================================================
 
-import Barrier3D_Functions as func
+from V1_NoBMI import Barrier3D_Functions as func
+# import Barrier3D_Functions as func
 import numpy as np
 import math 
 import time
@@ -52,14 +53,15 @@ warnings.filterwarnings("ignore")
 
 Time = time.time()
 
-RNG = np.random.default_rng(seed=1973) # KA: added a seeded number generator so we can reproduce runs for testing
+RNG = np.random.default_rng(seed=1973)  # KA: added a seeded number generator so we can reproduce runs for testing
  
 #==============================================================================================================================================
 # SET PARAMETERS       
 #==============================================================================================================================================
 
 ### Load Input Parameters
-from Barrier3D_Parameters import (
+# from Barrier3D_Parameters import (
+from V1_NoBMI.Barrier3D_Parameters import (
                                   BarrierLength, 
                                   BayDepth, 
                                   BermEl, 

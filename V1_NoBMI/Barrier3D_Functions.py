@@ -38,7 +38,8 @@ from mpl_toolkits.mplot3d import Axes3D # analysis:ignore
 import imageio # analysis:ignore
 from scipy import signal
 
-from Barrier3D_Parameters import (
+# from Barrier3D_Parameters import (
+from V1_NoBMI.Barrier3D_Parameters import (
                                   RSLR,
                                   BayDepth,
                                   Dmaxel, 

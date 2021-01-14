@@ -26,7 +26,7 @@ import math
 ################################
 ### TIME
 
-TMAX = 25 + 1
+TMAX = 150 + 1
 StormStart = 2
 
 
@@ -36,22 +36,22 @@ StormStart = 2
 ### COMPUTATIONAL DOMAIN 
 
 # Vertical Dimensions
-LShoreface = 500 / 10 #500 /10
-DShoreface = 10 / 10 #10 /10
-BayDepth = 3 /10
-MHW = 0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
+LShoreface = 500 / 10
+DShoreface = 10 / 10
+BayDepth = 3 / 10
+MHW = 0.46 / 10  # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters) 
 InteriorDomain = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-elevations.npy')
 
 # Horizontal Dimensions
-BarrierLength = int(500 /10)
+BarrierLength = int(500 / 10)
 if len(InteriorDomain[0]) > BarrierLength:
     InteriorDomain = InteriorDomain[:,0:BarrierLength] # Reduce to specified max length
 else:
     BarrierLength = len(InteriorDomain[0])
 DomainWidth = len(InteriorDomain)
-DuneWidth = int(20 /10)
+DuneWidth = int(20 / 10)
 
 
 
@@ -111,8 +111,8 @@ DuneRestart = 0.075 /10
 ### ALONGSHORE TRANSPORT & RSLR
 
 # Volume of sediment lost via alongshore transport
-Rat = 0 /10 # dam   Note: Positive value will result in erosion, negative will result in progradation
-Qat = Rat * DShoreface # dam^3/dam
+Rat = 0 / 10  # dam   Note: Positive value will result in erosion, negative will result in progradation
+Qat = Rat * DShoreface  # dam^3/dam
 
 # Relative Sea Level Rise Rate
 RSLR_Constant = True
