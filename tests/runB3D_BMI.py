@@ -5,11 +5,6 @@
 # NOTES to users:
 #       - if using Barrier3D for the first time, remember to $ pip install -e .
 
-# import 1) the new class, Barrier3D, which is the model
-#        2) load_input: readers for input files, which include the parameter file as well as data files for elev.,
-#        storms, etc. Uses the config class to define imported input parameters. NOTE: this is not needed if you use the
-#        "from_path" function
-
 from barrier3d import Barrier3dBmi
 from tests import Barrier3D_Plotting_Functions as B3Dfunc
 import time

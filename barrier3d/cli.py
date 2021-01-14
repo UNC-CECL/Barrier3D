@@ -99,16 +99,16 @@ def barrier3d(cd) -> None:
 
       Create a folder with example input files,
 
-        $ mkdir example && barrier3d setup
+        $ mkdir example && b3d setup
 
       Run a simulation using the examples input files,
 
-        $ cd example && barrier3d run
+        $ cd example && b3d run
 
       Commands can also be chained together. The following will setup
       a simulation, run it, and then plot elevations.
 
-        $ mkdir example && barrier3d setup run plot elevation
+        $ mkdir example && b3d setup run plot elevation
     """
     os.chdir(cd)
 
