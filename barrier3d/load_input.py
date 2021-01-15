@@ -48,14 +48,27 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
             raise FileNotFoundError(parameter_file.absolute())
 
         params = load_parameters(parameter_file, fmt=fmt)
-        # KA: this is what I tried, among other things, to debug .npy - both csv and npy are hard coded
-        params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.npy")
-        params["StormSeries"] = load_storms(f"{prefix}-storms.npy")  # storms must come from a time series
-        if params["DuneParamStart"]:    # dune height will come from external file
-            params["DuneStart"] = load_dunes(f"{prefix}-dunes.npy")
-        if params["GrowthParamStart"]:  # growth parameters will come from external file
-            params["GrowthStart"] = load_growth_param(f"{prefix}-growthparam.npy")
 
+        # KA: this is what I tried, among other things, to debug .npy - both csv and npy are hard coded
+        if os.path.isfile("barrier3d-elevations.npy"):
+            params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.npy", fmt="npy")
+        else:
+            params["InteriorDomain"] = load_elevation(f"{prefix}-elevations.csv", fmt="csv")
+        if os.path.isfile("barrier3d-storms.npy"):
+            params["StormSeries"] = load_storms(f"{prefix}-storms.npy", fmt="npy")  # storms must come from a time series
+        else:
+            params["StormSeries"] = load_storms(f"{prefix}-storms.csv", fmt="csv")
+
+        if params["DuneParamStart"]:    # dune height will come from external file
+            if os.path.isfile("barrier3d-dunes.npy"):
+                params["DuneStart"] = load_dunes(f"{prefix}-dunes.npy", fmt="npy")
+            else:
+                params["DuneStart"] = load_dunes(f"{prefix}-dunes.csv", fmt="csv")
+        if params["GrowthParamStart"]:  # growth parameters will come from external file
+            if os.path.isfile("barrier3d-growthparam.npy"):
+                params["GrowthStart"] = load_growth_param(f"{prefix}-growthparam.npy", fmt="npy")
+            else:
+                params["GrowthStart"] = load_growth_param(f"{prefix}-growthparam.csv", fmt="csv")
         _process_raw_input(params)
 
     return params
@@ -111,6 +124,7 @@ def load_storms(path_to_file, fmt="npy"):
             comment="#",
             header=0,
         )
+        df.to_numpy()
         data = np.hstack(
             (
                 df["time"][:, None],
