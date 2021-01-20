@@ -1578,6 +1578,10 @@ class Barrier3d:
         return self._x_s_TS
 
     @property
+    def x_s(self):
+        return self._x_s
+
+    @property
     def x_b_TS(self):
         return self._x_b_TS
 
