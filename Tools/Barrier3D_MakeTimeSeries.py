@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 #####################################################################################################################
 ### Generate storm time series
 
-# KA, this needs to be updated for BMI (these units are already in dam, so I think this function would need to be added to load_inputs)
+# KA, this needs to be updated for the BMI (these units are already in dam, so I think this function would need to be added to load_inputs)
 from Barrier3D_Parameters import (mean_storm, SD_storm, MHW, StormStart, Dstart, rmin, rmax, BermEl)
 print()
 
