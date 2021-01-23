@@ -9,7 +9,6 @@ import numpy as np
 from .load_input import load_inputs
 
 
-# KA: called within Barrier3d - does this force an exit from the program? replaces former "warnings" package?
 class Barrier3dError(Exception):
     pass
 
@@ -1577,9 +1576,17 @@ class Barrier3d:
     def x_s_TS(self):
         return self._x_s_TS
 
+    @x_s_TS.setter
+    def x_s(self, value):
+        self._x_s_TS = value
+
     @property
     def x_s(self):
         return self._x_s
+
+    @x_s.setter
+    def x_s(self, value):
+        self._x_s = value
 
     @property
     def x_b_TS(self):
