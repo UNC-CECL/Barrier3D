@@ -1,4 +1,5 @@
 import math
+
 # import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
 
 import numpy as np
@@ -68,28 +69,28 @@ class Barrier3d:
         for q in range(self._DuneWidth):
             reduc = 1 / (Cf ** q)
             G = (
-                    self._growthparam
-                    * DuneDomain[t - 1, :, q]
-                    * (1 - DuneDomain[t - 1, :, q] / Dmax)
-                    * reduc
+                self._growthparam
+                * DuneDomain[t - 1, :, q]
+                * (1 - DuneDomain[t - 1, :, q] / Dmax)
+                * reduc
             )
             DuneDomain[t, :, q] = G + DuneDomain[t - 1, :, q]
             Qdg = Qdg + (
-                    np.sum(G) / self._BarrierLength
+                np.sum(G) / self._BarrierLength
             )  # Volume of sediment lost from beach/shoreface from dune growth
 
         return DuneDomain, Dmax, Qdg
 
     def Shrubs(
-            self,
-            InteriorDomain,
-            DuneDomainCrest,
-            ShrubDomainFemale,
-            ShrubDomainMale,
-            BurialDomain,
-            InteriorWidth_Avg,
-            DomainWidth,
-            ShrubDomainDead,
+        self,
+        InteriorDomain,
+        DuneDomainCrest,
+        ShrubDomainFemale,
+        ShrubDomainMale,
+        BurialDomain,
+        InteriorWidth_Avg,
+        DomainWidth,
+        ShrubDomainDead,
     ):
         """Main shrub expansion and mortality function"""
 
@@ -102,19 +103,26 @@ class Barrier3d:
         ShrubHeight = ShrubDomainAll * self._MaxShrubHeight
 
         # Kill all shrubs buried by over depth limit or eroded
-        ShrubDomainDead[BurialDomain > (self._BurialLimit * ShrubHeight)] = ShrubDomainAll[
-            BurialDomain > (self._BurialLimit * ShrubHeight)]  # Transfer to dead domain
         ShrubDomainDead[
-            BurialDomain >= 0.3] = 0  # If buried by more than 3 m, considered shrub to be gone(dead or alive)
+            BurialDomain > (self._BurialLimit * ShrubHeight)
+        ] = ShrubDomainAll[
+            BurialDomain > (self._BurialLimit * ShrubHeight)
+        ]  # Transfer to dead domain
+        ShrubDomainDead[
+            BurialDomain >= 0.3
+        ] = 0  # If buried by more than 3 m, considered shrub to be gone(dead or alive)
         ShrubDomainDead[BurialDomain < self._UprootLimit] = ShrubDomainAll[
-            BurialDomain < self._UprootLimit]  # Transfer to dead domain
+            BurialDomain < self._UprootLimit
+        ]  # Transfer to dead domain
 
         ShrubDomainFemale[BurialDomain > (self._BurialLimit * ShrubHeight)] = 0
         ShrubDomainFemale[BurialDomain < self._UprootLimit] = 0
         ShrubDomainMale[BurialDomain > (self._BurialLimit * ShrubHeight)] = 0
         ShrubDomainMale[BurialDomain < self._UprootLimit] = 0
 
-        BurialDomain[BurialDomain > (self._BurialLimit * ShrubHeight)] = 0  # Reset burial domain
+        BurialDomain[
+            BurialDomain > (self._BurialLimit * ShrubHeight)
+        ] = 0  # Reset burial domain
         BurialDomain[BurialDomain < self._UprootLimit] = 0  # Reset burial domain
         BurialDomain[BurialDomain >= 0.3] = 0  # Reset burial domain
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
@@ -132,8 +140,11 @@ class Barrier3d:
                         ]  # Shrub remains as dead if within tidal range (i.e. MHW - tidal range)
                     ShrubDomainFemale[w, bl] = 0
                     ShrubDomainMale[w, bl] = 0
-                elif InteriorDomain[w, bl] < 0 and ShrubDomainDead[w, bl] > 0 \
-                        and InteriorDomain[w, bl] < -self._TideAmp:  # Remove dead shrubs below tidal range
+                elif (
+                    InteriorDomain[w, bl] < 0
+                    and ShrubDomainDead[w, bl] > 0
+                    and InteriorDomain[w, bl] < -self._TideAmp
+                ):  # Remove dead shrubs below tidal range
                     ShrubDomainDead[w, bl] = 0
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
@@ -148,10 +159,10 @@ class Barrier3d:
         randX = self._RNG.integers(0, self._BarrierLength)
         randY = self._RNG.integers(0, max(1, InteriorWidth_Avg))
         if (
-                ShrubDomainFemale[randY, randX] == 0
-                and ShrubDomainMale[randY, randX] == 0
-                and DuneDomainCrest[randX] + self._BermEl >= self._Dshrub
-                and self._ShrubEl_min <= InteriorDomain[randY, randX] <= self._ShrubEl_max
+            ShrubDomainFemale[randY, randX] == 0
+            and ShrubDomainMale[randY, randX] == 0
+            and DuneDomainCrest[randX] + self._BermEl >= self._Dshrub
+            and self._ShrubEl_min <= InteriorDomain[randY, randX] <= self._ShrubEl_max
         ):
             # if random.random() > self._Female:
             if self._RNG.uniform() > self._Female:
@@ -161,7 +172,7 @@ class Barrier3d:
 
         # ### Disperse seeds
         for k in range(
-                self._BarrierLength
+            self._BarrierLength
         ):  # Loop through each row of island width (i.e. from ocean to mainland side of island)
             if 0 in ShrubDomainAll:
 
@@ -203,7 +214,7 @@ class Barrier3d:
                     # If there are seeds to disperse
                     if len(DispDist) > 0:
                         for j in range(
-                                len(DispDist + 1)
+                            len(DispDist + 1)
                         ):  # Loop through each individual seed to disperse
                             # Create a meshgrid to find coordinates of all points that are dropdistance from origin
                             if DispDist[j] > 0:
@@ -248,15 +259,24 @@ class Barrier3d:
                                 #   -the receiving cell has a tall enough fronting dune
                                 #   -the receiving cell is within elevation range
                                 if (
-                                        not (not (0 <= targetY < DomainWidth) or not (
-                                                0 <= targetX < self._BarrierLength) or not (
-                                                ShrubDomainFemale[targetY, targetX] == 0))
-                                        and ShrubDomainMale[targetY, targetX] == 0
-                                        and self._ShrubEl_min <= InteriorDomain[targetY, targetX] <= self._ShrubEl_max
-                                        and ShrubDomainDead[targetY, targetX] < 1
+                                    not (
+                                        not (0 <= targetY < DomainWidth)
+                                        or not (0 <= targetX < self._BarrierLength)
+                                        or not (
+                                            ShrubDomainFemale[targetY, targetX] == 0
+                                        )
+                                    )
+                                    and ShrubDomainMale[targetY, targetX] == 0
+                                    and self._ShrubEl_min
+                                    <= InteriorDomain[targetY, targetX]
+                                    <= self._ShrubEl_max
+                                    and ShrubDomainDead[targetY, targetX] < 1
                                 ):
                                     # Shrubs can establish if height of fronting dune greater than threshold
-                                    if DuneDomainCrest[targetX] + self._BermEl >= self._Dshrub:
+                                    if (
+                                        DuneDomainCrest[targetX] + self._BermEl
+                                        >= self._Dshrub
+                                    ):
                                         # Decide if the tree wll be a female or male
                                         if self._RNG.uniform() > self._Female:
                                             ShrubDomainFemale[targetY, targetX] = 1
@@ -264,8 +284,13 @@ class Barrier3d:
                                             ShrubDomainMale[targetY, targetX] = 1
 
                                     # Shrubs can establish without dune if locaed a certain distance from shoreline...
-                                    elif BeachWidth + self._DuneWidth + targetY > self._SprayDist:
-                                        if self._RNG.uniform() > 0.5:  # ... but have about 50% chance of survival
+                                    elif (
+                                        BeachWidth + self._DuneWidth + targetY
+                                        > self._SprayDist
+                                    ):
+                                        if (
+                                            self._RNG.uniform() > 0.5
+                                        ):  # ... but have about 50% chance of survival
                                             # Decide if the tree wll be a female or male
                                             if self._RNG.uniform() > self._Female:
                                                 ShrubDomainFemale[targetY, targetX] = 1
@@ -296,7 +321,7 @@ class Barrier3d:
             else:
                 stop = i
 
-                x = DuneDomain[Dow[start]: (Dow[stop] + 1)]
+                x = DuneDomain[Dow[start] : (Dow[stop] + 1)]
                 Hmean = sum(x) / float(len(x))
                 Rexcess = Rhigh - (Hmean + bermel)
                 alpha = Rhigh / (Hmean + bermel)
@@ -307,7 +332,7 @@ class Barrier3d:
         if i > 0:
             stop = i - 1
 
-            x = DuneDomain[Dow[start]: (Dow[stop] + 1)]
+            x = DuneDomain[Dow[start] : (Dow[stop] + 1)]
             if len(x) > 0:
                 Hmean = sum(x) / float(len(x))
                 Rexcess = Rhigh - (Hmean + bermel)
@@ -325,18 +350,18 @@ class Barrier3d:
             # Alongshore direction
             for d in range(2, self._BarrierLength):  # Loop L to R
                 Ldiff = (
-                        DuneDomain[t, d, w] - DuneDomain[t, d - 1, w]
+                    DuneDomain[t, d, w] - DuneDomain[t, d - 1, w]
                 )  # Calculate height difference
                 # Subtract sand from taller dune cell and add to adjacent shorter one (assumes sand in dunes is consrvd)
                 if Ldiff > self._HdDiffu:
                     sub = (
-                                  Ldiff - self._HdDiffu
-                          ) / 2  # Height difference in excess of maximum, divided by two
+                        Ldiff - self._HdDiffu
+                    ) / 2  # Height difference in excess of maximum, divided by two
                     DuneDomain[t, d, w] = (
-                            DuneDomain[t, d, w] - sub
+                        DuneDomain[t, d, w] - sub
                     )  # Lower dune that's too tall
                     DuneDomain[t, d - 1, w] = (
-                            DuneDomain[t, d - 1, w] + sub
+                        DuneDomain[t, d - 1, w] + sub
                     )  # Raise dune that's too short
             for d in range((self._BarrierLength - 2), 0, -1):  # Loop R to L
                 Rdiff = DuneDomain[t, d, w] - DuneDomain[t, d + 1, w]
@@ -348,15 +373,15 @@ class Barrier3d:
         return DuneDomain
 
     def SalineFlooding(
-            self,
-            ShrubDomainWidth,
-            ShrubDomainAll,
-            ShrubDomainFemale,
-            ShrubDomainMale,
-            ShrubDomainDead,
-            d,
-            i,
-            Q0,
+        self,
+        ShrubDomainWidth,
+        ShrubDomainAll,
+        ShrubDomainFemale,
+        ShrubDomainMale,
+        ShrubDomainDead,
+        d,
+        i,
+        Q0,
     ):
         """Kill all immature (< 1 yr-old) shrubs that have been flooded
         beyond a threshold discharge (Tolliver et al., 1997)"""
@@ -364,32 +389,34 @@ class Barrier3d:
         if d < (ShrubDomainWidth - 1) and i < (self._BarrierLength - 1):
             if Q0 >= self._SalineLimit and ShrubDomainAll[d, i] == 1:
                 ShrubDomainDead[d, i] = (
-                        ShrubDomainMale[d, i] + ShrubDomainFemale[d, i]
+                    ShrubDomainMale[d, i] + ShrubDomainFemale[d, i]
                 )  # Transfer to dead shrub domain
                 ShrubDomainFemale[d, i] = 0
                 ShrubDomainMale[d, i] = 0
 
         return ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead
 
-    def UpdateBurial(self, BurialDomain, ElevationChange, ShrubDomainWidth, ShrubDomainAll):
+    def UpdateBurial(
+        self, BurialDomain, ElevationChange, ShrubDomainWidth, ShrubDomainAll
+    ):
         """Updates amount of burial/erosion for each shrub"""
 
-        BurialDomain = BurialDomain + ElevationChange[1: ShrubDomainWidth + 1, :]
+        BurialDomain = BurialDomain + ElevationChange[1 : ShrubDomainWidth + 1, :]
         BurialDomain[ShrubDomainAll == 0] = 0
 
         return BurialDomain
 
     def UpdateShrubDomains(
-            self,
-            DomainWidth,
-            ShrubDomainWidth,
-            ShrubDomainFemale,
-            ShrubDomainMale,
-            ShrubDomainAll,
-            ShrubPercentCover,
-            BurialDomain,
-            ShrubDomainDead,
-            DeadPercentCover,
+        self,
+        DomainWidth,
+        ShrubDomainWidth,
+        ShrubDomainFemale,
+        ShrubDomainMale,
+        ShrubDomainAll,
+        ShrubPercentCover,
+        BurialDomain,
+        ShrubDomainDead,
+        DeadPercentCover,
     ):
         """Updates size of shrub domains"""
 
@@ -423,23 +450,23 @@ class Barrier3d:
         )
 
     def LTA_SC(
-            self,
-            InteriorDomain,
-            OWloss,
-            Qdg,
-            DuneLoss,
-            x_s,
-            x_s_TS,
-            x_t,
-            x_t_TS,
-            x_b_TS,
-            s_sf_TS,
-            InteriorWidth_Avg,
-            SL,
-            QowTS,
-            QsfTS,
-            t,
-            h_b_TS,
+        self,
+        InteriorDomain,
+        OWloss,
+        Qdg,
+        DuneLoss,
+        x_s,
+        x_s_TS,
+        x_t,
+        x_t_TS,
+        x_b_TS,
+        s_sf_TS,
+        InteriorWidth_Avg,
+        SL,
+        QowTS,
+        QsfTS,
+        t,
+        h_b_TS,
     ):
         """Finds shoreline change for modeled year following Lorenzo-Trueba and Ashton (2014)"""
 
@@ -466,16 +493,16 @@ class Barrier3d:
         # Shoreface Flux
         s_sf = d_sf / (x_s - x_t)
         Qsf = (self._k_sf / 100) * (
-                self._s_sf_eq - s_sf
+            self._s_sf_eq - s_sf
         )  # Convert Ksf from m^3/m/yr to dam^3/dam/yr
         QsfTS.append(Qsf * 100)  # Save in m^3/m
 
         # Toe, Shoreline, and island base elevation changes
         x_t_dt = (4 * Qsf * (h_b + d_sf) / (d_sf * (2 * h_b + d_sf))) + (
-                2 * self._RSLR[t] / s_sf
+            2 * self._RSLR[t] / s_sf
         )
         x_s_dt = 2 * (Qow + Qdg + self._Qat) / ((2 * h_b) + d_sf) - (
-                4 * Qsf * (h_b + d_sf) / (((2 * h_b) + d_sf) ** 2)
+            4 * Qsf * (h_b + d_sf) / (((2 * h_b) + d_sf) ** 2)
         )  # Dune growth and alongshore transport added to LTA14 formulation
 
         # Record changes
@@ -489,7 +516,15 @@ class Barrier3d:
 
         return x_s, x_t, x_s_TS, x_t_TS, x_b_TS, s_sf_TS, QowTS, QsfTS, h_b_TS
 
-    def CalcPC(self, ShrubDomainAll, PercentCoverTS, ShrubDomainDead, DeadPercentCoverTS, ShrubArea, t):
+    def CalcPC(
+        self,
+        ShrubDomainAll,
+        PercentCoverTS,
+        ShrubDomainDead,
+        DeadPercentCoverTS,
+        ShrubArea,
+        t,
+    ):
         """Calculates percent cover of shrub domain and shrub coverage area (dam^2)"""
 
         Allshrub_t = ShrubDomainAll.astype("int64")
@@ -502,7 +537,13 @@ class Barrier3d:
         DeadPercentCoverTS[t] = DeadPercentCover
         ShrubArea.append(np.count_nonzero(ShrubDomainAll))
 
-        return ShrubPercentCover, PercentCoverTS, ShrubArea, DeadPercentCover, DeadPercentCoverTS
+        return (
+            ShrubPercentCover,
+            PercentCoverTS,
+            ShrubArea,
+            DeadPercentCover,
+            DeadPercentCoverTS,
+        )
 
     def __init__(self, **kwds):
         self._RNG = kwds.pop("RNG")
@@ -611,8 +652,8 @@ class Barrier3d:
 
         # ### Initialize variables
         self._DomainTS = [
-                             None
-                         ] * self._TMAX  # Stores the elevation domain for each timestep
+            None
+        ] * self._TMAX  # Stores the elevation domain for each timestep
         self._DomainTS[0] = self._InteriorDomain
         self._SCRagg = 0  # Counter variable for shoreline change that is less than 1 cell size per year
         self._ShorelineChangeTS = [0]
@@ -626,9 +667,7 @@ class Barrier3d:
         self._RunUpCount = 0
 
         # Added by KA: use FindWidths to calculate the average interior width for setting initial back barrier shoreline
-        _, _, InteriorWidth_Avg = self.FindWidths(
-            self._InteriorDomain, self._SL
-        )
+        _, _, InteriorWidth_Avg = self.FindWidths(self._InteriorDomain, self._SL)
 
         # self._InteriorWidth_AvgTS = [self._DomainWidth]
         self._InteriorWidth_AvgTS = [InteriorWidth_Avg]
@@ -698,7 +737,7 @@ class Barrier3d:
 
         self._Hd_AverageTS.append(
             np.mean(DuneDomainCrest)
-        )  # Store average pre-storms dune-heigh for time step
+        )  # Store average pre-storm dune-height for time step
 
         # ###########################################
         # ### Shrubs
@@ -769,34 +808,34 @@ class Barrier3d:
 
                             # Calculate dune elevation loss
                             Rnorm = Rhigh[n] / (
-                                    self._DuneDomain[self._time_index, Dow[d], w]
-                                    + self._BermEl
+                                self._DuneDomain[self._time_index, Dow[d], w]
+                                + self._BermEl
                             )  # Rhigh relative to pre-storm dune elevation
                             Dloss = Rnorm / (
-                                    self._C1 + (Rnorm * (Rnorm - self._C2))
+                                self._C1 + (Rnorm * (Rnorm - self._C2))
                             )  # Amount of dune crest elevation change normalized by pre-storm dune elevation
                             # (i.e. a percent change), from Goldstein and Moore (2016)
 
                             # Set new dune height
                             InitDElev = (
-                                    self._DuneDomain[self._time_index, Dow[d], w]
-                                    + self._BermEl
+                                self._DuneDomain[self._time_index, Dow[d], w]
+                                + self._BermEl
                             )
                             NewDElev = InitDElev * (
-                                    1 - Dloss
+                                1 - Dloss
                             )  # Calculate new dune elevation from storm lowering
                             if NewDElev < self._BermEl:
                                 NewDElev = self._BermEl
                             self._DuneDomain[self._time_index, Dow[d], w] = (
-                                    NewDElev - self._BermEl
+                                NewDElev - self._BermEl
                             )  # Convert elevation to height above berm
 
                             DuneChange[Dow[d], w] = InitDElev - NewDElev
 
                             # If dune is lowered to ~ zero, allow for chance of regrowth by raising dune height to 5 cm
                             if (
-                                    self._DuneDomain[self._time_index, Dow[d], w]
-                                    < self._DuneRestart
+                                self._DuneDomain[self._time_index, Dow[d], w]
+                                < self._DuneRestart
                             ):
                                 if self._DuneRestart < self._Dmax:
                                     self._DuneDomain[
@@ -805,7 +844,9 @@ class Barrier3d:
                                 else:
                                     self._DuneDomain[
                                         self._time_index, Dow[d], w
-                                    ] = self._Dmax  # Restart height can't be greater than Dmax
+                                    ] = (
+                                        self._Dmax
+                                    )  # Restart height can't be greater than Dmax
 
                     # Dune Height Diffusion
                     self._DuneDomain = self.DiffuseDunes(
@@ -815,12 +856,12 @@ class Barrier3d:
 
                     DuneLoss = np.sum(DuneChange) / self._BarrierLength
                     Hd_TSloss = (
-                            DuneChange.max(axis=1) / dur[n]
+                        DuneChange.max(axis=1) / dur[n]
                     )  # Average height of dune loss for each substep during storm
 
                     self._Hd_Loss_TS[self._time_index, :] = self._Hd_Loss_TS[
-                                                            self._time_index, :
-                                                            ] + DuneChange.max(axis=1)
+                        self._time_index, :
+                    ] + DuneChange.max(axis=1)
 
                     # ###########################################
                     # ### Overwash
@@ -834,8 +875,8 @@ class Barrier3d:
                         # Rexcess = gaps[q][2]  # (m)
                         gapwidth = stop - start + 1
                         meandune = (
-                                           sum(Dunes_prestorm[start: stop + 1]) / gapwidth
-                                   ) + self._BermEl  # Average elevation of dune gap
+                            sum(Dunes_prestorm[start : stop + 1]) / gapwidth
+                        ) + self._BermEl  # Average elevation of dune gap
 
                         # Determine number of gaps in inundation regime
                         if Rlow[n] > meandune:
@@ -844,7 +885,7 @@ class Barrier3d:
                     # Determine Sediment And Water Routing Rules
 
                     if (
-                            len(gaps) > 0 and Iow / len(gaps) >= self._threshold_in
+                        len(gaps) > 0 and Iow / len(gaps) >= self._threshold_in
                     ):  # If greater than threshold % of dune gaps are inunundation regime, use inun. regime routing
                         inundation = 1
                         substep = self._OWss_i
@@ -858,7 +899,7 @@ class Barrier3d:
                     add = 10
                     duration = dur[n] * substep
                     width = (
-                            np.shape(self._InteriorDomain)[0] + 1 + add
+                        np.shape(self._InteriorDomain)[0] + 1 + add
                     )  # (dam) Add one for Dunes and 25 for bay
                     Elevation = np.zeros([duration, width, self._BarrierLength])
                     Dunes = Dunes_prestorm + self._BermEl
@@ -911,10 +952,10 @@ class Barrier3d:
 
                         if TS > 0:
                             Elevation[TS, 1:, :] = Elevation[
-                                                   TS - 1, 1:, :
-                                                   ]  # Begin timestep with elevation from end of last
+                                TS - 1, 1:, :
+                            ]  # Begin timestep with elevation from end of last
                             Elevation[TS, 0, :] = Dunes - (
-                                    Hd_TSloss / substep * TS
+                                Hd_TSloss / substep * TS
                             )  # Reduce dune in height linearly over course of storm
 
                         for d in range(width - 1):
@@ -931,9 +972,9 @@ class Barrier3d:
                                     # ### Calculate Slopes
                                     if i > 0:
                                         S1 = (
-                                                     Elevation[TS, d, i]
-                                                     - Elevation[TS, d + 1, i - 1]
-                                             ) / (math.sqrt(2))
+                                            Elevation[TS, d, i]
+                                            - Elevation[TS, d + 1, i - 1]
+                                        ) / (math.sqrt(2))
                                         S1 = np.nan_to_num(S1)
                                     else:
                                         S1 = 0
@@ -943,9 +984,9 @@ class Barrier3d:
 
                                     if i < (self._BarrierLength - 1):
                                         S3 = (
-                                                     Elevation[TS, d, i]
-                                                     - Elevation[TS, d + 1, i + 1]
-                                             ) / (math.sqrt(2))
+                                            Elevation[TS, d, i]
+                                            - Elevation[TS, d + 1, i + 1]
+                                        ) / (math.sqrt(2))
                                         S3 = np.nan_to_num(S3)
                                     else:
                                         S3 = 0
@@ -962,31 +1003,31 @@ class Barrier3d:
                                             S3 = 0
 
                                         Q1 = (
-                                                Q0
-                                                * S1 ** self._nn
-                                                / (
-                                                        S1 ** self._nn
-                                                        + S2 ** self._nn
-                                                        + S3 ** self._nn
-                                                )
+                                            Q0
+                                            * S1 ** self._nn
+                                            / (
+                                                S1 ** self._nn
+                                                + S2 ** self._nn
+                                                + S3 ** self._nn
+                                            )
                                         )
                                         Q2 = (
-                                                Q0
-                                                * S2 ** self._nn
-                                                / (
-                                                        S1 ** self._nn
-                                                        + S2 ** self._nn
-                                                        + S3 ** self._nn
-                                                )
+                                            Q0
+                                            * S2 ** self._nn
+                                            / (
+                                                S1 ** self._nn
+                                                + S2 ** self._nn
+                                                + S3 ** self._nn
+                                            )
                                         )
                                         Q3 = (
-                                                Q0
-                                                * S3 ** self._nn
-                                                / (
-                                                        S1 ** self._nn
-                                                        + S2 ** self._nn
-                                                        + S3 ** self._nn
-                                                )
+                                            Q0
+                                            * S3 ** self._nn
+                                            / (
+                                                S1 ** self._nn
+                                                + S2 ** self._nn
+                                                + S3 ** self._nn
+                                            )
                                         )
 
                                         Q1 = np.nan_to_num(Q1)
@@ -1024,31 +1065,31 @@ class Barrier3d:
                                     else:
 
                                         Q1 = (
-                                                Q0
-                                                * abs(S1) ** (-self._nn)
-                                                / (
-                                                        abs(S1) ** (-self._nn)
-                                                        + abs(S2) ** (-self._nn)
-                                                        + abs(S3) ** (-self._nn)
-                                                )
+                                            Q0
+                                            * abs(S1) ** (-self._nn)
+                                            / (
+                                                abs(S1) ** (-self._nn)
+                                                + abs(S2) ** (-self._nn)
+                                                + abs(S3) ** (-self._nn)
+                                            )
                                         )
                                         Q2 = (
-                                                Q0
-                                                * abs(S2) ** (-self._nn)
-                                                / (
-                                                        abs(S1) ** (-self._nn)
-                                                        + abs(S2) ** (-self._nn)
-                                                        + abs(S3) ** (-self._nn)
-                                                )
+                                            Q0
+                                            * abs(S2) ** (-self._nn)
+                                            / (
+                                                abs(S1) ** (-self._nn)
+                                                + abs(S2) ** (-self._nn)
+                                                + abs(S3) ** (-self._nn)
+                                            )
                                         )
                                         Q3 = (
-                                                Q0
-                                                * abs(S3) ** (-self._nn)
-                                                / (
-                                                        abs(S1) ** (-self._nn)
-                                                        + abs(S2) ** (-self._nn)
-                                                        + abs(S3) ** (-self._nn)
-                                                )
+                                            Q0
+                                            * abs(S3) ** (-self._nn)
+                                            / (
+                                                abs(S1) ** (-self._nn)
+                                                + abs(S2) ** (-self._nn)
+                                                + abs(S3) ** (-self._nn)
+                                            )
                                         )
 
                                         Q1 = np.nan_to_num(Q1)
@@ -1077,51 +1118,87 @@ class Barrier3d:
                                     if self._Shrub_ON:
                                         # Cell 1
                                         if i > 0:
-                                            if d < ShrubDomainWidth and self._ShrubPercentCover[d, i - 1] > 0:
-                                                Q1 = Q1 * ((1 - self._Qshrub_max) * self._ShrubPercentCover[d, i - 1])
-                                            elif d < DeadDomainWidth and self._DeadPercentCover[d, i - 1] > 0:
-                                                Q1 = Q1 * ((1 - self._Qshrub_max * 0.66) * self._DeadPercentCover[
-                                                    d, i - 1])  # Dead shrubs block 2/3 of what living shrubs block
+                                            if (
+                                                d < ShrubDomainWidth
+                                                and self._ShrubPercentCover[d, i - 1]
+                                                > 0
+                                            ):
+                                                Q1 = Q1 * (
+                                                    (1 - self._Qshrub_max)
+                                                    * self._ShrubPercentCover[d, i - 1]
+                                                )
+                                            elif (
+                                                d < DeadDomainWidth
+                                                and self._DeadPercentCover[d, i - 1] > 0
+                                            ):
+                                                Q1 = Q1 * (
+                                                    (1 - self._Qshrub_max * 0.66)
+                                                    * self._DeadPercentCover[d, i - 1]
+                                                )  # Dead shrubs block 2/3 of what living shrubs block
                                             Discharge[TS, d + 1, i - 1] = (
-                                                    Discharge[TS, d + 1, i - 1] + Q1
+                                                Discharge[TS, d + 1, i - 1] + Q1
                                             )
 
                                         # Cell 2
                                         # (ShrubDomainWidth - 1)?
-                                        if d < ShrubDomainWidth and self._ShrubPercentCover[d, i] > 0:
-                                            Q2 = Q2 * ((1 - self._Qshrub_max) * self._ShrubPercentCover[d, i])
-                                        elif d < DeadDomainWidth and self._DeadPercentCover[d, i] > 0:
-                                            Q2 = Q2 * ((1 - self._Qshrub_max * 0.66) * self._DeadPercentCover[d, i])
+                                        if (
+                                            d < ShrubDomainWidth
+                                            and self._ShrubPercentCover[d, i] > 0
+                                        ):
+                                            Q2 = Q2 * (
+                                                (1 - self._Qshrub_max)
+                                                * self._ShrubPercentCover[d, i]
+                                            )
+                                        elif (
+                                            d < DeadDomainWidth
+                                            and self._DeadPercentCover[d, i] > 0
+                                        ):
+                                            Q2 = Q2 * (
+                                                (1 - self._Qshrub_max * 0.66)
+                                                * self._DeadPercentCover[d, i]
+                                            )
                                         Discharge[TS, d + 1, i] = (
-                                                Discharge[TS, d + 1, i] + Q2
+                                            Discharge[TS, d + 1, i] + Q2
                                         )
 
                                         # Cell 3
                                         if i < (self._BarrierLength - 1):
-                                            if d < ShrubDomainWidth and self._ShrubPercentCover[d, i + 1] > 0:
-                                                Q3 = Q3 * ((1 - self._Qshrub_max) * self._ShrubPercentCover[d, i + 1])
-                                            elif d < DeadDomainWidth and self._DeadPercentCover[d, i + 1] > 0:
-                                                Q3 = Q3 * ((1 - self._Qshrub_max * 0.66) * self._DeadPercentCover[
-                                                    d, i + 1])
+                                            if (
+                                                d < ShrubDomainWidth
+                                                and self._ShrubPercentCover[d, i + 1]
+                                                > 0
+                                            ):
+                                                Q3 = Q3 * (
+                                                    (1 - self._Qshrub_max)
+                                                    * self._ShrubPercentCover[d, i + 1]
+                                                )
+                                            elif (
+                                                d < DeadDomainWidth
+                                                and self._DeadPercentCover[d, i + 1] > 0
+                                            ):
+                                                Q3 = Q3 * (
+                                                    (1 - self._Qshrub_max * 0.66)
+                                                    * self._DeadPercentCover[d, i + 1]
+                                                )
                                             Discharge[TS, d + 1, i + 1] = (
-                                                    Discharge[TS, d + 1, i + 1] + Q3
+                                                Discharge[TS, d + 1, i + 1] + Q3
                                             )
                                     else:
                                         # Cell 1
                                         if i > 0:
                                             Discharge[TS, d + 1, i - 1] = (
-                                                    Discharge[TS, d + 1, i - 1] + Q1
+                                                Discharge[TS, d + 1, i - 1] + Q1
                                             )
 
                                         # Cell 2
                                         Discharge[TS, d + 1, i] = (
-                                                Discharge[TS, d + 1, i] + Q2
+                                            Discharge[TS, d + 1, i] + Q2
                                         )
 
                                         # Cell 3
                                         if i < (self._BarrierLength - 1):
                                             Discharge[TS, d + 1, i + 1] = (
-                                                    Discharge[TS, d + 1, i + 1] + Q3
+                                                Discharge[TS, d + 1, i + 1] + Q3
                                             )
 
                                     # ### Calculate Sed Movement
@@ -1185,8 +1262,9 @@ class Barrier3d:
 
                                     # ### Calculate Net Erosion/Accretion
                                     # KA: note, Ian added bandaid by "or" statement here on 9/28/20
-                                    if (
-                                            Elevation[TS, d, i] > self._SL or any(z > self._SL for z in Elevation[TS, d + 1:d + 10, i])
+                                    if Elevation[TS, d, i] > self._SL or any(
+                                        z > self._SL
+                                        for z in Elevation[TS, d + 1 : d + 10, i]
                                     ):  # If cell is subaerial, elevation change is determined by difference between
                                         # flux in vs. flux out
                                         if i > 0:
@@ -1260,12 +1338,12 @@ class Barrier3d:
                         # ### Update Elevation After Every Storm Hour
                         if inundation == 1:
                             ElevationChange = (
-                                                      SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
-                                              ) / substep
+                                SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
+                            ) / substep
                         else:
                             ElevationChange = (
-                                                      SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
-                                              ) / substep
+                                SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
+                            ) / substep
                         Elevation[TS, :, :] = Elevation[TS, :, :] + ElevationChange
 
                         # Calculate and save volume of sediment deposited on/behind the island for every hour
@@ -1316,7 +1394,7 @@ class Barrier3d:
                         self._ShrubPercentCover,
                         self._BurialDomain,
                         self._ShrubDomainDead,
-                        self._DeadPercentCover
+                        self._DeadPercentCover,
                     )
 
         # Record storm data
@@ -1364,18 +1442,18 @@ class Barrier3d:
         drown_break = 0
 
         SCR = (
-                (self._x_s_TS[-1] - self._x_s_TS[-2]) * -1
-        )  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
+            self._x_s_TS[-1] - self._x_s_TS[-2]
+        ) * -1  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
 
         self._SCRagg = (
-               self._SCRagg + SCR
+            self._SCRagg + SCR
         )  # Account for any residual shoreline change (less than cell size) from previous time step
 
         if abs(self._SCRagg) >= 1:
             sc = math.floor(abs(self._SCRagg))
 
             if (
-                   self._SCRagg > 0
+                self._SCRagg > 0
             ):  # Positive = prograde, add row(s) to front of interior domain
                 for d in range(sc):
                     # New interior row added with elev. of previous dune field
@@ -1388,12 +1466,12 @@ class Barrier3d:
                     )
                     if self._DuneParamStart == 0:
                         newDuneHeight = np.ones([self._BarrierLength]) * (
-                                0.005
-                                + (
-                                        -0.005
-                                        + (0.005 - (-0.005))
-                                        * self._RNG.random(self._BarrierLength)
-                                )
+                            0.005
+                            + (
+                                -0.005
+                                + (0.005 - (-0.005))
+                                * self._RNG.random(self._BarrierLength)
+                            )
                         )
                     else:
                         newDuneHeight = np.ones([self._BarrierLength]) * 0.01
@@ -1429,12 +1507,12 @@ class Barrier3d:
                 self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
 
             elif (
-                    self._SCRagg < 0
+                self._SCRagg < 0
             ):  # Negative = erode, remove front row(s) of interior domain
                 for d in range(sc):
                     newDuneElev = self._InteriorDomain[
-                                  0, :
-                                  ]  # First row of interior will now become new part of active dune field
+                        0, :
+                    ]  # First row of interior will now become new part of active dune field
                     newDuneHeight = newDuneElev - self._BermEl
                     newDuneHeight[newDuneHeight < self._DuneRestart] = self._DuneRestart
                     self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
@@ -1450,12 +1528,8 @@ class Barrier3d:
                     self._ShrubDomainFemale = np.delete(
                         self._ShrubDomainFemale, 0, axis=0
                     )
-                    self._ShrubDomainMale = np.delete(
-                        self._ShrubDomainMale, 0, axis=0
-                    )
-                    self._ShrubDomainDead = np.delete(
-                        self._ShrubDomainDead, 0, axis=0
-                    )
+                    self._ShrubDomainMale = np.delete(self._ShrubDomainMale, 0, axis=0)
+                    self._ShrubDomainDead = np.delete(self._ShrubDomainDead, 0, axis=0)
                     self._ShrubPercentCover = np.delete(
                         self._ShrubPercentCover, 0, axis=0
                     )
@@ -1504,7 +1578,7 @@ class Barrier3d:
 
         zero = np.zeros([DomainWidth, self._BarrierLength])
         self._ShrubFemaleTS[self._time_index] = (
-                self._ShrubDomainFemale + zero
+            self._ShrubDomainFemale + zero
         )  # Correctly saves domain to list only if array of zeros are added to domain first, no clue why - 4Mar20
         self._ShrubMaleTS[self._time_index] = self._ShrubDomainMale + zero
         self._ShrubDeadTS[self._time_index] = self._ShrubDomainDead + zero
@@ -1516,7 +1590,7 @@ class Barrier3d:
             self._PercentCoverTS,
             self._ShrubArea,
             self._DeadPercentCover,
-            self._DeadPercentCoverTS
+            self._DeadPercentCoverTS,
         ) = self.CalcPC(
             self._ShrubDomainAll,
             self._PercentCoverTS,
@@ -1567,3 +1641,35 @@ class Barrier3d:
     @property
     def h_b_TS(self):
         return self._h_b_TS
+
+    @property
+    def growthparam(self):
+        return self._growthparam
+
+    @growthparam.setter
+    def growthparam(self, value):
+        self._growthparam = value
+
+    @property
+    def DuneDomain(self):
+        return self._DuneDomain
+
+    @DuneDomain.setter
+    def DuneDomain(self, value):
+        self._DuneDomain = value
+
+    @property
+    def InteriorDomain(self):
+        return self._InteriorDomain
+
+    @InteriorDomain.setter
+    def InteriorDomain(self, value):
+        self._InteriorDomain = value
+
+    @property
+    def DomainTS(self):
+        return self._DomainTS
+
+    @DomainTS.setter
+    def DomainTS(self, value):
+        self._DomainTS = value

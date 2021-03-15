@@ -22,7 +22,7 @@ class Barrier3dConfiguration(Configuration):
         "StormStart",
         default=2,
         units="y",
-        description="Year when storm can start occurring",
+        description="Year when storm can start occurring (NOTE: if changed, need new storm time series)",
         validators=[Range(lower=0)],
     )
     BarrierLength = FloatField(
@@ -64,7 +64,7 @@ class Barrier3dConfiguration(Configuration):
         "MHW",
         default=0.46,
         units="m",
-        description="Elevation of Mean High Water",
+        description="Elevation of Mean High Water (NOTE: if changed, need new storm time series)",
         validators=[Range(lower=0)],
     )
     Dstart = FloatField(
@@ -78,7 +78,7 @@ class Barrier3dConfiguration(Configuration):
         "BermEl",
         default=1.9,
         units="m",
-        description="Static elevation of berm; berm elevation + dune height = dune elevation",
+        description="Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)",
         validators=[Range(lower=0)],
     )
     rmin = FloatField(
@@ -147,11 +147,11 @@ class Barrier3dConfiguration(Configuration):
         description="Beach slope for runup calculations",
         validators=[Range(lower=0)],
     )
-#    StormTimeSeries = BooleanField(
-#        "StormTimeSeries",
-#        default=True,
-#        description="Storms will come from a time series",
-#    )
+    #    StormTimeSeries = BooleanField(
+    #        "StormTimeSeries",
+    #        default=True,
+    #        description="Storms will come from a time series",
+    #    )
     StormSeries = ArrayField(
         "StormSeries",
         default=(),
