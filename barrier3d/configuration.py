@@ -6,7 +6,14 @@ import numpy as np
 import pandas
 import xlrd
 
-from exconfig import Configuration, ArrayField, BooleanField, FloatField, IntegerField
+from exconfig import (
+    Configuration,
+    ArrayField,
+    BooleanField,
+    FloatField,
+    IntegerField,
+    # StringField,
+)
 from exconfig.validators import Range
 
 
@@ -392,6 +399,13 @@ class Barrier3dConfiguration(Configuration):
         units="m",
         description="Start location of shoreface toe ",
     )
+
+    # StormSeriesFile: StringField(
+    #     "ShorefaceToe",
+    #     default=0,
+    #     units="m",
+    #     description="Start location of shoreface toe ",
+    # )
 
     @classmethod
     def from_py(cls, path_to_py):

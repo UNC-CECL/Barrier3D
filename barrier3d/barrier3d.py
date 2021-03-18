@@ -691,6 +691,7 @@ class Barrier3d:
 
         # Dune height loss exclusively from vertical storm erosion
         self._Hd_Loss_TS = np.zeros([self._TMAX, self._BarrierLength])
+        self._dune_migration = False  # KA, added boolean to easily track when we shift the dune domain due to shoreline erosion
 
         self._time_index = 1
 
@@ -1440,6 +1441,9 @@ class Barrier3d:
         # ###########################################
 
         drown_break = 0
+        self._dune_migration = (
+            False  # KA, added boolean to easily track when we shift the dune domain
+        )
 
         SCR = (
             self._x_s_TS[-1] - self._x_s_TS[-2]
@@ -1451,6 +1455,7 @@ class Barrier3d:
 
         if abs(self._SCRagg) >= 1:
             sc = math.floor(abs(self._SCRagg))
+            self._dune_migration = True  # shift dune domain
 
             if (
                 self._SCRagg > 0
@@ -1673,3 +1678,11 @@ class Barrier3d:
     @DomainTS.setter
     def DomainTS(self, value):
         self._DomainTS = value
+
+    @property
+    def dune_migration(self):
+        return self._dune_migration
+
+    @property
+    def BermEl(self):
+        return self._BermEl
