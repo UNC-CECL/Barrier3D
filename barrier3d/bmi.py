@@ -62,6 +62,7 @@ class Barrier3dBmi(Bmi):
 
     def update(self):
         self._model.update()
+        self._model.update_dune_domain()
 
     def update_frac(self, time_frac):
         """Update model by a fraction of a time step."""

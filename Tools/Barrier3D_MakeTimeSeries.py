@@ -1,112 +1,120 @@
-# Time series creation for
+"""MakeTimeSeries
 
-# ~ Barrier3D ~
-# A spatially explicit exploratory model of barrier island evolution in three dimensions
+These functions are for creating and saving storm time series, initial dune height, and dune growth rates for
+use as inputs in Barrier3D simulations.
 
-# Ian R.B. Reeves
-
-# Version Number: 3
-# Updated: 21 Sep 2020
-
-# Creates and saves storm time series, initial dune height, and dune growth rates
-
-# This version randomly selects a storm from a given storm list
+"""
 
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-#####################################################################################################################
-### Generate storm time series
 
-# KA, this needs to be updated for BMI (these units are already in dam, so I think this function would need to be added to load_inputs)
-from Barrier3D_Parameters import (mean_storm, SD_storm, MHW, StormStart, Dstart, rmin, rmax, BermEl)
-print()
+def storms_per_year_from_MSSM_output(
+    datadir,
+    name,
+    storm_list_name="VCRStormList.npy",
+    mean_storm=8.3,
+    SD_storm=5.9,
+    MHW=0.46,
+    StormStart=2,
+    BermEl=1.9,
+    model_years=10000,
+):
+    r"""This function uses a normal distribution (provided the mean and standard deviation) to select a random number
+    of storms per year from a list of multivariate sea storms, created using the Wahl et al., 2016 method.
 
-years = 3000
+    """
 
-# Set-up input files
-# StormList = np.load('C:/Barrier3D/Parameterization/VCRStormList.npy')
-StormList = np.load('/Users/KatherineAnardeWheels/PycharmProjects/CASCADE/B3D_Inputs/VCRStormList.npy')
+    # convert to decameters
+    MHW = MHW / 10
+    BermEl = BermEl / 10 - MHW  # just for plotting
 
-# Time series
-StormSeries = np.zeros([StormStart, 5])
+    # load list of storms (created using a MSSM model)
+    StormList = np.load(datadir + storm_list_name)
 
-for t in range(StormStart, years):
+    StormSeries = np.zeros([StormStart, 5])  # pad with zeros until storms start
 
-    # Calculate number of storms in year
-    numstorm = round(np.random.normal(mean_storm, SD_storm))
-   
-    if numstorm < 0:
-        numstorm = 0
-    stormTS = np.zeros([numstorm,5])    
-    
-    # Select storms for year
-    for n in range(numstorm):       
-        storm = random.randint(1,len(StormList)-1)
-       
-        dur = StormList[storm, 1] # Duration          
-        Rhigh = StormList[storm, 2] # TWL
-        period = StormList[storm, 4] # Tp
-        Rlow = StormList[storm, 6] # Rlow
-               
-        stormTS[n,0] = t
-        stormTS[n,1] = Rhigh / 10 - MHW
-        stormTS[n,2] = Rlow / 10 - MHW
-        stormTS[n,3] = period
-        stormTS[n,4] = round(dur / 2) # Divided by two assuming TWL only for only half of storm
-    
-    # Save
-    StormSeries = np.vstack([StormSeries, stormTS])
-    
-# np.save('C:/Barrier3D/Parameterization/StormTimeSeries_1000yr.npy', StormSeries)
-np.save('/Users/KatherineAnardeWheels/PycharmProjects/CASCADE/B3D_Inputs/StormTimeSeries_3000yr.npy', StormSeries)
+    for t in range(StormStart, model_years):
 
-## Plots
-Bin = np.linspace(-1, 4.6, 57)
+        # Calculate number of storms in year
+        numstorm = round(np.random.normal(mean_storm, SD_storm))
 
-plt.figure()
-surgetidecalc = StormSeries[:,2] * 10
-plt.hist(surgetidecalc, bins=Bin)
-plt.title('StormSeries Rlow')
+        if numstorm < 0:
+            numstorm = 0
+        stormTS = np.zeros([numstorm, 5])
 
-plt.figure()
-twlcalc = StormSeries[:,1] * 10
-plt.hist(twlcalc, bins=Bin)
-plt.title('StormSeries Rhigh')
+        # Select storms for year
+        for n in range(numstorm):
+            storm = random.randint(1, len(StormList) - 1)
 
-plt.figure()
-fig = plt.gcf()
-fig.set_size_inches(16,4)
-plt.plot(twlcalc)
-plt.xlabel('Storm')
-plt.hlines(BermEl*10, -5, len(twlcalc)+20, colors='red', linestyles='dashed')
-plt.show()
-plt.ylabel('TWL (m MHW)')
+            dur = StormList[storm, 1]  # Duration
+            Rhigh = StormList[storm, 2]  # TWL
+            period = StormList[storm, 4]  # Tp
+            Rlow = StormList[storm, 6]  # Rlow
 
-print('Max TWL:          ', max(StormSeries[:,1])*10)
-print('Max Rexcess:      ', (max(StormSeries[:,1])-BermEl)*10)
+            stormTS[n, 0] = t
+            stormTS[n, 1] = Rhigh / 10 - MHW
+            stormTS[n, 2] = Rlow / 10 - MHW
+            stormTS[n, 3] = period
+            stormTS[n, 4] = round(
+                dur / 2
+            )  # Divided by two assuming TWL only for only half of storm
+            # (we could do better here, like assume that the TWL follows a distribution;
+            # or create a time series as in the Wahl follow up paper)
 
-print('% Rhigh > BermEl: ', (twlcalc>(BermEl*10)).sum()/len(twlcalc)*100)
-print('% Rlow  > BermEl: ', (surgetidecalc>(BermEl*10)).sum()/len(surgetidecalc)*100)
-print()
-print('[X] Storm series')
+        StormSeries = np.vstack([StormSeries, stormTS])
 
-#####################################################################################################################
-### Generate dune height start
-DuneStart = np.ones([1000]) * (Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1000)))
-np.save('C:/Barrier3D/Parameterization/DuneStart_1000dam.npy', DuneStart)
-print('[X] Dune start heights')
+    # Plots
+    Bin = np.linspace(-1, 4.6, 57)
 
+    plt.figure()
+    surgetidecalc = StormSeries[:, 2] * 10
+    plt.hist(surgetidecalc, bins=Bin)
+    plt.title("StormSeries Rlow")
 
-#####################################################################################################################
-### Generate along-shore varying rmin & rmax
-growthparam = rmin + (rmax-rmin) * np.random.rand(1000)
-np.save('C:/Barrier3D/Parameterization/growthparam_1000dam.npy', growthparam)
-print('[X] Dune growth rates')
+    plt.figure()
+    twlcalc = StormSeries[:, 1] * 10
+    plt.hist(twlcalc, bins=Bin)
+    plt.title("StormSeries Rhigh")
 
+    plt.figure()
+    fig = plt.gcf()
+    fig.set_size_inches(16, 4)
+    plt.plot(twlcalc)
+    plt.xlabel("Storm")
+    plt.hlines(BermEl * 10, -5, len(twlcalc) + 20, colors="red", linestyles="dashed")
+    plt.show()
+    plt.ylabel("TWL (m MHW)")
 
-print()
-print('- Time series generation complete -')
+    print("Max TWL (m):          ", max(StormSeries[:, 1]) * 10)
+    print("Max Rexcess (m):      ", (max(StormSeries[:, 1]) - BermEl) * 10)
+
+    print("% Rhigh > BermEl: ", (twlcalc > (BermEl * 10)).sum() / len(twlcalc) * 100)
+    print(
+        "% Rlow  > BermEl: ",
+        (surgetidecalc > (BermEl * 10)).sum() / len(surgetidecalc) * 100,
+    )
+
+    return np.save(datadir + name, StormSeries)
 
 
+# Generate dune height start
+def gen_dune_height_start(datadir, name, Dstart=0.5, ny=1000):
+
+    # convert to decameters
+    Dstart = Dstart / 10
+
+    DuneStart = np.ones([ny]) * (
+        Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(ny))
+    )
+
+    return np.save(datadir + name, DuneStart)
+
+
+# Generate along-shore varying rmin & rmax
+def gen_alongshore_variable_rmin_rmax(datadir, name, rmin=0.35, rmax=0.85, ny=1000):
+
+    growthparam = rmin + (rmax - rmin) * np.random.rand(ny)
+
+    return np.save(datadir + name, growthparam)

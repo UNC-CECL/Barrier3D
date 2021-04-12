@@ -90,3 +90,5 @@ ENV/
 
 # PyCharm settings
 .idea
+/example/
+/SimulationDataForReview/
