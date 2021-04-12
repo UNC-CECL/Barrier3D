@@ -615,6 +615,8 @@ class Barrier3d:
         self._RSLR_const = kwds.pop("RSLR_const")
         self._SH = kwds.pop("SH")
         self._x_t = kwds.pop("x_t")
+        self._rmin = kwds.pop("rmin")
+        self._rmax = kwds.pop("rmax")
 
         if len(kwds) > 0:
             raise ValueError(
@@ -1686,3 +1688,15 @@ class Barrier3d:
     @property
     def BermEl(self):
         return self._BermEl
+
+    @property
+    def rmin(self):
+        return self._rmin
+
+    @property
+    def rmax(self):
+        return self._rmax
+
+    @property
+    def Dmax(self):
+        return self._Dmax
