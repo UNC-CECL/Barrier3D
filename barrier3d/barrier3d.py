@@ -99,8 +99,6 @@ class Barrier3d:
 
         BeachWidth = 40 / 10  # Calculated based on berm (dune toe) elevation of 1.44 MSL, and beach slope of 0.04 (i.e., 1.44/0.04 = 47.5 ~= 40 m)
 
-        MaxShrubHeight = 0.53
-
         ### Burial / Uprooting
         ShrubHeight = ShrubPercentCover * self._MaxShrubHeight
         DeadHeight = DeadPercentCover * self._MaxShrubHeight
