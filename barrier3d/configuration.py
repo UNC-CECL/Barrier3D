@@ -389,9 +389,10 @@ class Barrier3dConfiguration(Configuration):
     )
     MaxShrubHeight = FloatField(
         "MaxShrubHeight",
-        default=3.5,
+        default=5.2,
         units="m",
         description="Maximum shrub height",
+        validators=[Range(lower=0)],
     )
     ShorefaceToe = FloatField(
         "ShorefaceToe",
