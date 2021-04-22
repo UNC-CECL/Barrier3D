@@ -50,35 +50,13 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
         params = load_parameters(parameter_file, fmt=fmt)
 
         # KA: this is what I tried, among other things, to debug .npy - both csv and npy are hard coded
-        if os.path.isfile("barrier3d-elevations.npy"):
-            params["InteriorDomain"] = load_elevation(
-                f"{prefix}-elevations.npy", fmt="npy"
-            )
-        else:
-            params["InteriorDomain"] = load_elevation(
-                f"{prefix}-elevations.csv", fmt="csv"
-            )
-        if os.path.isfile("barrier3d-storms.npy"):
-            params["StormSeries"] = load_storms(
-                f"{prefix}-storms.npy", fmt="npy"
-            )  # storms must come from a time series
-        else:
-            params["StormSeries"] = load_storms(f"{prefix}-storms.csv", fmt="csv")
+        params["InteriorDomain"] = load_elevation(params["elevation_file"], fmt=None)
+        params["StormSeries"] = load_storms(
+            params["storm_file"], fmt=None
+        )  # storms must come from a time series
+        params["DuneStart"] = load_dunes(params["dune_file"], fmt=None)
+        params["GrowthStart"] = load_growth_param(params["growth_param_file"], fmt=None)
 
-        if params["DuneParamStart"]:  # dune height will come from external file
-            if os.path.isfile("barrier3d-dunes.npy"):
-                params["DuneStart"] = load_dunes(f"{prefix}-dunes.npy", fmt="npy")
-            else:
-                params["DuneStart"] = load_dunes(f"{prefix}-dunes.csv", fmt="csv")
-        if params["GrowthParamStart"]:  # growth parameters will come from external file
-            if os.path.isfile("barrier3d-growthparam.npy"):
-                params["GrowthStart"] = load_growth_param(
-                    f"{prefix}-growthparam.npy", fmt="npy"
-                )
-            else:
-                params["GrowthStart"] = load_growth_param(
-                    f"{prefix}-growthparam.csv", fmt="csv"
-                )
         _process_raw_input(params)
 
     return params
@@ -94,6 +72,8 @@ def load_parameters(path_to_file, fmt="yaml"):
 
 
 def load_elevation(path_to_file, fmt="npy"):
+    fmt = fmt or _guess_format(path_to_file)
+
     # load_elevation(path_to_file, fmt="npy"):
     if fmt == "npy":
         elevation = np.load(path_to_file, allow_pickle=True)
@@ -117,7 +97,35 @@ def load_elevation(path_to_file, fmt="npy"):
     return elevation
 
 
+def _guess_format(path_to_file):
+    """Guess the format of a file based on its name.
+
+    Parameters
+    ----------
+    path_to_file : str, path-like
+        Name of the file.
+
+    Returns
+    -------
+    str
+        The format of the file or an empty string if it can't be determined.
+
+    Examples
+    --------
+    >>> from barrier3d.load_input import _guess_format
+    >>> _guess_format("file.csv")
+    'csv'
+    >>> _guess_format("file.npy")
+    'npy'
+    >>> _guess_format("file-with-an-extension")
+    ''
+    """
+    return pathlib.Path(path_to_file).suffix[1:]
+
+
 def load_storms(path_to_file, fmt="npy"):
+    fmt = fmt or _guess_format(path_to_file)
+
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
@@ -154,6 +162,8 @@ def load_storms(path_to_file, fmt="npy"):
 
 
 def load_dunes(path_to_file, fmt="npy"):
+    fmt = fmt or _guess_format(path_to_file)
+
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
@@ -168,6 +178,8 @@ def load_dunes(path_to_file, fmt="npy"):
 
 
 def load_growth_param(path_to_file, fmt="npy"):
+    fmt = fmt or _guess_format(path_to_file)
+
     if fmt == "npy":
         data = np.load(path_to_file)
     elif fmt == "csv":
