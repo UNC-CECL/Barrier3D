@@ -2,19 +2,14 @@
 # -*- coding: utf-8 -*-
 import os
 import pathlib
-import re
-import sys
-from collections import OrderedDict
 from functools import partial
 
 import click
 import numpy as np
 import pandas as pd
 import pkg_resources
-import yaml
 
-from .barrier3d import Barrier3d, Barrier3dError
-from .bmi import Barrier3dBmi
+from .barrier3d import Barrier3d
 from .configuration import Barrier3dConfiguration
 
 __version__ = "0.1"
@@ -191,7 +186,7 @@ def _contents_of_input_file(infile: str) -> str:
     if infile not in INFILES:
         raise ValueError(
             "unknown input file type ({infile} not one of {infiles})".format(
-                infile=infile, infiles=", ".join(sorted(infiles))
+                infile=infile, infiles=", ".join(sorted(INFILES))
             )
         )
 

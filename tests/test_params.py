@@ -1,10 +1,9 @@
 import importlib
 
-import numpy as np
 import pytest
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal
 
-from barrier3d import Barrier3d, Barrier3dConfiguration, load_inputs
+from barrier3d import Barrier3d, load_inputs
 from barrier3d.load_input import as_cwd
 
 
@@ -65,11 +64,13 @@ def test_missing_folder(datadir):
 def test_barrier3d_init(datadir, fmt):
     params = load_inputs(datadir, prefix="barrier3d", fmt=fmt)
     barrier3d = Barrier3d(**params)
+    assert isinstance(barrier3d, Barrier3d)
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
 def test_barrier3d_from_path(datadir, fmt):
     barrier3d = Barrier3d.from_path(datadir, fmt=fmt)
+    assert isinstance(barrier3d, Barrier3d)
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
