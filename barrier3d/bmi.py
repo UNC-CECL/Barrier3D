@@ -3,7 +3,6 @@
 import pathlib
 
 import numpy as np
-import yaml
 from bmipy import Bmi
 
 from .barrier3d import Barrier3d

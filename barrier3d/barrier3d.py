@@ -1,13 +1,14 @@
 import math
 
-# import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
-
 import numpy as np
-
-# from scipy import signal
 
 # from .parameters import Barrier3dParameters
 from .load_input import load_inputs
+
+# import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
+
+
+# from scipy import signal
 
 
 class Barrier3dError(Exception):
@@ -178,12 +179,12 @@ class Barrier3d:
 
                 # For all cells with a shrub
                 FemaleShrubs = ShrubDomainFemale[:, k]
-                I = [
+                fruiting_shrub = [
                     index
                     for index, value in enumerate(FemaleShrubs)
                     if value >= self._TimeFruit
                 ]
-                numShrubCells = len(I)
+                numShrubCells = len(fruiting_shrub)
                 # Determine how many seeds in each cell
                 # Seedspercell = np.random.randint(
                 Seedspercell = self._RNG.integers(
@@ -222,7 +223,7 @@ class Barrier3d:
                                 X, Y = np.meshgrid(
                                     range(1, gridsize), range(1, gridsize)
                                 )
-                                originX = I[
+                                originX = fruiting_shrub[
                                     i
                                 ]  # Sets coordinates of plant where seed is coming from
                                 originY = k

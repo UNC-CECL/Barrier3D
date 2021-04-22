@@ -1,10 +1,10 @@
 import contextlib
+import math
 import os
 import pathlib
 
 import numpy as np
 import pandas
-import math
 
 from .configuration import Barrier3dConfiguration
 
