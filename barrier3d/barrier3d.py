@@ -1,13 +1,14 @@
 import math
 
-# import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
-
 import numpy as np
-
-# from scipy import signal
 
 # from .parameters import Barrier3dParameters
 from .load_input import load_inputs
+
+# import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
+
+
+# from scipy import signal
 
 
 class Barrier3dError(Exception):

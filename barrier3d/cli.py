@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os
 import pathlib
-import pkg_resources
 import re
 import sys
 from collections import OrderedDict
@@ -11,12 +10,12 @@ from functools import partial
 import click
 import numpy as np
 import pandas as pd
+import pkg_resources
 import yaml
 
 from .barrier3d import Barrier3d, Barrier3dError
 from .bmi import Barrier3dBmi
 from .configuration import Barrier3dConfiguration
-
 
 __version__ = "0.1"
 
@@ -59,9 +58,8 @@ class Barrier3dOutputWriter:
                         "Back-barrier shoreline position [dam]",
                     ]
                 ),
-                file=fp
+                file=fp,
             )
-
 
     def _save_output(self):
         data = pd.DataFrame(
@@ -73,7 +71,7 @@ class Barrier3dOutputWriter:
                 "dx_sf_dt": np.diff(self._bmi.x_s_TS[-2:]),
                 "x_b": self._bmi.x_b_TS[-1],
             },
-            index=(0, ),
+            index=(0,),
         )
         data.to_csv("output.csv", mode="a", index=False, sep=",", header=False)
 
@@ -203,9 +201,7 @@ def _contents_of_input_file(infile: str) -> str:
 @barrier3d.command()
 @click.argument(
     "value",
-    type=click.Choice(
-        ["time_step", "q_ow", "q_sf", "dx_toe_dt", "dx_sf_dt", "x_bb"]
-    )
+    type=click.Choice(["time_step", "q_ow", "q_sf", "dx_toe_dt", "dx_sf_dt", "x_bb"]),
 )
 def plot(value: str) -> None:
     """Plot output from a simulation."""
@@ -217,7 +213,7 @@ def plot(value: str) -> None:
     data = pd.read_csv(
         filepath,
         names=("time_step", "q_ow", "q_sf", "dx_toe_dt", "dx_sf_dt", "x_bb"),
-        comment="#"
+        comment="#",
     )
     plt.plot(data["time_step"], data[value])
 

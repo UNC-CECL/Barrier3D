@@ -5,14 +5,12 @@ import pathlib
 import numpy as np
 import pandas
 import xlrd
-
-from exconfig import (
-    Configuration,
+from exconfig import (  # StringField,
     ArrayField,
     BooleanField,
+    Configuration,
     FloatField,
     IntegerField,
-    # StringField,
 )
 from exconfig.validators import Range
 
