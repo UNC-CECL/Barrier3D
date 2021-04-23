@@ -1,3 +1,7 @@
+elevation_file: "barrier3d-elevations.npy" # File that contains initial elevations
+dune_file: "barrier3d-dunes.npy"  # File that contains initial dune values
+growth_param_file: "barrier3d-growthparam.npy" # File that contains initial growth parameters
+storm_file: "barrier3d-storms.npy" # File that contains storm data
 TMAX: 151                       # [y] Duration of simulation
 StormStart: 2                   # [y] Year when storm can start occurring (NOTE: if changed, need new storm time series)
 BarrierLength: 500.0            # [m] Static length (alongshore) of island segment
