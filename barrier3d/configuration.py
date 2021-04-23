@@ -11,7 +11,7 @@ from exconfig import (
     FloatField,
     IntegerField,
 )
-from exconfig.validators import Range, Path
+from exconfig.validators import Path, Range
 
 
 class Barrier3dConfiguration(Configuration):
