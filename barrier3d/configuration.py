@@ -7,37 +7,37 @@ from exconfig import (
     ArrayField,
     BooleanField,
     Configuration,
+    Field,
     FloatField,
     IntegerField,
 )
-from exconfig.field import Field
 from exconfig.validators import Range, Path
 
 
 class Barrier3dConfiguration(Configuration):
     elevation_file = Field(
         "elevation_file",
-        default="barrier3d-elevations.csv",
+        default="barrier3d-elevations.npy",
         description="File that contains initial elevations",
-        validators=[Path(file_okay=True, dir_okay=False, exists=False)],
+        validators=[Path(file_okay=True, dir_okay=False)],
     )
     dune_file = Field(
         "dune_file",
-        default="barrier3d-dunes.csv",
+        default="barrier3d-dunes.npy",
         description="File that contains initial dune values",
-        validators=[Path(file_okay=True, dir_okay=False, exists=False)],
+        validators=[Path(file_okay=True, dir_okay=False)],
     )
     growth_param_file = Field(
         "growth_param_file",
-        default="barrier3d-growthparam.csv",
+        default="barrier3d-growthparam.npy",
         description="File that contains initial growth parameters",
-        validators=[Path(file_okay=True, dir_okay=False, exists=False)],
+        validators=[Path(file_okay=True, dir_okay=False)],
     )
     storm_file = Field(
         "storm_file",
-        default="barrier3d-storms.csv",
+        default="barrier3d-storms.npy",
         description="File that contains storm data",
-        validators=[Path(file_okay=True, dir_okay=False, exists=False)],
+        validators=[Path(file_okay=True, dir_okay=False)],
     )
     TMAX = IntegerField(
         "TMAX",
