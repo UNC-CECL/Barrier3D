@@ -49,13 +49,16 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
 
         params = load_parameters(parameter_file, fmt=fmt)
 
-        # KA: this is what I tried, among other things, to debug .npy - both csv and npy are hard coded
-        params["InteriorDomain"] = load_elevation(params["elevation_file"], fmt=None)
+        params["InteriorDomain"] = load_elevation(
+            params.pop("elevation_file"), fmt=None
+        )
         params["StormSeries"] = load_storms(
-            params["storm_file"], fmt=None
+            params.pop("storm_file"), fmt=None
         )  # storms must come from a time series
-        params["DuneStart"] = load_dunes(params["dune_file"], fmt=None)
-        params["GrowthStart"] = load_growth_param(params["growth_param_file"], fmt=None)
+        params["DuneStart"] = load_dunes(params.pop("dune_file"), fmt=None)
+        params["GrowthStart"] = load_growth_param(
+            params.pop("growth_param_file"), fmt=None
+        )
 
         _process_raw_input(params)
 
