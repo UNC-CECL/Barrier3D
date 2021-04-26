@@ -7,7 +7,6 @@ from .load_input import load_inputs
 
 # import random   # KA: mcflugen added a seeded number generator so we can reproduce runs for testing
 
-
 # from scipy import signal
 
 
@@ -88,6 +87,8 @@ class Barrier3d:
         DuneDomainCrest,
         ShrubDomainFemale,
         ShrubDomainMale,
+        ShrubPercentCover,
+        DeadPercentCover,
         BurialDomain,
         InteriorWidth_Avg,
         DomainWidth,
@@ -97,79 +98,86 @@ class Barrier3d:
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
 
-        BeachWidth = 60 / 10  # Temp
+        BeachWidth = int(self._bermEl / self._beta)   # Calculated based on berm (dune toe) elevation of 1.44 MSL, and beach slope of 0.04 (i.e., 1.44/0.04 = 47.5 ~= 40 m)
 
-        # ### Burial
-        # Find heights of shrub plants
-        ShrubHeight = ShrubDomainAll * self._MaxShrubHeight
+        ### Burial / Uprooting
+        ShrubHeight = ShrubPercentCover * self._MaxShrubHeight
+        DeadHeight = DeadPercentCover * self._MaxShrubHeight
 
-        # Kill all shrubs buried by over depth limit or eroded
-        ShrubDomainDead[
-            BurialDomain > (self._BurialLimit * ShrubHeight)
-        ] = ShrubDomainAll[
-            BurialDomain > (self._BurialLimit * ShrubHeight)
-        ]  # Transfer to dead domain
-        ShrubDomainDead[
-            BurialDomain >= 0.3
-        ] = 0  # If buried by more than 3 m, considered shrub to be gone(dead or alive)
-        ShrubDomainDead[BurialDomain < self._UprootLimit] = ShrubDomainAll[
-            BurialDomain < self._UprootLimit
-        ]  # Transfer to dead domain
+        for l in range(len(ShrubPercentCover[0])):
+            for w in range(len(ShrubPercentCover)):
+                if ShrubDomainAll[w, l] > 0:
+                    if BurialDomain[w, l] > ShrubHeight[w, l] or BurialDomain[w, l] < self._UprootLimit:
+                        ShrubDomainFemale[w, l] = 0
+                        ShrubDomainMale[w, l] = 0
 
-        ShrubDomainFemale[BurialDomain > (self._BurialLimit * ShrubHeight)] = 0
-        ShrubDomainFemale[BurialDomain < self._UprootLimit] = 0
-        ShrubDomainMale[BurialDomain > (self._BurialLimit * ShrubHeight)] = 0
-        ShrubDomainMale[BurialDomain < self._UprootLimit] = 0
+                    elif BurialDomain[w, l] > (self._BurialLimit * ShrubHeight[w, l]):
+                        ShrubDomainDead[w, l] = ShrubDomainAll[w, l]
+                        ShrubDomainFemale[w, l] = 0
+                        ShrubDomainMale[w, l] = 0
 
-        BurialDomain[
-            BurialDomain > (self._BurialLimit * ShrubHeight)
-        ] = 0  # Reset burial domain
-        BurialDomain[BurialDomain < self._UprootLimit] = 0  # Reset burial domain
-        BurialDomain[BurialDomain >= 0.3] = 0  # Reset burial domain
+                elif ShrubDomainDead[w, l] > 0:
+                    if BurialDomain[w, l] > DeadHeight[w, l] or BurialDomain[w, l] < self._UprootLimit:
+                        ShrubDomainDead[w, l] = 0
+
+        tempAll = ShrubDomainFemale + ShrubDomainMale + ShrubDomainDead
+        BurialDomain[tempAll == 0] = 0  # Reset burial domain
+
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
 
-        # ### Inundation
-        # Remove shrubs that have fallen below Mean High Water (i.e. elevation of 0)
-        # (passively inundated by rising back-barrier water elevations)
 
+        ### Inundation
+        # Kill shrubs that have fallen below minimum elevation, remove shrubs that have fallen below Mean High Water (i.e. elevation of 0) (passive loss from rising back-barrier water elevations)
         for w in range(DomainWidth):
-            for bl in range(self._BarrierLength):
-                if InteriorDomain[w, bl] < 0 and ShrubDomainAll[w, bl] > 0:
-                    if InteriorDomain[w, bl] > -self._TideAmp:
-                        ShrubDomainDead[w, bl] = ShrubDomainAll[
-                            w, bl
-                        ]  # Shrub remains as dead if within tidal range (i.e. MHW - tidal range)
-                    ShrubDomainFemale[w, bl] = 0
-                    ShrubDomainMale[w, bl] = 0
-                elif (
-                    InteriorDomain[w, bl] < 0
-                    and ShrubDomainDead[w, bl] > 0
-                    and InteriorDomain[w, bl] < -self._TideAmp
-                ):  # Remove dead shrubs below tidal range
-                    ShrubDomainDead[w, bl] = 0
+            for l in range(self._BarrierLength):
+                if InteriorDomain[w, l] < self._ShrubEl_min:
+                    if InteriorDomain[w, l] > self._SL:
+                        if ShrubDomainFemale[w, l] > 0 or ShrubDomainMale[w, l] > 0:
+                            ShrubDomainDead[w, l] = ShrubDomainFemale[w, l] + ShrubDomainMale[
+                                w, l]  # Shrub remains as dead if above MHW
+                            ShrubDomainFemale[w, l] = 0
+                            ShrubDomainMale[w, l] = 0
+                    else:
+                        ShrubDomainDead[w, l] = 0  # Remove dead shrubs below MHW
+                        ShrubDomainFemale[w, l] = 0
+                        ShrubDomainMale[w, l] = 0
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
 
-        # ### Age the shrubs in years
+
+        ### Age the shrubs in years
         ShrubDomainFemale[ShrubDomainFemale > 0] += 1
         ShrubDomainMale[ShrubDomainMale > 0] += 1
 
-        # ### Randomly drop a seed onto the island each time step
+        # ================================================
+        ### Drop Seed
+        # Randomly drop a seed onto the island each time step
         # randX = np.random.randint(0, self._BarrierLength)
-        # randY = np.random.randint(0, InteriorWidth_Avg)
+        # randY = np.random.randint(0, max(1, InteriorWidth_Avg))
         randX = self._RNG.integers(0, self._BarrierLength)
         randY = self._RNG.integers(0, max(1, InteriorWidth_Avg))
-        if (
-            ShrubDomainFemale[randY, randX] == 0
-            and ShrubDomainMale[randY, randX] == 0
-            and DuneDomainCrest[randX] + self._BermEl >= self._Dshrub
-            and self._ShrubEl_min <= InteriorDomain[randY, randX] <= self._ShrubEl_max
-        ):
-            # if random.random() > self._Female:
+        if ShrubDomainFemale[randY, randX] == 0 and ShrubDomainMale[randY, randX] == 0 and ShrubDomainDead[
+            randY, randX] == 0 and DuneDomainCrest[randX] + self._BermEl >= self._Dshrub and InteriorDomain[
+            randY, randX] >= self._ShrubEl_min \
+                and InteriorDomain[randY, randX] <= self._ShrubEl_max:
             if self._RNG.uniform() > self._Female:
                 ShrubDomainFemale[randY, randX] = 1
             else:
                 ShrubDomainMale[randY, randX] = 1
+
+        # # Randomly drop a seed onto the LEFT SIDE of the island each time step
+        # # randX = np.random.randint(0,BarrierLength*0.02) # Can drop anywhere with the first 2% of interior columns
+        # # randY = np.random.randint(0,max(1,InteriorWidth_Avg))
+        # randX = self._RNG.integers(0,self.BarrierLength*0.02)
+        # randY = self._RNG.integers(0,max(1,InteriorWidth_Avg))
+        # if ShrubDomainFemale[randY,randX] == 0 and ShrubDomainMale[randY,randX] == 0 and ShrubDomainDead[randY,randX] == 0 and DuneDomainCrest[randX] + self.BermEl >= self.Dshrub and InteriorDomain[randY,randX] >= self.ShrubEl_min \
+        #     and InteriorDomain[randY,randX] <= self.ShrubEl_max:
+        #     if self._RNG.uniform() > self._Female:
+        #         ShrubDomainFemale[randY, randX] = 1
+        #     else:
+        #         ShrubDomainMale[randY, randX] = 1
+        # ================================================
+
 
         # ### Disperse seeds
         for k in range(
@@ -611,10 +619,9 @@ class Barrier3d:
         self._MaxUpSlope = kwds.pop("MaxUpSlope")
         self._DuneParamStart = kwds.pop("DuneParamStart")
         self._GrowthParamStart = kwds.pop("GrowthParamStart")
-        self._MaxShrubHeight = kwds.pop("MaxShrubHeight")
         self._RSLR_Constant = kwds.pop("RSLR_Constant")
         self._RSLR_const = kwds.pop("RSLR_const")
-        self._SH = kwds.pop("SH")
+        self._MaxShrubHeight = kwds.pop("MaxShrubHeight")
         self._x_t = kwds.pop("x_t")
         self._rmin = kwds.pop("rmin")
         self._rmax = kwds.pop("rmax")
@@ -759,6 +766,8 @@ class Barrier3d:
                 DuneDomainCrest,
                 self._ShrubDomainFemale,
                 self._ShrubDomainMale,
+                self._ShrubPercentCover,
+                self._DeadPercentCover,
                 self._BurialDomain,
                 InteriorWidth_Avg,
                 DomainWidth,
