@@ -9,11 +9,9 @@ import numpy as np
 import pandas as pd
 import pkg_resources
 
+from . import __version__
 from .barrier3d import Barrier3d
 from .configuration import Barrier3dConfiguration
-
-__version__ = "0.1"
-
 
 out = partial(click.secho, bold=True, err=True)
 err = partial(click.secho, fg="red", err=True)
