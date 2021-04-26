@@ -41,7 +41,6 @@ def test_barrier3d_configuration(datadir):
     assert_array_almost_equal(actual.pop("growthparam"), expected.pop("growthparam"))
     assert_array_almost_equal(actual.pop("DuneDomain"), expected.pop("DuneDomain"))
     assert_array_almost_equal(actual.pop("StormSeries"), expected.pop("StormSeries"))
-    assert_array_almost_equal(actual.pop("SH"), expected.pop("SH"))
 
     actual.pop("RNG")
     expected.pop("RNG")
