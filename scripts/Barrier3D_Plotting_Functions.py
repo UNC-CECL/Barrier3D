@@ -52,31 +52,40 @@ def plot_DuneHeight(DuneDomain, Dmax):
     plt.title("Dune Height (m)")
     name = "Output/Dunes"
     # duneFig.savefig(name)
-
+    duneFig.show()
 
 # ===================================================
 # 2: Elevation Domain For Last Time Step
 
 
-def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
+def plot_ElevTMAX(TMAX, DuneDomain, DomainTS, BermEl, Shrub_ON, PercentCoverTS, DeadPercentCoverTS, DuneWidth):
 
-    if TMAX > t:
-        TMAX = t
+    TMAX = TMAX - 1
     Dunes = (DuneDomain[TMAX, :, :] + BermEl) * 10
     Dunes = np.rot90(Dunes)
     Dunes = np.flipud(Dunes)
     Domain = DomainTS[TMAX] * 10
     Domain = np.vstack([Dunes, Domain])
+    if Shrub_ON == 1:
+        Shrubs = PercentCoverTS[TMAX]
+        Dead = DeadPercentCoverTS[TMAX]
+        Sy, Sx = np.argwhere(Shrubs > 0).T
+        Sz = Shrubs[Sy, Sx] * 80
+        Dy, Dx = np.argwhere(Dead > 0).T
+        Dz = Dead[Dy, Dx] * 80
     elevFig1 = plt.figure(figsize=(14, 5))
     ax = elevFig1.add_subplot(111)
     cax = ax.matshow(
         Domain, origin="lower", cmap="terrain", vmin=-1.1, vmax=4.0
     )  # , interpolation='gaussian') # analysis:ignore
+    if Shrub_ON == 1:
+        ax.scatter(Sx, Sy + DuneWidth, marker='$*$', s=Sz, c='black', alpha=0.7, edgecolors='none')
+        ax.scatter(Dx, Dy + DuneWidth, marker='$*$', s=Dz, c='red', alpha=0.7, edgecolors='none')
     ax.xaxis.set_ticks_position("bottom")
     # cbar = elevFig1.colorbar(cax)
     # cbar.set_label('Elevation (m)', rotation=270)
     plt.xlabel("Alongshore Distance (dam)")
-    plt.ylabel("Cross-Shore Diatance (dam)")
+    plt.ylabel("Cross-Shore Distance (dam)")
     plt.title("Interior Elevation (m)")
     timestr = "Time = " + str(TMAX) + " yrs"
     plt.text(1, 1, timestr)
@@ -84,6 +93,7 @@ def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
     plt.show()
     name = "Output/FinalElevation"
     # elevFig1.savefig(name)
+    plt.show()
 
 
 # ===================================================
@@ -715,7 +725,7 @@ def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS):
 
     if Shrub_ON == 1:
         ShrubPC = PercentCoverTS[TMAX - 1]
-        shrubFig2 = plt.figure(figsize=(14, 5))
+        shrubFig2 = plt.figure(figsize=(10, 5))
         ax = shrubFig2.add_subplot(111)
         cax = ax.matshow(
             ShrubPC, origin="lower", cmap="YlGn", vmin=0, vmax=1
@@ -734,7 +744,8 @@ def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS):
         plt.title("Final Shrub Percent Cover")
         plt.show()
         name = "Output/PercentCover"
-        shrubFig2.savefig(name)
+        # shrubFig2.savefig(name)
+        shrubFig2.show()
 
 
 # ===================================================

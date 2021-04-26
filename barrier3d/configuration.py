@@ -292,14 +292,14 @@ class Barrier3dConfiguration(Configuration):
     )
     Seedmin = FloatField(
         "Seedmin",
-        default=100,
+        default=1000,
         units="1 / yr",
         description="Seeds produced per shrub per year (fecundity)",
         validators=[Range(lower=0)],
     )
     Seedmax = FloatField(
         "Seedmax",
-        default=1000,
+        default=10000,
         units="1 / yr",
         description="Seeds produced per shrub per year (fecundity)",
         validators=[Range(lower=0)],
@@ -316,7 +316,7 @@ class Barrier3dConfiguration(Configuration):
     )
     Dshrub = FloatField(
         "Dshrub",
-        default=2,
+        default=2.75,
         units="m",
         description="Minimum elevation of fronting dune for shrub growth",
         validators=[Range(lower=0)],
@@ -344,7 +344,7 @@ class Barrier3dConfiguration(Configuration):
     )
     ShrubEl_min = FloatField(
         "ShrubEl_min",
-        default=0.6,
+        default=1.2,
         units="m",
         description="Elevation range for shrub growth, minimum bound",
         validators=[Range(lower=0)],
@@ -372,14 +372,14 @@ class Barrier3dConfiguration(Configuration):
     )
     BurialLimit = FloatField(
         "BurialLimit",
-        default=0.5,
+        default=0.75,
         units="m",
-        description="Shrubs buried beyond this limit killed",
+        description="Maximum percentage of height that a shrub can be buried up to before dying",
         validators=[Range(lower=0)],
     )
     UprootLimit = FloatField(
         "UprootLimit",
-        default=-0.3,
+        default=-0.2,
         units="m",
         description="Shrubs eroded beyond this limit killed",
         validators=[Range(upper=0)],
@@ -410,9 +410,10 @@ class Barrier3dConfiguration(Configuration):
     )
     MaxShrubHeight = FloatField(
         "MaxShrubHeight",
-        default=3.5,
+        default=5.2,
         units="m",
         description="Maximum shrub height",
+        validators=[Range(lower=0)],
     )
     ShorefaceToe = FloatField(
         "ShorefaceToe",

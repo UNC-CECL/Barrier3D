@@ -35,30 +35,30 @@ MaxUpSlope: 0.25                # Maximum slope water can flow upward
 threshold_in: 0.25              # [m^3 / hr] Threshold to determine if in inundation regime
 Kr: 0.000075                    # Sediment flux constant, run-up regime
 Ki: 0.0000075                   # Sediment flux constant, inundation regime
-Cbb_r: 0.5                      # Coefficient for exponential decay of sediment load entering back-barrier bay in run-up regime
-Cbb_i: 0.8                      # Coefficient for exponential decay of sediment load entering back-barrier bay in inundation regime
+Cbb_r: 0.7                      # Coefficient for exponential decay of sediment load entering back-barrier bay in run-up regime
+Cbb_i: 0.85                     # Coefficient for exponential decay of sediment load entering back-barrier bay in inundation regime
 Qs_bb_min: 1                    # [m^3 / hr] Minimum sediment flux in back-barrier bay (below which sediment won't flux)
 Cx: 10.0                        # Multiplier with the average slope of the interior for constant "C" in inundation transport rule
 OWss_i: 2                       # Overwash substep
 OWss_r: 1                       # Overwash substep
 k_sf: 5000.0                    # [m^3 / m / y] Shoreface flux rate constant
 s_sf_eq: 0.02                   # Equilibrium shoreface slope
-Shrub_ON: false                 # 1 = shrubs on in simulation, 0 = shrubs off
+Shrub_ON: true                 # 1 = shrubs on in simulation, 0 = shrubs off
 Seedmin: 100.0                  # [1 / yr] Seeds produced per shrub per year (fecundity)
 Seedmax: 1000.0                 # [1 / yr] Seeds produced per shrub per year (fecundity)
 disp_mu: -0.721891              # For lognormal probability distribution of seed dispersal distance
 disp_sigma: 1.5                 # For lognormal probability distribution of seed dispersal distance
-Dshrub: 2.0                     # [m] Minimum elevation of fronting dune for shrub growth
+Dshrub: 2.75                    # [m] Minimum elevation of fronting dune for shrub growth
 GermRate: 0.6                   # Germination rate
 TimeFruit: 5.0                  # [yr] Age shrubs need to be before they start fruiting
 Female: 0.5                     # Percentage of shrubs that are female
-ShrubEl_min: 0.6                # [m] Elevation range for shrub growth, minimum bound
+ShrubEl_min: 1.2                # [m] Elevation range for shrub growth, minimum bound
 ShrubEl_max: 2.3                # [m] Elevation range for shrub growth, maximum bound
 TideAmp: 1.2                    # [m] Tidal amplitude
 SprayDist: 170                  # [m] Distance from ocean shoreline that shrubs can establish
-BurialLimit: 0.5                # [m] Shrubs buried beyond this limit killed
-UprootLimit: -0.3               # [m] Shrubs eroded beyond this limit killed
-SalineLimit: 0.05               # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
+BurialLimit: 0.75               # [m] Maximum percentage of height that a shrub can be buried up to before dying
+UprootLimit: -0.2               # [m] Shrubs eroded beyond this limit killed
+SalineLimit: 5                  # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
 Qshrub_max: 0.15                # Maximum percentage of overwash reduction through a shrub cell with full percent cover
-MaxShrubHeight: 3.5             # [m] Maximum shrub height
+MaxShrubHeight: 5.2             # [m] Maximum shrub height
 ShorefaceToe: 0                 # [m] Start location of shoreface toe

@@ -346,11 +346,12 @@ def _process_raw_input(params):
     params["ShrubEl_max"] = params["ShrubEl_max"] / 10.0 - params["MHW"]
     params["TideAmp"] /= 10.0
     params["SprayDist"] /= 10.0
+    params["MaxShrubHeight"] /= 10.0
 
-    # Shrub height (with age as proxy)
-    SH = np.linspace(0, 0.3, 10)
-    addend = np.ones(params["TMAX"] + 50)  # (years 10+)
-    params["SH"] = np.append(SH, addend)
+    # # Shrub height (with age as proxy)
+    # SH = np.linspace(0, 0.3, 10)
+    # addend = np.ones(params["TMAX"] + 50)  # (years 10+)
+    # params["SH"] = np.append(SH, addend)
 
     # Overwash Interaction (convert to decameters)
     params["BurialLimit"] /= 10.0
