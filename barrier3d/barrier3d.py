@@ -98,7 +98,7 @@ class Barrier3d:
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
 
-        BeachWidth = int(self._bermEl / self._beta)   # Calculated based on berm (dune toe) elevation of 1.44 MSL, and beach slope of 0.04 (i.e., 1.44/0.04 = 47.5 ~= 40 m)
+        BeachWidth = int(self._BermEl / self._beta)   # Calculated based on berm (dune toe) elevation of 1.44 MSL, and beach slope of 0.04 (i.e., 1.44/0.04 = 47.5 ~= 40 m)
 
         ### Burial / Uprooting
         ShrubHeight = ShrubPercentCover * self._MaxShrubHeight
