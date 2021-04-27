@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
 
-# import versioneer
-
 
 setup(
     name="barrier3d",
+    version="0.1.0.dev0",
     description="A spatially explicit exploratory model of barrier island evolution in three dimensions",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -25,6 +24,4 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     entry_points={"console_scripts": ["b3d=barrier3d.cli:barrier3d"]},
-    # version=versioneer.get_version(),
-    # cmdclass=versioneer.get_cmdclass(),
 )
