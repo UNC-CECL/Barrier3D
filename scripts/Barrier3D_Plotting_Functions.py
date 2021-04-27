@@ -54,11 +54,21 @@ def plot_DuneHeight(DuneDomain, Dmax):
     # duneFig.savefig(name)
     duneFig.show()
 
+
 # ===================================================
 # 2: Elevation Domain For Last Time Step
 
 
-def plot_ElevTMAX(TMAX, DuneDomain, DomainTS, BermEl, Shrub_ON, PercentCoverTS, DeadPercentCoverTS, DuneWidth):
+def plot_ElevTMAX(
+    TMAX,
+    DuneDomain,
+    DomainTS,
+    BermEl,
+    Shrub_ON,
+    PercentCoverTS,
+    DeadPercentCoverTS,
+    DuneWidth,
+):
 
     TMAX = TMAX - 1
     Dunes = (DuneDomain[TMAX, :, :] + BermEl) * 10
@@ -79,8 +89,24 @@ def plot_ElevTMAX(TMAX, DuneDomain, DomainTS, BermEl, Shrub_ON, PercentCoverTS, 
         Domain, origin="lower", cmap="terrain", vmin=-1.1, vmax=4.0
     )  # , interpolation='gaussian') # analysis:ignore
     if Shrub_ON == 1:
-        ax.scatter(Sx, Sy + DuneWidth, marker='$*$', s=Sz, c='black', alpha=0.7, edgecolors='none')
-        ax.scatter(Dx, Dy + DuneWidth, marker='$*$', s=Dz, c='red', alpha=0.7, edgecolors='none')
+        ax.scatter(
+            Sx,
+            Sy + DuneWidth,
+            marker="$*$",
+            s=Sz,
+            c="black",
+            alpha=0.7,
+            edgecolors="none",
+        )
+        ax.scatter(
+            Dx,
+            Dy + DuneWidth,
+            marker="$*$",
+            s=Dz,
+            c="red",
+            alpha=0.7,
+            edgecolors="none",
+        )
     ax.xaxis.set_ticks_position("bottom")
     # cbar = elevFig1.colorbar(cax)
     # cbar.set_label('Elevation (m)', rotation=270)
