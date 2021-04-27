@@ -8,8 +8,8 @@ setup(
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Ian Reeves",
-    author_email="irbreeves@gmail.com",
-    url="https://github.com/anardek/Barrier3D",
+    author_email="reevesi@live.unc.edu",
+    url="https://github.com/UNC-CECL/Barrier3D",
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GPLv3 License",

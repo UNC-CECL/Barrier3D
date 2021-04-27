@@ -643,10 +643,6 @@ class Barrier3d:
                 "unrecognized keywords ({0})".format(", ".join(kwds.keys()))
             )
 
-        # Note, the following variables are not used
-        self._MaxAvgSlope = self._BermEl / 10
-        # fluxLimit = 100  # Initialize
-
         # ### Initialize Shrubs
         # if Shrub_ON ==1: print('Shrubs ON')
 
@@ -958,11 +954,8 @@ class Barrier3d:
                         if inundation == 1:  # Inundation regime
                             Rin = self._Rin_i
 
-                            # Find average slope of interior
-                            AvgSlope = self._BermEl / InteriorWidth_Avg
-
-                            # Enforce max average interior slope
-                            AvgSlope = min(self._MaxAvgSlope, AvgSlope)
+                            # Representative average slope of interior
+                            AvgSlope = self._BermEl / 20
 
                             C = self._Cx * AvgSlope  # Momentum constant
 
