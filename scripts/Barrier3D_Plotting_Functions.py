@@ -749,29 +749,28 @@ def plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS):
 
 def plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS):
 
-    if Shrub_ON == 1:
-        ShrubPC = PercentCoverTS[TMAX - 1]
-        shrubFig2 = plt.figure(figsize=(10, 5))
-        ax = shrubFig2.add_subplot(111)
-        cax = ax.matshow(
-            ShrubPC, origin="lower", cmap="YlGn", vmin=0, vmax=1
-        )  # analysis:ignore
-        ax.xaxis.set_ticks_position("bottom")
-        cbar = shrubFig2.colorbar(cax)
-        cbar.set_label("Shrub Percent Cover", rotation=270, labelpad=20)
+    ShrubPC = PercentCoverTS[TMAX - 1]
+    shrubFig2 = plt.figure(figsize=(10, 5))
+    ax = shrubFig2.add_subplot(111)
+    cax = ax.matshow(
+        ShrubPC, origin="lower", cmap="YlGn", vmin=0, vmax=1
+    )  # analysis:ignore
+    ax.xaxis.set_ticks_position("bottom")
+    cbar = shrubFig2.colorbar(cax)
+    cbar.set_label("Shrub Percent Cover", rotation=270, labelpad=20)
 
-        Dead = DeadPercentCoverTS[TMAX - 1]
-        Dy, Dx = np.argwhere(Dead > 0).T
-        Dz = Dead[Dy, Dx] * 20
-        ax.scatter(Dx, Dy, marker="x", s=Dz, color="k", alpha=0.25)
+    Dead = DeadPercentCoverTS[TMAX - 1]
+    Dy, Dx = np.argwhere(Dead > 0).T
+    Dz = Dead[Dy, Dx] * 20
+    ax.scatter(Dx, Dy, marker="x", s=Dz, color="k", alpha=0.25)
 
-        plt.xlabel("Alongshore Distance (dm)")
-        plt.ylabel("Cross-Shore Diatance (dm)")
-        plt.title("Final Shrub Percent Cover")
-        plt.show()
-        name = "Output/PercentCover"
-        # shrubFig2.savefig(name)
-        shrubFig2.show()
+    plt.xlabel("Alongshore Distance (dm)")
+    plt.ylabel("Cross-Shore Diatance (dm)")
+    plt.title("Final Shrub Percent Cover")
+    plt.show()
+    name = "Output/PercentCover"
+    # shrubFig2.savefig(name)
+    shrubFig2.show()
 
 
 # ===================================================
