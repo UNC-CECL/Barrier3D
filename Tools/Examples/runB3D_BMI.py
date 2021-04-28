@@ -13,7 +13,9 @@ import time
 barrier3d = Barrier3dBmi()
 
 # specify data directory with initial conditions
-datadir = "/Users/Ian/PycharmProjects/Barrier3D/tests/test_params/barrier3d-parameters.yaml"
+datadir = (
+    "/Users/Ian/PycharmProjects/Barrier3D/tests/test_params/barrier3d-parameters.yaml"
+)
 barrier3d.initialize(datadir)
 
 # increase time step
@@ -22,15 +24,27 @@ for time_step in range(1, barrier3d._model._TMAX):
     barrier3d.update()  # update the model by a time step
 
     # Print time step to screen
-    print("\r", 'Time Step: ', time_step, end="")
+    print("\r", "Time Step: ", time_step, end="")
 
 SimDuration = time.time() - Time
 print()
-print('Elapsed Time: ', SimDuration, 'sec')  # Print elapsed time of simulation
+print("Elapsed Time: ", SimDuration, "sec")  # Print elapsed time of simulation
 
 # This is currently the only plotting function that works with the BMI version
 # Plot 1: Dune Height Over Time (input in decameter)
 B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
-B3Dfunc.plot_ShrubPercentCoverTMAX(barrier3d._model._PercentCoverTS, barrier3d._model._TMAX, barrier3d._model._DeadPercentCoverTS)
-B3Dfunc.plot_ElevTMAX(barrier3d._model._TMAX, barrier3d._model._DuneDomain, barrier3d._model._DomainTS, barrier3d._model._BermEl,
-                      barrier3d._model._Shrub_ON, barrier3d._model._PercentCoverTS, barrier3d._model._DeadPercentCoverTS, barrier3d._model._DuneWidth)
+B3Dfunc.plot_ShrubPercentCoverTMAX(
+    barrier3d._model._PercentCoverTS,
+    barrier3d._model._TMAX,
+    barrier3d._model._DeadPercentCoverTS,
+)
+B3Dfunc.plot_ElevTMAX(
+    barrier3d._model._TMAX,
+    barrier3d._model._DuneDomain,
+    barrier3d._model._DomainTS,
+    barrier3d._model._BermEl,
+    barrier3d._model._Shrub_ON,
+    barrier3d._model._PercentCoverTS,
+    barrier3d._model._DeadPercentCoverTS,
+    barrier3d._model._DuneWidth,
+)
