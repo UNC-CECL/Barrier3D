@@ -91,9 +91,7 @@ class Barrier3d:
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
 
-        BeachWidth = int(
-            self._BermEl / self._beta
-        )
+        BeachWidth = int(self._BermEl / self._beta)
 
         # Burial / Uprooting
         ShrubHeight = ShrubPercentCover * self._MaxShrubHeight
