@@ -9,7 +9,7 @@ import time
 import matplotlib.pyplot as plt
 
 from barrier3d import Barrier3dBmi
-from tests import Barrier3D_Plotting_Functions as B3Dfunc
+from scripts import Barrier3D_Plotting_Functions as B3Dfunc
 
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
