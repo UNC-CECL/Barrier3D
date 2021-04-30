@@ -1,5 +1,9 @@
 ### Barrier3D v1.0
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4730989.svg)](https://doi.org/10.5281/zenodo.4730989)
+
+
+
 Note: [Barrier3D v2.0](https://github.com/UNC-CECL/Barrier3D/tree/Barrier3d-v2.0) is built with the [Basic Model Interface](https://bmi.readthedocs.io/).
 
 
