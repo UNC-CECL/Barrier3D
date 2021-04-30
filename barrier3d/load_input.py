@@ -51,14 +51,27 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
 
         params["InteriorDomain"] = load_elevation(
             params.pop("elevation_file"), fmt=None
-        )
+        )  # interior elevations must come from a time series
+
         params["StormSeries"] = load_storms(
             params.pop("storm_file"), fmt=None
         )  # storms must come from a time series
-        params["DuneStart"] = load_dunes(params.pop("dune_file"), fmt=None)
-        params["GrowthStart"] = load_growth_param(
-            params.pop("growth_param_file"), fmt=None
-        )
+
+        if params[
+            "DuneParamStart"
+        ]:  # user specifies if dune height will come from external file
+            params["DuneStart"] = load_dunes(params.pop("dune_file"), fmt=None)
+        else:
+            params.pop("dune_file")  # get rid of the keyword
+
+        if params[
+            "GrowthParamStart"
+        ]:  # user specifies if growth parameters will come from external file
+            params["GrowthStart"] = load_growth_param(
+                params.pop("growth_param_file"), fmt=None
+            )
+        else:
+            params.pop("growth_param_file")
 
         _process_raw_input(params)
 

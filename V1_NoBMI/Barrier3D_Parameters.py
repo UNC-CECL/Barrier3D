@@ -17,7 +17,7 @@ Full copyright notice located in main Barrier3D.py file
 # Converts from meters to decameters for simulation
 
 
-#==================================================================================================================================
+# ==================================================================================================================================
 
 import numpy as np
 import math
@@ -30,10 +30,8 @@ TMAX = 150 + 1
 StormStart = 2
 
 
-
-
 ################################
-### COMPUTATIONAL DOMAIN 
+### COMPUTATIONAL DOMAIN
 
 # Vertical Dimensions
 LShoreface = 500 / 10
@@ -41,107 +39,114 @@ DShoreface = 10 / 10
 BayDepth = 3 / 10
 MHW = 0.46 / 10  # Used as offset to convert given elevations relative to a MHW of 0
 
-# Elevation (decameters) 
-InteriorDomain = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-elevations.npy')
+# Elevation (decameters)
+InteriorDomain = np.load(
+    "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-elevations.npy"
+)
 
 # Horizontal Dimensions
 BarrierLength = int(500 / 10)
 if len(InteriorDomain[0]) > BarrierLength:
-    InteriorDomain = InteriorDomain[:,0:BarrierLength] # Reduce to specified max length
+    InteriorDomain = InteriorDomain[
+        :, 0:BarrierLength
+    ]  # Reduce to specified max length
 else:
     BarrierLength = len(InteriorDomain[0])
 DomainWidth = len(InteriorDomain)
 DuneWidth = int(20 / 10)
 
 
-
-
 ################################
 ### Storm Time Series
 StormTimeSeries = True
-StormSeries = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-storms.npy') # TEMP HARDWIRED
-
-
+StormSeries = np.load(
+    "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-storms.npy"
+)  # TEMP HARDWIRED
 
 
 ################################
 ### DUNES
 
 # Dune height refers to heigh of dune above the static berm elevation
-Dstart = 0.5 /10
-BermEl = 1.9 /10 - MHW
+Dstart = 0.5 / 10
+BermEl = 1.9 / 10 - MHW
 
 # Initialize dune crest height domain
 if StormTimeSeries == 0:
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
-    DuneDomain[0,:,0] = np.ones([1, BarrierLength]) * (Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1,BarrierLength)))
-    for w in range(1,DuneWidth):
-        DuneDomain[0,:,w] = DuneDomain[0,:,0]
+    DuneDomain[0, :, 0] = np.ones([1, BarrierLength]) * (
+        Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, BarrierLength))
+    )
+    for w in range(1, DuneWidth):
+        DuneDomain[0, :, w] = DuneDomain[0, :, 0]
 else:
-    DuneStart = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-dunes.npy') # TEMP HARDWIRED
+    DuneStart = np.load(
+        "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-dunes.npy"
+    )  # TEMP HARDWIRED
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
-    DuneDomain[0,:,0] = DuneStart[0:BarrierLength]    
-    for w in range(1,DuneWidth):
-        DuneDomain[0,:,w] = DuneDomain[0,:,0]  
-    
+    DuneDomain[0, :, 0] = DuneStart[0:BarrierLength]
+    for w in range(1, DuneWidth):
+        DuneDomain[0, :, w] = DuneDomain[0, :, 0]
+
 # Dune growth parameter
 rmin = 0.35
 rmax = 0.85
 if StormTimeSeries:
-    growthparamstart = np.load('/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-growthparam.npy') # TEMP HARDWIRED
+    growthparamstart = np.load(
+        "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-growthparam.npy"
+    )  # TEMP HARDWIRED
     growthparam = growthparamstart[0:BarrierLength]
 else:
     growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
 
 # Dune diffusion parameter
-HdDiffu = 0.75 /10
+HdDiffu = 0.75 / 10
 
 # Maximum dune height
-Dmaxel = 3.4 /10 - MHW
+Dmaxel = 3.4 / 10 - MHW
 
 # Erosion parameters
-C1 = 8.8 
+C1 = 8.8
 C2 = 4.6
-DuneRestart = 0.075 /10
-
-
+DuneRestart = 0.075 / 10
 
 
 ################################
 ### ALONGSHORE TRANSPORT & RSLR
 
 # Volume of sediment lost via alongshore transport
-Rat = 0 / 10  # dam   Note: Positive value will result in erosion, negative will result in progradation
+Rat = (
+    0 / 10
+)  # dam   Note: Positive value will result in erosion, negative will result in progradation
 Qat = Rat * DShoreface  # dam^3/dam
 
 # Relative Sea Level Rise Rate
 RSLR_Constant = True
 if RSLR_Constant:
     # Constant RSLR
-    RSLR_const = 0.004 /10
-    RSLR = [RSLR_const] * TMAX 
+    RSLR_const = 0.004 / 10
+    RSLR = [RSLR_const] * TMAX
 else:
     # Logistic RSLR rate projection - Rohling et al. (2013)
     RSLR = []
-    alpha = 0.75 # m/yr -- probability maximum = 0.75, 68% upper bound = 2.0
-    beta = alpha / 0.003 - 1 # constant
-    gamma = 350 # yr -- probability maximum = 350, 68% upper bound = 900
-    C = 12 # constant
-    for t in range(150,TMAX+150):
-        delta = alpha / (1 + beta * math.exp(-t / gamma * C)) / 10000 * 10 # Convert from m/cy to dam/yr
+    alpha = 0.75  # m/yr -- probability maximum = 0.75, 68% upper bound = 2.0
+    beta = alpha / 0.003 - 1  # constant
+    gamma = 350  # yr -- probability maximum = 350, 68% upper bound = 900
+    C = 12  # constant
+    for t in range(150, TMAX + 150):
+        delta = (
+            alpha / (1 + beta * math.exp(-t / gamma * C)) / 10000 * 10
+        )  # Convert from m/cy to dam/yr
         RSLR.append(delta)
-
 
 
 ################################
 ### STORM
 
-mean_storm = 8.3 
-SD_storm = 5.9 
+mean_storm = 8.3
+SD_storm = 5.9
 numstorm = 0
 beta = 0.04
-
-
 
 
 ################################
@@ -162,13 +167,11 @@ threshold_in = 0.25
 # Sediment Transport
 Kr = 0.000075
 Ki = 0.0000075
-Qs_min = 1 /1000 # Convert to dam^3
-Qs_bb_min = 1 /1000 # Convert to dam^3
+Qs_min = 1 / 1000  # Convert to dam^3
+Qs_bb_min = 1 / 1000  # Convert to dam^3
 Cx = 10
-Cbb_r = 0.5
-Cbb_i = 0.8
-
-
+Cbb_r = 0.7
+Cbb_i = 0.85
 
 
 ################################
@@ -176,8 +179,6 @@ Cbb_i = 0.8
 
 k_sf = 5000
 s_sf_eq = 0.02
-
-
 
 
 ################################
@@ -191,92 +192,90 @@ disp_mu = -0.721891
 disp_sigma = 1.5
 
 # Growth
-Dshrub = 2 /10
+Dshrub = 2 / 10
 GermRate = 0.6
 TimeFruit = 5
 Female = 0.5
-ShrubEl_min = 0.6 /10 - MHW
-ShrubEl_max = 2.3 /10 - MHW
-TideAmp = 1.2 /10
-SprayDist = 170 /10
+ShrubEl_min = 0.6 / 10 - MHW
+ShrubEl_max = 2.3 / 10 - MHW
+TideAmp = 1.2 / 10
+SprayDist = 170 / 10
 
 # Overwash Interaction
-BurialLimit = 0.5 /10
-UprootLimit = -0.3 /10
+BurialLimit = 0.5 / 10
+UprootLimit = -0.3 / 10
 SalineLimit = 0.05
 Qshrub_max = 0.15
 
 # Percent cover change (years 0-9)
 PC = np.array([0, 0.04, 0.08, 0.10, 0.15, 0.15, 0.20, 0.35, 0.80, 1])
-addend = np.ones(TMAX+50) # (years 10+)
+addend = np.ones(TMAX + 50)  # (years 10+)
 PC = np.append(PC, addend)
 
 # Shrub height (with age as proxy)
-SH = np.linspace(0,0.3,10)
-addend = np.ones(TMAX+50) # (years 10+)
+SH = np.linspace(0, 0.3, 10)
+addend = np.ones(TMAX + 50)  # (years 10+)
 SH = np.append(SH, addend)
 
 
-
 ################################
-SimParams = [TMAX,
-             RSLR, 
-             MHW, 
-             BermEl, 
-             BarrierLength, 
-             s_sf_eq, 
-             DShoreface, 
-             LShoreface, 
-             Shrub_ON,
-             Dmaxel,
-             beta,
-             BayDepth,
-             growthparam, 
-             DuneWidth, 
-             HdDiffu, 
-             k_sf, 
-             Qat, 
-             Dshrub,
-             Female, 
-             ShrubEl_min, 
-             ShrubEl_max,
-             BurialLimit, 
-             UprootLimit, 
-             TimeFruit, 
-             Seedmin, 
-             Seedmax, 
-             GermRate, 
-             disp_mu, 
-             disp_sigma, 
-             SalineLimit, 
-             PC,
-             Dstart,
-             SD_storm, 
-             StormStart,
-             mean_storm, 
-             numstorm, 
-             Qshrub_max, 
-             C1, 
-             C2, 
-             DuneRestart, 
-             nn, 
-             mm,
-             threshold_in, 
-             Rin_r, 
-             Rin_i, 
-             Qs_min, 
-             Kr, 
-             Ki, 
-             Cbb_r, 
-             Cbb_i, 
-             Qs_bb_min, 
-             Cx, 
-             OWss_i, 
-             OWss_r,
-             TideAmp,
-             SprayDist,
-             SH,
-             MaxUpSlope]
-
-    
-    
+SimParams = [
+    TMAX,
+    RSLR,
+    MHW,
+    BermEl,
+    BarrierLength,
+    s_sf_eq,
+    DShoreface,
+    LShoreface,
+    Shrub_ON,
+    Dmaxel,
+    beta,
+    BayDepth,
+    growthparam,
+    DuneWidth,
+    HdDiffu,
+    k_sf,
+    Qat,
+    Dshrub,
+    Female,
+    ShrubEl_min,
+    ShrubEl_max,
+    BurialLimit,
+    UprootLimit,
+    TimeFruit,
+    Seedmin,
+    Seedmax,
+    GermRate,
+    disp_mu,
+    disp_sigma,
+    SalineLimit,
+    PC,
+    Dstart,
+    SD_storm,
+    StormStart,
+    mean_storm,
+    numstorm,
+    Qshrub_max,
+    C1,
+    C2,
+    DuneRestart,
+    nn,
+    mm,
+    threshold_in,
+    Rin_r,
+    Rin_i,
+    Qs_min,
+    Kr,
+    Ki,
+    Cbb_r,
+    Cbb_i,
+    Qs_bb_min,
+    Cx,
+    OWss_i,
+    OWss_r,
+    TideAmp,
+    SprayDist,
+    SH,
+    MaxUpSlope,
+]
