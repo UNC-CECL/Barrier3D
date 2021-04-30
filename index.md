@@ -11,6 +11,8 @@ Barrier3D is built with the Basic Model Interface (BMI; https://bmi.readthedocs.
 
 _Copyright (C) 2021 Ian R.B. Reeves (principal developer) licensed under the GNU General Public License v3.0_
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4730988.svg)](https://doi.org/10.5281/zenodo.4730988)
+
 ## Requirements 
 
 Barrier3D requires Python 3, and the libraries listed in the project's `requirements.txt` file.
