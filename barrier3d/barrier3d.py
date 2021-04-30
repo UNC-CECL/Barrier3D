@@ -2,6 +2,8 @@ import math
 import numpy as np
 from .load_input import load_inputs
 
+# import random
+
 
 class Barrier3dError(Exception):
     pass
@@ -22,7 +24,6 @@ class Barrier3d:
 
     def FindWidths(self, InteriorDomain, SL):
         """Finds DomainWidth and InteriorWidth
-
         DomainWidth is wide enough to fit widest part of island; InteriorWidth
         stores the width of the island at each row of the domain where elevation
         is greater than 0
@@ -153,6 +154,8 @@ class Barrier3d:
         # ================================================
         # Drop Seed
         # Randomly drop a seed onto the island each time step
+        # randX = np.random.randint(0, self._BarrierLength)
+        # randY = np.random.randint(0, max(1, InteriorWidth_Avg))
         randX = self._RNG.integers(0, self._BarrierLength)
         randY = self._RNG.integers(0, max(1, InteriorWidth_Avg))
         if (
@@ -168,6 +171,17 @@ class Barrier3d:
             else:
                 ShrubDomainMale[randY, randX] = 1
 
+        # # Randomly drop a seed onto the LEFT SIDE of the island each time step
+        # # randX = np.random.randint(0,BarrierLength*0.02) # Can drop anywhere with the first 2% of interior columns
+        # # randY = np.random.randint(0,max(1,InteriorWidth_Avg))
+        # randX = self._RNG.integers(0,self.BarrierLength*0.02)
+        # randY = self._RNG.integers(0,max(1,InteriorWidth_Avg))
+        # if ShrubDomainFemale[randY,randX] == 0 and ShrubDomainMale[randY,randX] == 0 and ShrubDomainDead[randY,randX] == 0 and DuneDomainCrest[randX] + self.BermEl >= self.Dshrub and InteriorDomain[randY,randX] >= self.ShrubEl_min \
+        #     and InteriorDomain[randY,randX] <= self.ShrubEl_max:
+        #     if self._RNG.uniform() > self._Female:
+        #         ShrubDomainFemale[randY, randX] = 1
+        #     else:
+        #         ShrubDomainMale[randY, randX] = 1
         # ================================================
 
         # ### Disperse seeds
@@ -185,21 +199,25 @@ class Barrier3d:
                 ]
                 numShrubCells = len(fruiting_shrub)
                 # Determine how many seeds in each cell
+                # Seedspercell = np.random.randint(
                 Seedspercell = self._RNG.integers(
                     self._Seedmin, high=self._Seedmax, size=numShrubCells
                 )
                 # For each shrub cell, determine survival rate for the cell in this year
                 SeedSurvYear = self._GermRate * self._RNG.random(numShrubCells)
+                # SeedSurvYear = self._GermRate * np.random.rand(numShrubCells)
 
                 for i in range(numShrubCells):
                     # For each shrub cell producing seeds, generate a random # of random numbers each rep. a single seed
                     randseeds = self._RNG.random(Seedspercell[i])
+                    # randseeds = np.random.rand(Seedspercell[i])
                     # Find how many seeds produced in each cell actually survive
                     Survivors = len(randseeds[randseeds < SeedSurvYear[i]])
 
                     # Determine distance, rounding to nearest integer
                     if Survivors > 0:
                         DispDist = np.round(
+                            # np.random.lognormal(
                             self._RNG.lognormal(
                                 self._disp_mu, self._disp_sigma, Survivors
                             )
@@ -635,6 +653,7 @@ class Barrier3d:
         self._DeadPercentCover = self._DeadPercentCoverTS[0]
         self._BurialDomain = np.zeros([self._DomainWidth, self._BarrierLength])
         self._ShrubArea = [0]
+        self._MaxAvgSlope = self._BermEl / 10
 
         # ### Initialize variables
         self._DomainTS = [
@@ -650,11 +669,16 @@ class Barrier3d:
 
         # use FindWidths to calculate the average interior width for setting initial back barrier shoreline
         _, _, InteriorWidth_Avg = self.FindWidths(self._InteriorDomain, self._SL)
+        # self._InteriorWidth_AvgTS = [self._DomainWidth]
         self._InteriorWidth_AvgTS = [InteriorWidth_Avg]
         self._QowTS = [0]  # (m^3/m)
+        # self._x_t = 0  # (dam) Start location of shoreface toe
         self._x_s = self._x_t + LShoreface  # (dam) Start location of shoreline
         self._x_t_TS = [self._x_t]  # (dam) Shoreface toe locations for each time step
         self._x_s_TS = [self._x_s]  # (dam) Shoreline locations for each time step
+        # self._x_b_TS = [
+        #     (self._x_s + self._DomainWidth)
+        # ]  # (dam) Bay shoreline locations for each time step
         self._x_b_TS = [
             (self._x_s + InteriorWidth_Avg)
         ]  # (dam) Bay shoreline locations for each time step
@@ -667,7 +691,7 @@ class Barrier3d:
 
         # Dune height loss exclusively from vertical storm erosion
         self._Hd_Loss_TS = np.zeros([self._TMAX, self._BarrierLength])
-        self._dune_migration = False  # boolean to easily track when we shift the dune domain due to shoreline erosion
+        self._dune_migration = False  # boolean to track when we shift the dune domain due to shoreline erosion
 
         self._time_index = 1
 
@@ -898,6 +922,12 @@ class Barrier3d:
 
                         if inundation == 1:  # Inundation regime
                             Rin = self._Rin_i
+
+                            # # Find average slope of interior
+                            # AvgSlope = self._BermEl / InteriorWidth_Avg
+                            #
+                            # # Enforce max average interior slope
+                            # AvgSlope = min(self._MaxAvgSlope, AvgSlope)
 
                             # Representative average slope of interior
                             AvgSlope = self._BermEl / 20
@@ -1658,7 +1688,3 @@ class Barrier3d:
     @property
     def Dmax(self):
         return self._Dmax
-
-    @property
-    def InteriorWidth_AvgTS(self):
-        return self._InteriorWidth_AvgTS
