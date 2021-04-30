@@ -461,6 +461,36 @@ class Barrier3d:
             DeadPercentCover,
         )
 
+    def InteriorNoise(self, InteriorDomain, InteriorWidth):
+        """Adds elevation noise to flat parts of the interior to represent aeolian re-working during interstorm periods"""
+
+        zthresh = 0.005  # dam
+        ythresh = 2  # dam
+        gap = 1  # dam
+
+        # Loop through each column and
+        for x in range(self._BarrierLength):
+            col = InteriorDomain[0 : InteriorWidth[x], x]
+
+            # find continuous sections that are too flat
+            der = np.diff(col)
+            der_under = np.where(der < zthresh)[0]
+
+            if len(der_under) > 0:
+                gaps = np.diff(der_under) > gap
+                flat_start = np.insert(der_under[1:][gaps], 0, der_under[0])
+                flat_stop = np.append(der_under[:-1][gaps], der_under[-1])
+
+                # Add noise to flat sections
+                for n in range(1, len(flat_stop)):
+                    flat_length = flat_stop[n] - flat_start[n]
+                    if flat_length >= ythresh:
+                        # noise = np.random.rand(flat_length) * zthresh
+                        noise = np.random.uniform(-1, 1, flat_length) * zthresh * 2
+                        InteriorDomain[flat_start[n] : flat_stop[n], x] += noise
+
+        return InteriorDomain
+
     def LTA_SC(
         self,
         InteriorDomain,
@@ -1390,6 +1420,10 @@ class Barrier3d:
 
         # Record storm data
         self._StormCount.append(numstorm)
+
+        # Optional: Add noise to flat parts of interior domain
+        # if self._time_index > self._StormStart:
+        #     self._InteriorDomain = self.InteriorNoise(self._InteriorDomain, InteriorWidth)
 
         # ###########################################
         # ### Ocean Shoreline Change
