@@ -3,11 +3,11 @@
 Note: [Barrier3D v2.0](https://github.com/UNC-CECL/Barrier3D/tree/Barrier3d-v2.0) is built with the [Basic Model Interface](https://bmi.readthedocs.io/).
 
 
-`Barrier3D.py` is the main runfile for for running single simulations.
+`Barrier3D.py` is the main runfile for individual simulations.
 
 `Barrier3D_Functions.py` contains functions for running simulations and plotting results.
 
-`Barrier3D_Parameters.py` sets parameter values for simulations.
+`Barrier3D_Parameters.py` sets parameter values and initial conditions for simulations.
 
 __`/Parameterization`__ contains storm, dune, and elevation parameter files needed to run Barrier3D.
 
