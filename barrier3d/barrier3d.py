@@ -470,11 +470,7 @@ class Barrier3d:
             DeadPercentCover,
         )
 
-    def InteriorNoise(
-            self,
-            InteriorDomain,
-            InteriorWidth
-    ):
+    def InteriorNoise(self, InteriorDomain, InteriorWidth):
         """Adds elevation noise to flat parts of the interior to represent aeolian re-working during interstorm periods"""
 
         zthresh = 0.005  # dam
@@ -483,7 +479,7 @@ class Barrier3d:
 
         # Loop through each column and
         for x in range(self._BarrierLength):
-            col = InteriorDomain[0:InteriorWidth[x], x]
+            col = InteriorDomain[0 : InteriorWidth[x], x]
 
             # find continuous sections that are too flat
             der = np.diff(col)
@@ -500,7 +496,7 @@ class Barrier3d:
                     if flat_length >= ythresh:
                         # noise = np.random.rand(flat_length) * zthresh
                         noise = np.random.uniform(-1, 1, flat_length) * zthresh * 2
-                        InteriorDomain[flat_start[n]:flat_stop[n], x] += noise
+                        InteriorDomain[flat_start[n] : flat_stop[n], x] += noise
 
         return InteriorDomain
 
