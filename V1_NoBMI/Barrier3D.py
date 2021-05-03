@@ -6,14 +6,14 @@
 
 """------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 - Copyright (C) 2020 Ian R.B. Reeves (current developer)                                                                                                                                                                                          -
-- Current developer can be contacted by email (reevesi@live.unc.edu) and paper mail (104 South Road, Mitchell Hall CB #3315, Chapel Hill, NC 27599, USA                                                                                           -
+- Current developer can be contacted by email (reevesi@live.unc.edu) and paper mail (104 South Road, Mitchell Hall CB #3315, Chapel Hill, NC 27599, USA)                                                                                          -
 - This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. -
 - This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.        -
 - You should have received a copy of the GNU General Public License along with this program; if not, see <https://www.gnu.org/licenses/>.                                                                                                         -
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"""
 
 # Version Number: 5
-# Updated: 16 July 2020
+# Updated: 30 April 2021
 
 
 # Barrier3D_Parameters.py and Barrier3D_Functions.py must be located in same directory as this main runfile
@@ -40,8 +40,7 @@
 # IMPORTS       
 #==============================================================================================================================================
 
-from V1_NoBMI import Barrier3D_Functions as func
-# import Barrier3D_Functions as func
+import Barrier3D_Functions as func
 import numpy as np
 import math 
 import time
@@ -52,16 +51,13 @@ warnings.filterwarnings("ignore")
 
 
 Time = time.time()
-
-RNG = np.random.default_rng(seed=1973)  # KA: added a seeded number generator so we can reproduce runs for testing
  
 #==============================================================================================================================================
 # SET PARAMETERS       
 #==============================================================================================================================================
 
 ### Load Input Parameters
-# from Barrier3D_Parameters import (
-from V1_NoBMI.Barrier3D_Parameters import (
+from Barrier3D_Parameters import (
                                   BarrierLength, 
                                   BayDepth, 
                                   BermEl, 
@@ -182,7 +178,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
         TMAX = t-1
         break
 
-
+        
     ### Grow Dunes
     DuneDomain, Dmax, Qdg = func.DuneGrowth(DuneDomain, t)
 
@@ -192,13 +188,14 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     Hd_AverageTS.append(np.mean(DuneDomainCrest)) # Store average pre-storms dune-heigh for time step
     
     
+    
     ###########################################      
     ### Shrubs 
     
     if Shrub_ON == 1:
 
-        ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain, ShrubDomainDead = func.Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, BurialDomain, InteriorWidth_Avg, DomainWidth, ShrubDomainDead)
-    
+        ShrubDomainAll, ShrubDomainFemale, ShrubDomainMale, BurialDomain, ShrubDomainDead = func.Shrubs(InteriorDomain, DuneDomainCrest, t, ShrubDomainFemale, ShrubDomainMale, ShrubPercentCover, 
+                                                                                                        DeadPercentCover, BurialDomain, InteriorWidth_Avg, DomainWidth, ShrubDomainDead, SL)
     
     
     ###########################################      
@@ -212,7 +209,10 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
         if StormTimeSeries == True:
             TSloc = np.argwhere(StormSeries[:,0] == t)
             numstorm = int(len(TSloc)) # analysis:ignore
-
+        else:        
+            numstorm = int(numstorm)
+            numstorm = round(np.random.normal(mean_storm, SD_storm)) # analysis:ignore # Comment out this line if using pre-specified static number of storms per year        
+        
         if numstorm > 0:
             if StormTimeSeries == True:
                 TSloc = np.argwhere(StormSeries[:,0] == t)
@@ -300,8 +300,8 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                 
                 # Set Domain
                 add = 10
-                duration = dur[n] * substep 
-                width = np.shape(InteriorDomain)[0] + 1 + add # (dam) Add one for Dunes and 25 for bay
+                duration = int(dur[n] * substep) 
+                width = np.shape(InteriorDomain)[0] + 1 + add # (dam) Add one for Dunes and 10 for bay
                 Elevation = np.zeros([duration, width, BarrierLength])                
                 Dunes = Dunes_prestorm + BermEl
                 Bay = np.ones([add, BarrierLength]) * -BayDepth
@@ -333,10 +333,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                         Rin = Rin_i
                         
                         # Find average slope of interior
-                        AvgSlope = BermEl / InteriorWidth_Avg
-                        
-                        # Enforce max average interior slope
-                        AvgSlope = min(MaxAvgSlope, AvgSlope)
+                        AvgSlope = BermEl / 20 
                         
                         C = Cx * AvgSlope # Momentum constant
 
@@ -437,8 +434,6 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                     Q2 = np.nan_to_num(Q2)
                                     Q3 = np.nan_to_num(Q3)  
                                 
-                                    #MaxUpSlope = 0.25 # dam
-
                                     if S1 > MaxUpSlope:
                                         Q1 = 0
                                     else:
@@ -466,7 +461,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                         Discharge[TS,d+1,i-1] = Discharge[TS,d+1,i-1] + Q1
                                         
                                     # Cell 2                                    
-                                    if d < ShrubDomainWidth and ShrubPercentCover[d,i] > 0: # (ShrubDomainWidth - 1)?
+                                    if d < ShrubDomainWidth and ShrubPercentCover[d,i] > 0:
                                         Q2 =  Q2 * ((1 - Qshrub_max) * ShrubPercentCover[d,i])
                                     elif d < (DeadDomainWidth) and DeadPercentCover[d,i] > 0:
                                         Q2 =  Q2 * ((1 - Qshrub_max * 0.66) * DeadPercentCover[d,i])
@@ -552,7 +547,8 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
                                 Qs3 = np.nan_to_num(Qs3)          
                                         
                                 ### Calculate Net Erosion/Accretion
-                                if Elevation[TS,d,i] > SL or any(z > SL for z in Elevation[TS,d+1:d+10,i]): # If cell is subaerial, elevation change is determined by difference between flux in vs. flux out
+                                # if Elevation[TS,d,i] > SL: # If cell is subaerial, elevation change is determined by difference between flux in vs. flux out
+                                if Elevation[TS,d,i] > SL or any(z > SL for z in Elevation[TS,d+1:d+6,i]):
                                     if i > 0:
                                         SedFluxIn[TS,d+1,i-1] += Qs1
                                         
@@ -649,6 +645,10 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
     StormCount.append(numstorm)
 
 
+    # # Optional: Add noise to flat parts of interior domain
+    # if t > StormStart:
+    #     InteriorDomain = func.InteriorNoise(InteriorDomain, InteriorWidth)
+
 
     ###########################################      
     ### Ocean Shoreline Change
@@ -668,9 +668,7 @@ for t in range(1, TMAX): # Yearly time steps - actual time = t + 1
             for d in range(sc):
                 InteriorDomain = np.vstack([DuneDomain[t,:,-1] + BermEl, InteriorDomain]) # New interior row added with elevation of previous dune field (i.e. previous dune row now part of interior)
                 if StormTimeSeries == 0:
-                    # newDuneHeight = np.ones([BarrierLength]) * (0.005 + (-0.005 + (0.005 - (-0.005)) * np.random.rand(BarrierLength)))
-                    newDuneHeight = np.ones([BarrierLength]) * (
-                                0.005 + (-0.005 + (0.005 - (-0.005)) * RNG.random(BarrierLength)))
+                    newDuneHeight = np.ones([BarrierLength]) * (0.005 + (-0.005 + (0.005 - (-0.005)) * np.random.rand(BarrierLength)))
                 else:
                     newDuneHeight = np.ones([BarrierLength]) * 0.01
                 DuneDomain[t,:,:] = np.roll(DuneDomain[t,:,:], 1, axis=1)
@@ -757,16 +755,22 @@ elif platform == "darwin":
 elif platform == "linux" or platform == "linux2":
     print('\a')
     os.system('spd-say "barrier shrub simulation complete"')
-    
+
     
 # Save Run Data
-#outpath = 'Output/'
-#if not os.path.exists(outpath):
-#    os.makedirs(outpath)
-#filename = 'Output/SimData.npz'
-#np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS, QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS,
-#         PercentCoverTS = PercentCoverTS, DeadPercentCoverTS = DeadPercentCoverTS, ShrubArea = ShrubArea, ShrubDomainAll = ShrubDomainAll, ShrubDeadTS = ShrubDeadTS, StormCount = StormCount, t = t, RunUpCount = RunUpCount, InundationCount = InundationCount,
-#         ShorelineChange = ShorelineChange, Hd_Loss_TS = Hd_Loss_TS, SimDuration = SimDuration, StormSeries = StormSeries, Dmax = Dmax, SL = SL, MaxAvgSlope = MaxAvgSlope, fluxLimit = fluxLimit, SimParams = SimParams)
+outpath = 'Output/'
+if not os.path.exists(outpath):
+    os.makedirs(outpath)
+filename = 'Output/SimData.npz'
+
+if Shrub_ON == 1: # Saving shrub domains greatly increase file size
+    np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS, QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS, 
+          PercentCoverTS = PercentCoverTS, DeadPercentCoverTS = DeadPercentCoverTS, ShrubArea = ShrubArea, ShrubDomainAll = ShrubDomainAll, ShrubDeadTS = ShrubDeadTS, StormCount = StormCount, t = t, RunUpCount = RunUpCount, 
+          InundationCount = InundationCount, ShorelineChange = ShorelineChange, Hd_Loss_TS = Hd_Loss_TS, SimDuration = SimDuration, StormSeries = StormSeries, Dmax = Dmax, SL = SL, MaxAvgSlope = MaxAvgSlope, fluxLimit = fluxLimit, SimParams = SimParams)
+else: 
+    np.savez(filename, DuneDomain = DuneDomain, DomainTS = DomainTS, x_s_TS = x_s_TS, x_b_TS = x_b_TS, x_t_TS = x_t_TS, s_sf_TS = s_sf_TS, InteriorWidth_AvgTS = InteriorWidth_AvgTS, QowTS = QowTS, QsfTS = QsfTS, Hd_AverageTS = Hd_AverageTS, 
+         StormCount = StormCount, t = t, RunUpCount = RunUpCount, InundationCount = InundationCount, ShorelineChange = ShorelineChange, Hd_Loss_TS = Hd_Loss_TS, SimDuration = SimDuration, StormSeries = StormSeries, Dmax = Dmax, SL = SL,
+         MaxAvgSlope = MaxAvgSlope, fluxLimit = fluxLimit, SimParams = SimParams)
 
 
 
@@ -774,13 +778,13 @@ elif platform == "linux" or platform == "linux2":
 # PLOT RESULTS      
 #==============================================================================================================================================
 
-#
+
 # 1: Dune Height Over Time
 func.plot_DuneHeight(DuneDomain, Dmax)
 
 
 # 2: Elevation Domain For Last Time Step
-func.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS)
+func.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS, Shrub_ON, PercentCoverTS, DeadPercentCoverTS)
 
 
 ## 3: Elevation Domain Frames
@@ -788,20 +792,20 @@ func.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS)
 
 
 ## 4: Animation Frames of Barrier and Dune Elevation
-#func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
+# func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
 
 
 # 5: Cross-Shore Transect Every 100 m Alongshore For Last Time Step
 func.plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX)
 
 
-# 6: Shoreline Positions Over Time
+# 6: Shoreline Positions Over Time 
 func.plot_ShorelinePositions(x_s_TS, x_b_TS)
-
+      
 
 # 7: Shoreline Change Rate Over Time
-func.plot_ShorelineChangeRate(x_s_TS)
-
+#func.plot_ShorelineChangeRate(x_s_TS)
+    
 
 ## 8: OW vs IN count
 func.plot_RuInCount(RunUpCount, InundationCount)
@@ -811,12 +815,12 @@ func.plot_RuInCount(RunUpCount, InundationCount)
 #func.plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS)
 
 
-## 10: Average Island Elevation Over Time <-------------- BROKEN!
-#func.plot_AvgIslandElev(h_b_TS)
+## 10: Average Island Elevation Over Time
+#func.plot_AvgIslandElev(AvgInteriorElevationTS)
 
 
 ## 11: Shoreface Slope Over Time
-func.plot_ShorefaceSlope(s_sf_TS)
+#func.plot_ShorefaceSlope(s_sf_TS)
 
 
 ## 12: Average Interior Width Over Time
@@ -828,7 +832,7 @@ func.plot_ShorefaceSlope(s_sf_TS)
 
 
 # 14: Stats Summary: Width, Berm Elevation, SF Slope, Shoreline Change, and Overwash Flux Over Time (all in one)
-func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS)
+func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS) 
 
 
 ## 15: 3D Plot of Island Domain For Last Time Step
@@ -837,22 +841,22 @@ func.plot_StatsSummary(s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS,
 
 ## 16: 3D Animation Frames of Island Elevation (no translation) <-------------- BROKEN!
 #func.plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain)
-
+       
 
 ## 17: 3D Animation Frames of Island Evolution (with translation)
 #func.plot_3DElevAnimation(DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, ShorelineChange)
 
 
 ## 18: Shrub Age Domain at Simulation End
-# #func.plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS)
+func.plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS)
 
 
 ## 19: Percent Cover Domain at Simulation End
-#func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS)
+func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS)
 
 
 # 20: Shrub Area Over Time
-#func.plot_ShrubArea(ShrubArea)
+func.plot_ShrubArea(ShrubArea)
 
 
 # 21: Storm count over time
@@ -863,19 +867,24 @@ func.plot_StormCount(StormCount)
 #func.plot_AlongshoreDuneHeight(DuneDomain)
 
 
-#23: Calculate shoreline change periodicity
+# 23: Calculate shoreline change periodicity
 #SCperiod, AvgFastDur, AvgSlowDur = func.calc_ShorelinePeriodicity(TMAX, x_s_TS)
 #print('SCperiod: ', SCperiod)
 
 
-#24: Average dune height with storm TWLs
+# 24: Average dune height with storm TWLs
 func.plot_DuneStorm(Hd_AverageTS, StormSeries, TMAX)
 
 
-#25: Seabed Profile
+# 25: Seabed Profile
 func.plot_SeabedProfile(SL, TMAX, x_t_TS)
 
 
-#26: Shrub Island Animation
+# 26: Shrub Island Animation
 #func.plot_ShrubAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
+
+
+# 28: Shrub front location and/or expansion rate
+func.plot_ShrubFront(Shrub_ON, TMAX, PercentCoverTS)
+
 

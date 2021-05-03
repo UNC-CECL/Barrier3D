@@ -1,4 +1,4 @@
-# Parameter value loading script for
+ # Parameter value loading script for
 
 # ~ Barrier3D ~
 # A spatially explicit exploratory model of barrier island evolution in three dimensions
@@ -9,7 +9,7 @@ Copyright (C) 2020 Ian R.B. Reeves
 Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
-# Version Number: 4
+# Version Number: 3
 # Updated: 30 April 2021
 
 
@@ -17,21 +17,16 @@ Full copyright notice located in main Barrier3D.py file
 # Converts from meters to decameters for simulation
 
 
+#==================================================================================================================================
 
 import numpy as np
 import math
 
 
-
-elevfile = 'Parameterization/InitElevHog.npy'
-stormfile = 'Parameterization/StormTimeSeries_1000yr.npy'
-dunestartfile = 'Parameterization/DuneStart_1000dam.npy'
-growthparamfile = 'Parameterization/growthparam_1000dam.npy'
-
 ################################
 ### TIME
 
-TMAX = 50 + 1                 
+TMAX = 1000 + 1                 
 StormStart = 2
 
 
@@ -47,7 +42,7 @@ BayDepth = 3 /10
 MHW = 0.46 /10 # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters) 
-InteriorDomain = np.load(elevfile)
+InteriorDomain = np.load('Parameterization/InitElev.npy')
 
 # Horizontal Dimensions
 BarrierLength = int(500 /10)
@@ -64,7 +59,7 @@ DuneWidth = int(20 /10)
 ################################
 ### Storm Time Series
 StormTimeSeries = True
-StormSeries = np.load(stormfile)
+StormSeries = np.load('Parameterization/StormTimeSeries_1000yr.npy') # TEMP HARDWIRED
 
 
 
@@ -72,10 +67,13 @@ StormSeries = np.load(stormfile)
 ################################
 ### DUNES
 
-# Dune height refers to heigh of dune above the static berm elevation
-Dstart = 0.5 /10
-BermEl = 1.9 /10 - MHW
+# Maximum dune elevation
+Dmaxel = 3.4 /10 - MHW
 
+# Dune height refers to heigh of dune above the static berm elevation
+BermEl = 1.9 /10 - MHW
+Dstart = 0.5 /10  
+                           
 # Initialize dune crest height domain
 if StormTimeSeries:
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
@@ -83,7 +81,7 @@ if StormTimeSeries:
     for w in range(1,DuneWidth):
         DuneDomain[0,:,w] = DuneDomain[0,:,0]
 else:
-    DuneStart = np.load(dunestartfile)
+    DuneStart = np.load('Parameterization/DuneStart_1000dam.npy') # TEMP HARDWIRED
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0,:,0] = DuneStart[0:BarrierLength]    
     for w in range(1,DuneWidth):
@@ -95,14 +93,13 @@ rmax = 0.85
 if StormTimeSeries:
     growthparam = rmin + (rmax-rmin) * np.random.rand(1,BarrierLength)
 else:
-    growthparamstart = np.load(growthparamfile)
+    growthparamstart = np.load('Parameterization/growthparam_1000dam.npy') # TEMP HARDWIRED
     growthparam = growthparamstart[0:BarrierLength]
 
 # Dune diffusion parameter
 HdDiffu = 0.75 /10
 
-# Maximum dune height
-Dmaxel = 3.4 /10 - MHW
+
 
 # Erosion parameters
 C1 = 8.8 
@@ -141,7 +138,7 @@ else:
 ################################
 ### STORM
 
-mean_storm = 8.3 
+mean_storm = 8 
 SD_storm = 5.9 
 numstorm = 0
 beta = 0.04
@@ -161,7 +158,7 @@ nn = 0.5
 mm = 2
 Rin_r = 2
 Rin_i = 0.1
-MaxUpSlope = 0.25
+MaxUpSlope = 0.2
 threshold_in = 0.25
 
 # Sediment Transport
@@ -190,8 +187,8 @@ s_sf_eq = 0.02
 
 # Dispersal
 Shrub_ON = 0
-Seedmin = 100
-Seedmax = 1000
+Seedmin = 1000
+Seedmax = 10000
 disp_mu = -0.721891
 disp_sigma = 1.5
 
@@ -211,6 +208,8 @@ UprootLimit = -0.2 /10 # Convert to dam
 SalineLimit = 5 /1000 # Convert to dam^3
 Qshrub_max = 0.15 # percent
 
+
+
 # Percent cover change (years 0-9)
 PC = np.array([0, 0.04, 0.08, 0.10, 0.15, 0.15, 0.20, 0.35, 0.80, 1])
 addend = np.ones(TMAX+50) # (years 10+)
@@ -219,7 +218,8 @@ PC = np.append(PC, addend)
 
 SL = 0
 
-    
+
+################################
 SimParams = [TMAX,
              RSLR, 
              MHW, 
@@ -278,5 +278,6 @@ SimParams = [TMAX,
              SprayDist,
              SL,
              MaxUpSlope]
-          
 
+    
+    
