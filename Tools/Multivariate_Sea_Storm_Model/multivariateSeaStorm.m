@@ -1,13 +1,20 @@
 function [stStorms, stSimStorms] = multivariateSeaStorm(sCopula, ...
-    sWIS_filename, sWaterLevel_filename, fBeta, fBermEl, nSimStorm, bPlot)
+    sWIS_filename, sWaterLevel_filename, fBeta, fBermEl, nSimStorm, ...
+    bPlot, sOutput_filename)
 % [stStorms, stSimStorms] = multivariateSeaStorm("c-vine", ...
-%     'ST63183_v03.onlns', 'Tide-8631044-Combined.txt', 0.04, 1.9, 10000, true)
+%     'ST63183_v03.onlns', 'Tide-8631044-Combined.txt', 0.04, 1.9, 20000, ...
+%      true, "StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv")
 %
 % ------------------------multivariateSeaStorm---------------------------%
 % Purpose: This function creates synthetic time series from tidal guage and
 % WIS buoy data using the method of Wahl et al., 2016
 %
-% SEE ALSO: t_tide
+% SEE ALSO: t_tide, mssmVines.R
+%
+% References:
+% ...[1] Wahl, T., Plant, N. G., & Long, J. W. (2016). Probabilistic 
+% assessment of erosion and flooding risk in the northern Gulf of Mexico. 
+% Journal of Geophysical Research: Oceans, 121(5), 3029-3043.
 %
 % Record of revisions:
 %       Date            Programmer          Description of Change
@@ -26,7 +33,8 @@ function [stStorms, stSimStorms] = multivariateSeaStorm(sCopula, ...
 %       dt - datetime
 %
 % Inputs:
-%       sCopula              - options are "c-vine", "d-vine", "gaussian", 
+%       sCopula              - copula to be fitted to storm variables; 
+%                              options are "c-vine", "d-vine", "gaussian", 
 %                              or "t"
 %       sWIS_filename        - .onlns file downloaded from WIS; must  
 %                              contain hourly records of wave height (m)
@@ -41,6 +49,7 @@ function [stStorms, stSimStorms] = multivariateSeaStorm(sCopula, ...
 %                              heights; we use the average berm elevation 
 %                              (m NAVD88)
 %       bPlot                - boolean for plotting
+%       sOutputFilename      - string of prefix for output filenames
 %
 %% -----------------------------------------------------------------------%
 
@@ -84,7 +93,10 @@ stSimStorms = calculate_simulated_TWL(fBeta, stSimStorms);
 
 % lastly, apply max thresholds for synthetics
 stSimStorms = apply_max_thresholds(fHs_max, nTp_max, ...
-        nDur_max, stSimStorms, stStorms);
+        nDur_max, stSimStorms, stStorms, sCopula);
+    
+% write synthetic storms to csv file
+csv_write(stSimStorms);
 
 %% -----------------------------------------------------------------------%
     
@@ -125,7 +137,7 @@ function stObs = process_tides(stObs)
     stObs.dtSL_nan(idLoc) = datenum(stObs.dtSL(1:length(idLoc))); % this is for t-tide only
 
       % for debugging
-%     if bPlot
+%     if bPlot == 1
 %         figure; plot(stObs.dtSL, stObs.rSL, stObs.dtH, stObs.rSL_nan)  
 %         ylabel('Sea level [mNAVD88]')
 %         xlabel('time')
@@ -231,7 +243,7 @@ function stObs = tide_residuals(stObs)
     stObs.rAT_nan(idLoc) = stObs.rAT(1:length(idLoc));
 
       % for debugging
-%     if bPlot
+%     if bPlot == 1
 %         figure; plot(dtSLcorr_sub, rSLcorr_sub, ... % corr SL
 %                     dtSLcorr_sub, stObs.rAT, ... % pred tide
 %                     dtSLcorr_sub, stObs.rNTR) % residual
@@ -256,7 +268,7 @@ function stObs = calculate_TWL(fBeta, stObs, fBermEl)
     %stObs.rTWL     = stObs.rSL_nan + stObs.rR2;    % observed
     stObs.rRlow = (stObs.rTWL - (rSwash/2));  % this is just for Ian...use observed
 
-    if bPlot        
+    if bPlot == 1       
         figure
         % SL
         subplot(4,2,1)
@@ -352,7 +364,7 @@ function stStorms = extract_sea_storms_from_obs(fBermEl,nMinDuration,stObs)
 
     % visual check of threshold and drivers (this is hard coded to 1980, will 
     % need to be changed for other locations)
-    if bPlot
+    if bPlot == 1
         figure
         subplot(2,1,1)
         plot(nStartYear : 1 : nStartYear+nYrs-1, [rTWL_over_yearly, rR2_over_yearly, rNTR_over_yearly], '-o')
@@ -468,7 +480,7 @@ function stStorms = extract_sea_storms_from_obs(fBermEl,nMinDuration,stObs)
     stStorms.nHs_threshold = nHs_threshold;
     stStorms.nStorms = length(stStorms.rTWL);
 
-%     if bPlot
+%     if bPlot == 1
 %         % Plot storm TWL, Hs, Dur, Tp, NTR, AT histogram
 %         figure
 %         subplot(2,3,1)
@@ -555,7 +567,7 @@ function [stStorms, stSimStorms] = mssm(sCopula, nSimStorm, stStorms)
     rU4 = (n-rR4+0.5)./n;
 
 %     % for debugging, prove that ecdf() is the same as above
-%     if bPlot
+%     if bPlot == 1
 %         figure
 %         ecdf(stStorms.rNTR)
 %         hold on
@@ -564,7 +576,7 @@ function [stStorms, stSimStorms] = mssm(sCopula, nSimStorm, stStorms)
 %         scatter(stStorms.rNTR, rEP1) % the CDF estimate from marginal dist
 %     end
 
-    % Compute Kendal's Corelation Coefficient for each pair using the ECDF
+    % Compute Kendall's Corelation Coefficient for each pair using the ECDF
     % NOTE: if pval(a,b) is small (less than 0.05), then the correlation 
     % rho(a,b) is significantly different from zero
     [stStorms.rTau, ~] = corr([rU1, rU2, rU3, rU4], 'type', 'kendall');
@@ -674,7 +686,7 @@ function stSimStorms = calculate_simulated_TWL(fBeta, stSimStorms)
 end
 
 function stSimStorms = apply_max_thresholds(fHs_max, nTp_max, ...
-        nDur_max, stSimStorms, stStorms)
+        nDur_max, stSimStorms, stStorms, sCopula)
 
     % only save synthetic storms below thresholds
     [cSimHs, cSimDur, cSimTp, cSimNTR, cSimAT, cSimRlow, cSimTWL, ...
@@ -707,7 +719,7 @@ function stSimStorms = apply_max_thresholds(fHs_max, nTp_max, ...
     stSimStorms.rRlow = cell2mat(cSimRlow)';
     stSimStorms.rR2 = cell2mat(cSimR2)';
 
-    if bPlot
+    if bPlot == 1
         % plot Wahl Figure 6
         figure
         subplot(5,6,1)
@@ -830,5 +842,23 @@ function stSimStorms = apply_max_thresholds(fHs_max, nTp_max, ...
         legend('sim')
     end
 end
+
+function csv_write(stSimStorms)
+    
+    % create matrix of all simulated storms and parameters
+    SimStorms = zeros(length(stSimStorms.rHs), 7);
+
+    SimStorms(:,1) = stSimStorms.rHs;
+    SimStorms(:,2) = stSimStorms.rDur;
+    SimStorms(:,3) = stSimStorms.rTWL;
+    SimStorms(:,4) = stSimStorms.rNTR;
+    SimStorms(:,5) = stSimStorms.rTp;
+    SimStorms(:,6) = stSimStorms.rAT;
+    SimStorms(:,7) = stSimStorms.rRlow;
+
+    csvwrite(sOutput_filename, SimStorms)
+
+end
+
 
 end
