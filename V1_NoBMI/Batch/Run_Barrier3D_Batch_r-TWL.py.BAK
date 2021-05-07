@@ -6,10 +6,10 @@
 
 # I.R.B. Reeves - 19 Sep 2019
 
-# Runs range of dune growth rates and average storms/year -- parallelized version
+# Runs range of dune growth rates and average storms/year -- with permanent shift in average TWL
 
 
-# Version Number: 4
+# Version Number: 1
 # Updated: 30 April 2021
 
 
@@ -20,6 +20,7 @@ import Barrier3D_Batch as batch
 from datetime import datetime
 import numpy as np
 import random
+import bisect
 
 # import multiprocessing
 from joblib import Parallel, delayed
@@ -39,7 +40,6 @@ Num = 25  # Duplicates
 name = datetime.today().strftime("%Y_%m%d_%H%M")
 directory = "Output/BatchSims_" + name
 print("BatchSims_" + name)
-
 os.makedirs(directory)
 
 # Batch loops
@@ -47,13 +47,32 @@ Rmin = [0.05, 0.20, 0.35, 0.50, 0.65]
 Rmax = [0.55, 0.70, 0.85, 1.00, 1.15]
 Nstorm = [4, 6, 8, 10, 12]
 
+# Beta Distribution Parameters
+loc = -0.23670528422151482
+scale = 733.1726404400683
+a = 6.168920215856851
+b = 2845.158579719937
+
+# Bin Specifications
+BinStart = -0.2
+BinStop = 5.0
+BinWidth = 0.1
+BinNum = int(((BinStop - BinStart) / BinWidth) + 2)
+Bin = np.linspace(BinStart, BinStop, BinNum)
+
+# Load Storms
+StormList = np.load("Parameterization/StormList.npy")
+simTWL = StormList[:, 2]
+
+# Shift in Average TWL
+shift = -0.15
+
 # Makes sets of storm series
 def makeStormSet():
     StormSet = [None] * len(Nstorm)
     for Ns in range(len(Nstorm)):
         S = Nstorm[Ns]
         # Make Time series
-        StormList = np.load("Parameterization/StormList.npy")
         StormSeries = np.zeros([StormStart, 5])
         for t in range(StormStart, 1000):
             # Calculate number of storms in year
@@ -63,9 +82,21 @@ def makeStormSet():
             stormTS = np.zeros([numstorm, 5])
             # Select storms for year
             for n in range(numstorm):
-                storm = random.randint(
-                    0, len(StormList) - 1
-                )  # Pick random row index of each storm in list
+                ST = np.random.beta(a, b) * scale + loc + shift
+                if ST < 0:
+                    ST = 0
+                elif ST > simTWL[-1]:
+                    ST = simTWL[-1]
+                STmin = Bin[bisect.bisect(Bin, ST) - 1]
+                STmax = STmin + 0.1
+                indexMin = bisect.bisect(simTWL, STmin)
+                indexMax = bisect.bisect(simTWL, STmax) - 1
+                if indexMin == 0:
+                    storm = 1
+                elif indexMin >= indexMax:
+                    storm = indexMin
+                else:
+                    storm = random.randint(indexMin, indexMax)
 
                 dur = StormList[storm, 1]  # Duration
                 Rhigh = StormList[storm, 2]  # TWL

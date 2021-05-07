@@ -88,7 +88,7 @@ def makeStormSet():
         # Save
         StormSeries = np.vstack([StormSeries, stormTS])
     return StormSeries
-  
+
 
 def makeDuneDomain():
     Dstart = np.random.uniform(
