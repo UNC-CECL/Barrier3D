@@ -1722,3 +1722,19 @@ class Barrier3d:
     @property
     def Dmax(self):
         return self._Dmax
+
+    @property
+    def StormSeries(self):
+        return self._StormSeries
+
+    @StormSeries.setter
+    def StormSeries(self, value):
+        self._StormSeries = value
+
+    @property
+    def StormStart(self):
+        return self._StormStart
+
+    @StormStart.setter
+    def StormStart(self, value):
+        self._StormStart = value
