@@ -138,8 +138,8 @@ def frequency_storms_from_MSSM(
     datadir,
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     MHW=0.46,
-    return_period=50,  # 15, 50 # years, minimum of 1, for CBBT, VA, 1 (99%) = 0.45 above MHHW, 10 (10%) = 1.05 m above MHHW, 100 (1%) = 1.5 m above MHHW
-    return_period_TWL=2.0,  # 1.5, 2.0 # in m above MHW (from NOAA Annual Exceedance Probability Curves, closest extreme stats, https://tidesandcurrents.noaa.gov/est/curves.shtml?stnid=8638863)
+    return_period=50,  # minimum of 1
+    return_period_TWL=2.0,  # in m above MHW (from NOAA Annual Exceedance Probability Curves)
     StormStart=2,
     BermEl=1.9,  # m NAVD88, just used for plotting
     model_years=1000,
@@ -245,14 +245,14 @@ def shift_storm_intensity(
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     mean_yearly_storms=8.3,
     SD_yearly_storms=5.9,
-    shift=-0.2,  # shift in TWL distribution (i.e., SHIFT STORM INTENSITY), m NAVD88
+    shift=-0.15,  # shift the TWL distribution to change intensity, m NAVD88; [-0.15, 0.15] for Reeves et al., 2021
     MHW=0.46,  # m NAVD88
     StormStart=2,
     BermEl=1.9,  # m NAVD88, just used for plotting
     model_years=1000,
     bPlot=True,
     bSave=False,
-    output_filename="StormList_10kyrs_VCR_Berm1pt9m_Slope0pt04-highIntensity",
+    output_filename="StormList_10kyrs_VCR_Berm1pt9m_Slope0pt04-lowIntensity",
 ):
     r"""
     This function fits a beta distribution to the TWL time series and then shifts the beta distribution to the left
