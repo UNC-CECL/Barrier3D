@@ -20,22 +20,24 @@ Save = False
 sealevel = True
 
 
-#=============================
-paths = ['C:/Barrier3D/Output/BatchSims_2021_0220_1452',
-            'C:/Barrier3D/Output/BatchSims_2021_0220_2005',
-            'C:/Barrier3D/Output/BatchSims_2021_0225_1615',
-            'C:/Barrier3D/Output/BatchSims_2021_0225_1617']
+# =============================
+paths = [
+    "C:/Barrier3D/Output/BatchSims_2021_0220_1452",
+    "C:/Barrier3D/Output/BatchSims_2021_0220_2005",
+    "C:/Barrier3D/Output/BatchSims_2021_0225_1615",
+    "C:/Barrier3D/Output/BatchSims_2021_0225_1617",
+]
 
 
-#============================
-PSNums = [25,25,25,25]
+# ============================
+PSNums = [25, 25, 25, 25]
 
 
 SimNum = np.sum(PSNums) * 10
-Stats = np.zeros([SimNum, 4]) 
+Stats = np.zeros([SimNum, 4])
 
 
-#============================
+# ============================
 # Initialize
 
 Drown_NS = 0
@@ -167,86 +169,87 @@ VolB4 = []
 xbB4 = []
 
 
-#%% LOAD DATA 
+#%% LOAD DATA
 
 for q in range(len(paths)):
-    
+
     print(paths[q])
-    
+
     SimN = PSNums[q] * 10 + 1
-    
-    for Sim in range(1,SimN):
-           
+
+    for Sim in range(1, SimN):
+
         # Create File Path
-        filename = paths[q] + '/SimData_' + str(Sim) + '.npz'
-    
+        filename = paths[q] + "/SimData_" + str(Sim) + ".npz"
+
         # Load File
-        SimData = np.load(filename, allow_pickle = True)
-        
+        SimData = np.load(filename, allow_pickle=True)
+
         # Load  Data
-        x_s_TS = SimData['x_s_TS']
-        x_b_TS = SimData['x_b_TS']
-        InteriorWidth_AvgTS = SimData['InteriorWidth_AvgTS']
-        AvgInteriorElevationTS = SimData['AvgInteriorElevationTS']
-        DomainTS = SimData['DomainTS']
-        QowTS = SimData['QowTS']
-        Hd_AverageTS = SimData['Hd_AverageTS']
-        SimParams = SimData['SimParams']
+        x_s_TS = SimData["x_s_TS"]
+        x_b_TS = SimData["x_b_TS"]
+        InteriorWidth_AvgTS = SimData["InteriorWidth_AvgTS"]
+        AvgInteriorElevationTS = SimData["AvgInteriorElevationTS"]
+        DomainTS = SimData["DomainTS"]
+        QowTS = SimData["QowTS"]
+        Hd_AverageTS = SimData["Hd_AverageTS"]
+        SimParams = SimData["SimParams"]
         RSLR = SimParams[1]
-        BermEl = SimParams[3] 
-        BarrierLength = SimParams[4] 
-        DShoreface = SimParams[6] 
-        LShoreface = SimParams[7] 
+        BermEl = SimParams[3]
+        BarrierLength = SimParams[4]
+        DShoreface = SimParams[6]
+        LShoreface = SimParams[7]
         Shrub_ON = SimParams[8]
         TMAX = len(x_s_TS)
-    
-        
+
         if Shrub_ON == 1:
-            PercentCoverTS = SimData['PercentCoverTS']
-            ShrubArea = SimData['ShrubArea']
-            DeadPercentCoverTS = SimData['DeadPercentCoverTS']
-            ShrubDeadTS = SimData['ShrubDeadTS']
+            PercentCoverTS = SimData["PercentCoverTS"]
+            ShrubArea = SimData["ShrubArea"]
+            DeadPercentCoverTS = SimData["DeadPercentCoverTS"]
+            ShrubDeadTS = SimData["ShrubDeadTS"]
         else:
             PercentCoverTS = 0
             ShrubArea = 0
             DeadPercentCoverTS = 0
-            
-                
-        #%% STORE DATA    
-            
+
+        #%% STORE DATA
+
         N = Sim % 10 - 1
-        if N < 0: N = 9
+        if N < 0:
+            N = 9
 
         # Average Dune Height
-        aHd = [a * 10 for a in Hd_AverageTS] # Convert to m
-    
+        aHd = [a * 10 for a in Hd_AverageTS]  # Convert to m
+
         # Average Island Width
-        aW = [a * 10 for a in InteriorWidth_AvgTS] # Convert to m
-        
+        aW = [a * 10 for a in InteriorWidth_AvgTS]  # Convert to m
+
         # Average Island Elevation
-        aE = [a * 10 for a in AvgInteriorElevationTS] # Convert to m
-    
+        aE = [a * 10 for a in AvgInteriorElevationTS]  # Convert to m
+
         # Shorline Change & Change Rate
-        scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS] # Convert to m
-        bbscts = [(x - x_b_TS[0]) * 10 for x in x_b_TS] # Convert to m
+        scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS]  # Convert to m
+        bbscts = [(x - x_b_TS[0]) * 10 for x in x_b_TS]  # Convert to m
         SCrate = [0]
         bbSCrate = [0]
-        for k in range(1,len(scts)):
-            SCrate.append(scts[k]- scts[k-1])   
-        for k in range(1,len(bbscts)):
-            bbSCrate.append(bbscts[k]- bbscts[k-1])
-            
+        for k in range(1, len(scts)):
+            SCrate.append(scts[k] - scts[k - 1])
+        for k in range(1, len(bbscts)):
+            bbSCrate.append(bbscts[k] - bbscts[k - 1])
+
         # Island Volume
         volumeTS = []
         for t in range(TMAX):
             domain = DomainTS[t]
-            vol = (np.sum(domain[domain > 0])*1000) / (BarrierLength*10) # Convert to m^3, Normalize alongshore
+            vol = (np.sum(domain[domain > 0]) * 1000) / (
+                BarrierLength * 10
+            )  # Convert to m^3, Normalize alongshore
             volumeTS.append(vol)
         # volumeTS = [a * 1000 for a in volumeTS] # Convert to m^3
-        
+
         # Cumulative overwash
         Qow_cumul = np.cumsum(QowTS)
-        
+
         # Shrub Dead Area
         if Shrub_ON == 1:
             ShrubArea_Dead = []
@@ -254,14 +257,14 @@ for q in range(len(paths)):
                 DeadArea = np.count_nonzero(ShrubDeadTS[t])
                 ShrubArea[t] += DeadArea
                 ShrubArea_Dead.append(DeadArea)
-        
+
         # Count drowning
         if TMAX < 1000:
             if Shrub_ON == 1:
                 Drown_S += 1
             else:
-                Drown_NS += 1            
-        
+                Drown_NS += 1
+
             AddZeros = [0] * (1001 - TMAX)
             volumeTS.extend(AddZeros)
             aE.extend(AddZeros)
@@ -275,20 +278,19 @@ for q in range(len(paths)):
                 ShrubArea = np.asarray(AreaTemp)
             QowTemp = np.ndarray.tolist(QowTS)
             QowTemp.extend(AddZeros)
-            QowTS = np.asarray(QowTemp) 
-            
+            QowTS = np.asarray(QowTemp)
+
             # Cumulative stats
             Add = [scts[-1]] * (1001 - TMAX)
             scts.extend(Add)
-            
+
             Add = [bbscts[-1]] * (1001 - TMAX)
             bbscts.extend(Add)
-            
+
             Add = [Qow_cumul[-1]] * (1001 - TMAX)
             QowCumulTemp = np.ndarray.tolist(Qow_cumul)
             QowCumulTemp.extend(Add)
             Qow_cumul = np.asarray(QowCumulTemp)
-            
 
         # RSLR0
         if N == 0:
@@ -303,8 +305,8 @@ for q in range(len(paths)):
             QowcA0.append(Qow_cumul)
             VolA0.append(volumeTS)
             xbA0.append(bbscts)
-        
-        elif N == 5: 
+
+        elif N == 5:
             HdB0.append(aHd)
             SCRB0.append(SCrate)
             bbSCRB0.append(bbSCrate)
@@ -316,7 +318,7 @@ for q in range(len(paths)):
             QowcB0.append(Qow_cumul)
             VolB0.append(volumeTS)
             xbB0.append(bbscts)
-            
+
         # RSLR1
         elif N == 1:
             HdA1.append(aHd)
@@ -330,8 +332,8 @@ for q in range(len(paths)):
             QowcA1.append(Qow_cumul)
             VolA1.append(volumeTS)
             xbA1.append(bbscts)
-        
-        elif N == 6: 
+
+        elif N == 6:
             HdB1.append(aHd)
             SCRB1.append(SCrate)
             bbSCRB1.append(bbSCrate)
@@ -343,7 +345,7 @@ for q in range(len(paths)):
             QowcB1.append(Qow_cumul)
             VolB1.append(volumeTS)
             xbB1.append(bbscts)
-        
+
         # RSLR2
         elif N == 2:
             HdA2.append(aHd)
@@ -357,8 +359,8 @@ for q in range(len(paths)):
             QowcA2.append(Qow_cumul)
             VolA2.append(volumeTS)
             xbA2.append(bbscts)
-        
-        elif N == 7: 
+
+        elif N == 7:
             HdB2.append(aHd)
             SCRB2.append(SCrate)
             bbSCRB2.append(bbSCrate)
@@ -370,7 +372,7 @@ for q in range(len(paths)):
             QowcB2.append(Qow_cumul)
             VolB2.append(volumeTS)
             xbB2.append(bbscts)
-        
+
         # RSLR3
         elif N == 3:
             HdA3.append(aHd)
@@ -384,8 +386,8 @@ for q in range(len(paths)):
             QowcA3.append(Qow_cumul)
             VolA3.append(volumeTS)
             xbA3.append(bbscts)
-        
-        elif N == 8: 
+
+        elif N == 8:
             HdB3.append(aHd)
             SCRB3.append(SCrate)
             bbSCRB3.append(bbSCrate)
@@ -397,7 +399,7 @@ for q in range(len(paths)):
             QowcB3.append(Qow_cumul)
             VolB3.append(volumeTS)
             xbB3.append(bbscts)
-        
+
         # RSLR 4
         elif N == 4:
             HdA4.append(aHd)
@@ -411,8 +413,8 @@ for q in range(len(paths)):
             QowcA4.append(Qow_cumul)
             VolA4.append(volumeTS)
             xbA4.append(bbscts)
-        
-        elif N == 9: 
+
+        elif N == 9:
             HdB4.append(aHd)
             SCRB4.append(SCrate)
             bbSCRB4.append(bbSCrate)
@@ -451,7 +453,7 @@ QowB0_Avg = np.average(QowB0, axis=0)
 QowcB0_Avg = np.average(QowcB0, axis=0)
 VolB0_Avg = np.average(VolB0, axis=0)
 xbB0_Avg = np.average(xbB0, axis=0)
-    
+
 # RSLR1
 HdA1_Avg = np.average(HdA1, axis=0)
 SCRA1_Avg = np.average(SCRA1, axis=0)
@@ -549,273 +551,288 @@ VolB4_Avg = np.average(VolB4, axis=0)
 xbB4_Avg = np.average(xbB4, axis=0)
 
 
+#%% PLOT
 
-#%% PLOT       
-    
 if Plot:
-    
-    c1 = 'darkviolet'
-    c2 = 'blue'
-    c3 = 'green'
-    c4 = 'gold'
-    c5 = 'red'
-    
-    
-    Fig = plt.figure(figsize=(20,20))
-    plt.rcParams.update({'font.size':10})
 
-    ax = Fig.add_subplot(4,2,1)
-    plt.plot(xsA0_Avg, c1, ls='-')
-    plt.plot(xsB0_Avg, c1, ls='--')
-    plt.plot(xsA1_Avg, c2, ls='-')
-    plt.plot(xsB1_Avg, c2, ls='--')
-    plt.plot(xsA2_Avg, c3, ls='-')
-    plt.plot(xsB2_Avg, c3, ls='--')
-    plt.plot(xsA3_Avg, c4, ls='-')
-    plt.plot(xsB3_Avg, c4, ls='--')
-    plt.plot(xsA4_Avg, c5, ls='-')
-    plt.plot(xsB4_Avg, c5, ls='--')
-    plt.ylabel('Shoreline Position (m)')
-    plt.xlabel('Year')
+    c1 = "darkviolet"
+    c2 = "blue"
+    c3 = "green"
+    c4 = "gold"
+    c5 = "red"
+
+    Fig = plt.figure(figsize=(20, 20))
+    plt.rcParams.update({"font.size": 10})
+
+    ax = Fig.add_subplot(4, 2, 1)
+    plt.plot(xsA0_Avg, c1, ls="-")
+    plt.plot(xsB0_Avg, c1, ls="--")
+    plt.plot(xsA1_Avg, c2, ls="-")
+    plt.plot(xsB1_Avg, c2, ls="--")
+    plt.plot(xsA2_Avg, c3, ls="-")
+    plt.plot(xsB2_Avg, c3, ls="--")
+    plt.plot(xsA3_Avg, c4, ls="-")
+    plt.plot(xsB3_Avg, c4, ls="--")
+    plt.plot(xsA4_Avg, c5, ls="-")
+    plt.plot(xsB4_Avg, c5, ls="--")
+    plt.ylabel("Shoreline Position (m)")
+    plt.xlabel("Year")
     if sealevel:
-        plt.legend(['RSLR = 3', '', 'RSLR = 6', '', 'RSLR = 9', '', 'RSLR = 12', '', 'RSLR = 15', ''])
+        plt.legend(
+            [
+                "RSLR = 3",
+                "",
+                "RSLR = 6",
+                "",
+                "RSLR = 9",
+                "",
+                "RSLR = 12",
+                "",
+                "RSLR = 15",
+                "",
+            ]
+        )
     else:
-        plt.legend(['r = 0.3', '', 'r = 0.45', '', 'r = 0.6', '', 'r = 0.75', '', 'r = 0.9', ''])
-    
-    ax = Fig.add_subplot(4,2,4)
-    plt.plot(WidthA0_Avg, c1, ls='-')
-    plt.plot(WidthB0_Avg, c1, ls='--')
-    plt.plot(WidthA1_Avg, c2, ls='-')
-    plt.plot(WidthB1_Avg, c2, ls='--')
-    plt.plot(WidthA2_Avg, c3, ls='-')
-    plt.plot(WidthB2_Avg, c3, ls='--')
-    plt.plot(WidthA3_Avg, c4, ls='-')
-    plt.plot(WidthB3_Avg, c4, ls='--')
-    plt.plot(WidthA4_Avg, c5, ls='-')
-    plt.plot(WidthB4_Avg, c5, ls='--')
-    plt.ylabel('Island Width (m)')
-    plt.xlabel('Year') 
-    
-    ax = Fig.add_subplot(4,2,3)
-    plt.plot(QowcA0_Avg, c1, ls='-')
-    plt.plot(QowcB0_Avg, c1, ls='--')
-    plt.plot(QowcA1_Avg, c2, ls='-')
-    plt.plot(QowcB1_Avg, c2, ls='--')
-    plt.plot(QowcA2_Avg, c3, ls='-')
-    plt.plot(QowcB2_Avg, c3, ls='--')
-    plt.plot(QowcA3_Avg, c4, ls='-')
-    plt.plot(QowcB3_Avg, c4, ls='--')
-    plt.plot(QowcA4_Avg, c5, ls='-')
-    plt.plot(QowcB4_Avg, c5, ls='--')
-    plt.ylabel('Cumulative Overwash Flux (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(4,2,5)
-    plt.plot(ElevA0_Avg, c1, ls='-')
-    plt.plot(ElevB0_Avg, c1, ls='--')
-    plt.plot(ElevA1_Avg, c2, ls='-')
-    plt.plot(ElevB1_Avg, c2, ls='--')
-    plt.plot(ElevA2_Avg, c3, ls='-')
-    plt.plot(ElevB2_Avg, c3, ls='--')
-    plt.plot(ElevA3_Avg, c4, ls='-')
-    plt.plot(ElevB3_Avg, c4, ls='--')
-    plt.plot(ElevA4_Avg, c5, ls='-')
-    plt.plot(ElevB4_Avg, c5, ls='--')
-    plt.ylabel('Interior Elevation (m)')
-    plt.xlabel('Year')  
-    
-    ax = Fig.add_subplot(4,2,6)
-    plt.plot(VolA0_Avg, c1, ls='-')
-    plt.plot(VolB0_Avg, c1, ls='--')
-    plt.plot(VolA1_Avg, c2, ls='-')
-    plt.plot(VolB1_Avg, c2, ls='--')
-    plt.plot(VolA2_Avg, c3, ls='-')
-    plt.plot(VolB2_Avg, c3, ls='--')
-    plt.plot(VolA3_Avg, c4, ls='-')
-    plt.plot(VolB3_Avg, c4, ls='--')
-    plt.plot(VolA4_Avg, c5, ls='-')
-    plt.plot(VolB4_Avg, c5, ls='--')
-    plt.ylabel('Island Volume (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(4,2,2)
-    plt.plot(xbA0_Avg, c1, ls='-')
-    plt.plot(xbB0_Avg, c1, ls='--')
-    plt.plot(xbA1_Avg, c2, ls='-')
-    plt.plot(xbB1_Avg, c2, ls='--')
-    plt.plot(xbA2_Avg, c3, ls='-')
-    plt.plot(xbB2_Avg, c3, ls='--')
-    plt.plot(xbA3_Avg, c4, ls='-')
-    plt.plot(xbB3_Avg, c4, ls='--')
-    plt.plot(xbA4_Avg, c5, ls='-')
-    plt.plot(xbB4_Avg, c5, ls='--')
-    plt.ylabel('Back-Barrier Shoreline Position (m)')
-    plt.xlabel('Year') 
-    
-    ax = Fig.add_subplot(4,2,7)
-    plt.plot(HdA0_Avg, c1, ls='-')
-    plt.plot(HdB0_Avg, c1, ls='--')
-    plt.plot(HdA1_Avg, c2, ls='-')
-    plt.plot(HdB1_Avg, c2, ls='--')
-    plt.plot(HdA2_Avg, c3, ls='-')
-    plt.plot(HdB2_Avg, c3, ls='--')
-    plt.plot(HdA3_Avg, c4, ls='-')
-    plt.plot(HdB3_Avg, c4, ls='--')
-    plt.plot(HdA4_Avg, c5, ls='-')
-    plt.plot(HdB4_Avg, c5, ls='--')
-    plt.ylabel('Average Dune Height (m)')
-    plt.xlabel('Year') 
-    
-    ax = Fig.add_subplot(4,2,8)
+        plt.legend(
+            [
+                "r = 0.3",
+                "",
+                "r = 0.45",
+                "",
+                "r = 0.6",
+                "",
+                "r = 0.75",
+                "",
+                "r = 0.9",
+                "",
+            ]
+        )
+
+    ax = Fig.add_subplot(4, 2, 4)
+    plt.plot(WidthA0_Avg, c1, ls="-")
+    plt.plot(WidthB0_Avg, c1, ls="--")
+    plt.plot(WidthA1_Avg, c2, ls="-")
+    plt.plot(WidthB1_Avg, c2, ls="--")
+    plt.plot(WidthA2_Avg, c3, ls="-")
+    plt.plot(WidthB2_Avg, c3, ls="--")
+    plt.plot(WidthA3_Avg, c4, ls="-")
+    plt.plot(WidthB3_Avg, c4, ls="--")
+    plt.plot(WidthA4_Avg, c5, ls="-")
+    plt.plot(WidthB4_Avg, c5, ls="--")
+    plt.ylabel("Island Width (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 3)
+    plt.plot(QowcA0_Avg, c1, ls="-")
+    plt.plot(QowcB0_Avg, c1, ls="--")
+    plt.plot(QowcA1_Avg, c2, ls="-")
+    plt.plot(QowcB1_Avg, c2, ls="--")
+    plt.plot(QowcA2_Avg, c3, ls="-")
+    plt.plot(QowcB2_Avg, c3, ls="--")
+    plt.plot(QowcA3_Avg, c4, ls="-")
+    plt.plot(QowcB3_Avg, c4, ls="--")
+    plt.plot(QowcA4_Avg, c5, ls="-")
+    plt.plot(QowcB4_Avg, c5, ls="--")
+    plt.ylabel("Cumulative Overwash Flux (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 5)
+    plt.plot(ElevA0_Avg, c1, ls="-")
+    plt.plot(ElevB0_Avg, c1, ls="--")
+    plt.plot(ElevA1_Avg, c2, ls="-")
+    plt.plot(ElevB1_Avg, c2, ls="--")
+    plt.plot(ElevA2_Avg, c3, ls="-")
+    plt.plot(ElevB2_Avg, c3, ls="--")
+    plt.plot(ElevA3_Avg, c4, ls="-")
+    plt.plot(ElevB3_Avg, c4, ls="--")
+    plt.plot(ElevA4_Avg, c5, ls="-")
+    plt.plot(ElevB4_Avg, c5, ls="--")
+    plt.ylabel("Interior Elevation (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 6)
+    plt.plot(VolA0_Avg, c1, ls="-")
+    plt.plot(VolB0_Avg, c1, ls="--")
+    plt.plot(VolA1_Avg, c2, ls="-")
+    plt.plot(VolB1_Avg, c2, ls="--")
+    plt.plot(VolA2_Avg, c3, ls="-")
+    plt.plot(VolB2_Avg, c3, ls="--")
+    plt.plot(VolA3_Avg, c4, ls="-")
+    plt.plot(VolB3_Avg, c4, ls="--")
+    plt.plot(VolA4_Avg, c5, ls="-")
+    plt.plot(VolB4_Avg, c5, ls="--")
+    plt.ylabel("Island Volume (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 2)
+    plt.plot(xbA0_Avg, c1, ls="-")
+    plt.plot(xbB0_Avg, c1, ls="--")
+    plt.plot(xbA1_Avg, c2, ls="-")
+    plt.plot(xbB1_Avg, c2, ls="--")
+    plt.plot(xbA2_Avg, c3, ls="-")
+    plt.plot(xbB2_Avg, c3, ls="--")
+    plt.plot(xbA3_Avg, c4, ls="-")
+    plt.plot(xbB3_Avg, c4, ls="--")
+    plt.plot(xbA4_Avg, c5, ls="-")
+    plt.plot(xbB4_Avg, c5, ls="--")
+    plt.ylabel("Back-Barrier Shoreline Position (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 7)
+    plt.plot(HdA0_Avg, c1, ls="-")
+    plt.plot(HdB0_Avg, c1, ls="--")
+    plt.plot(HdA1_Avg, c2, ls="-")
+    plt.plot(HdB1_Avg, c2, ls="--")
+    plt.plot(HdA2_Avg, c3, ls="-")
+    plt.plot(HdB2_Avg, c3, ls="--")
+    plt.plot(HdA3_Avg, c4, ls="-")
+    plt.plot(HdB3_Avg, c4, ls="--")
+    plt.plot(HdA4_Avg, c5, ls="-")
+    plt.plot(HdB4_Avg, c5, ls="--")
+    plt.ylabel("Average Dune Height (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(4, 2, 8)
     plt.plot(SAB0_Avg, c1)
     plt.plot(SAB1_Avg, c2)
     plt.plot(SAB2_Avg, c3)
     plt.plot(SAB3_Avg, c4)
     plt.plot(SAB4_Avg, c5)
-    plt.ylabel('ShrubArea (dam^2)')
-    plt.xlabel('Year')
-    
+    plt.ylabel("ShrubArea (dam^2)")
+    plt.xlabel("Year")
+
     plt.show()
-    
 
     # For publication
-    
-    Fig = plt.figure(figsize=(16,15))
-    plt.rcParams.update({'font.size':14})
 
-    ax = Fig.add_subplot(3,2,3)
-    plt.plot(xsA0_Avg, c1, ls='-')
-    plt.plot(xsB0_Avg, c1, ls='--')
-    plt.plot(xsA1_Avg, c2, ls='-')
-    plt.plot(xsB1_Avg, c2, ls='--')
-    plt.plot(xsA2_Avg, c3, ls='-')
-    plt.plot(xsB2_Avg, c3, ls='--')
-    plt.plot(xsA3_Avg, c4, ls='-')
-    plt.plot(xsB3_Avg, c4, ls='--')
-    plt.plot(xsA4_Avg, c5, ls='-')
-    plt.plot(xsB4_Avg, c5, ls='--')
-    plt.ylabel('Shoreline Position (m)')
-    plt.xlabel('Year')
+    Fig = plt.figure(figsize=(16, 15))
+    plt.rcParams.update({"font.size": 14})
+
+    ax = Fig.add_subplot(3, 2, 3)
+    plt.plot(xsA0_Avg, c1, ls="-")
+    plt.plot(xsB0_Avg, c1, ls="--")
+    plt.plot(xsA1_Avg, c2, ls="-")
+    plt.plot(xsB1_Avg, c2, ls="--")
+    plt.plot(xsA2_Avg, c3, ls="-")
+    plt.plot(xsB2_Avg, c3, ls="--")
+    plt.plot(xsA3_Avg, c4, ls="-")
+    plt.plot(xsB3_Avg, c4, ls="--")
+    plt.plot(xsA4_Avg, c5, ls="-")
+    plt.plot(xsB4_Avg, c5, ls="--")
+    plt.ylabel("Shoreline Position (m)")
+    plt.xlabel("Year")
     # if sealevel:
     #     plt.legend(['RSLR = 3', '', 'RSLR = 6', '', 'RSLR = 9', '', 'RSLR = 12', '', 'RSLR = 15', ''])
     # else:
     #     plt.legend(['r = 0.3', '', 'r = 0.45', '', 'r = 0.6', '', 'r = 0.75', '', 'r = 0.9', ''])
-    
-    ax = Fig.add_subplot(3,2,1)
-    plt.plot(WidthA0_Avg, c1, ls='-')
-    plt.plot(WidthB0_Avg, c1, ls='--')
-    plt.plot(WidthA1_Avg, c2, ls='-')
-    plt.plot(WidthB1_Avg, c2, ls='--')
-    plt.plot(WidthA2_Avg, c3, ls='-')
-    plt.plot(WidthB2_Avg, c3, ls='--')
-    plt.plot(WidthA3_Avg, c4, ls='-')
-    plt.plot(WidthB3_Avg, c4, ls='--')
-    plt.plot(WidthA4_Avg, c5, ls='-')
-    plt.plot(WidthB4_Avg, c5, ls='--')
-    plt.ylabel('Barrier Width (m)')
-    plt.xlabel('Year') 
-    
-    ax = Fig.add_subplot(3,2,4)
-    plt.plot(QowcA0_Avg, c1, ls='-')
-    plt.plot(QowcB0_Avg, c1, ls='--')
-    plt.plot(QowcA1_Avg, c2, ls='-')
-    plt.plot(QowcB1_Avg, c2, ls='--')
-    plt.plot(QowcA2_Avg, c3, ls='-')
-    plt.plot(QowcB2_Avg, c3, ls='--')
-    plt.plot(QowcA3_Avg, c4, ls='-')
-    plt.plot(QowcB3_Avg, c4, ls='--')
-    plt.plot(QowcA4_Avg, c5, ls='-')
-    plt.plot(QowcB4_Avg, c5, ls='--')
-    plt.ylabel('Cumulative Overwash Flux (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(3,2,2)
-    plt.plot(VolA0_Avg, c1, ls='-')
-    plt.plot(VolB0_Avg, c1, ls='--')
-    plt.plot(VolA1_Avg, c2, ls='-')
-    plt.plot(VolB1_Avg, c2, ls='--')
-    plt.plot(VolA2_Avg, c3, ls='-')
-    plt.plot(VolB2_Avg, c3, ls='--')
-    plt.plot(VolA3_Avg, c4, ls='-')
-    plt.plot(VolB3_Avg, c4, ls='--')
-    plt.plot(VolA4_Avg, c5, ls='-')
-    plt.plot(VolB4_Avg, c5, ls='--')
-    plt.ylabel('Barrier Volume (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(3,2,5)
+
+    ax = Fig.add_subplot(3, 2, 1)
+    plt.plot(WidthA0_Avg, c1, ls="-")
+    plt.plot(WidthB0_Avg, c1, ls="--")
+    plt.plot(WidthA1_Avg, c2, ls="-")
+    plt.plot(WidthB1_Avg, c2, ls="--")
+    plt.plot(WidthA2_Avg, c3, ls="-")
+    plt.plot(WidthB2_Avg, c3, ls="--")
+    plt.plot(WidthA3_Avg, c4, ls="-")
+    plt.plot(WidthB3_Avg, c4, ls="--")
+    plt.plot(WidthA4_Avg, c5, ls="-")
+    plt.plot(WidthB4_Avg, c5, ls="--")
+    plt.ylabel("Barrier Width (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 4)
+    plt.plot(QowcA0_Avg, c1, ls="-")
+    plt.plot(QowcB0_Avg, c1, ls="--")
+    plt.plot(QowcA1_Avg, c2, ls="-")
+    plt.plot(QowcB1_Avg, c2, ls="--")
+    plt.plot(QowcA2_Avg, c3, ls="-")
+    plt.plot(QowcB2_Avg, c3, ls="--")
+    plt.plot(QowcA3_Avg, c4, ls="-")
+    plt.plot(QowcB3_Avg, c4, ls="--")
+    plt.plot(QowcA4_Avg, c5, ls="-")
+    plt.plot(QowcB4_Avg, c5, ls="--")
+    plt.ylabel("Cumulative Overwash Flux (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 2)
+    plt.plot(VolA0_Avg, c1, ls="-")
+    plt.plot(VolB0_Avg, c1, ls="--")
+    plt.plot(VolA1_Avg, c2, ls="-")
+    plt.plot(VolB1_Avg, c2, ls="--")
+    plt.plot(VolA2_Avg, c3, ls="-")
+    plt.plot(VolB2_Avg, c3, ls="--")
+    plt.plot(VolA3_Avg, c4, ls="-")
+    plt.plot(VolB3_Avg, c4, ls="--")
+    plt.plot(VolA4_Avg, c5, ls="-")
+    plt.plot(VolB4_Avg, c5, ls="--")
+    plt.ylabel("Barrier Volume (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 5)
     plt.plot(SAB0_Avg, c1)
     plt.plot(SAB1_Avg, c2)
     plt.plot(SAB2_Avg, c3)
     plt.plot(SAB3_Avg, c4)
     plt.plot(SAB4_Avg, c5)
-    plt.ylabel('Shrub Cover (Count))')
-    plt.xlabel('Year')
-    
+    plt.ylabel("Shrub Cover (Count))")
+    plt.xlabel("Year")
+
     plt.tight_layout(pad=1.5)
     plt.show()
-    
-    
-    
-    
+
     # For publication - Without No Shrub lines
-    
-    Fig = plt.figure(figsize=(16,15))
-    plt.rcParams.update({'font.size':14})
 
-    ax = Fig.add_subplot(3,2,3)
-    plt.plot(xsB0_Avg, c1, ls='--')
-    plt.plot(xsB1_Avg, c2, ls='--')
-    plt.plot(xsB2_Avg, c3, ls='--')
-    plt.plot(xsB3_Avg, c4, ls='--')
-    plt.plot(xsB4_Avg, c5, ls='--')
-    plt.ylabel('Shoreline Position (m)')
-    plt.xlabel('Year')
+    Fig = plt.figure(figsize=(16, 15))
+    plt.rcParams.update({"font.size": 14})
+
+    ax = Fig.add_subplot(3, 2, 3)
+    plt.plot(xsB0_Avg, c1, ls="--")
+    plt.plot(xsB1_Avg, c2, ls="--")
+    plt.plot(xsB2_Avg, c3, ls="--")
+    plt.plot(xsB3_Avg, c4, ls="--")
+    plt.plot(xsB4_Avg, c5, ls="--")
+    plt.ylabel("Shoreline Position (m)")
+    plt.xlabel("Year")
     # if sealevel:
     #     plt.legend(['RSLR = 3', '', 'RSLR = 6', '', 'RSLR = 9', '', 'RSLR = 12', '', 'RSLR = 15', ''])
     # else:
     #     plt.legend(['r = 0.3', '', 'r = 0.45', '', 'r = 0.6', '', 'r = 0.75', '', 'r = 0.9', ''])
-    
-    ax = Fig.add_subplot(3,2,1)
-    plt.plot(WidthB0_Avg, c1, ls='--')
-    plt.plot(WidthB1_Avg, c2, ls='--')
-    plt.plot(WidthB2_Avg, c3, ls='--')
-    plt.plot(WidthB3_Avg, c4, ls='--')
-    plt.plot(WidthB4_Avg, c5, ls='--')
-    plt.ylabel('Barrier Width (m)')
-    plt.xlabel('Year') 
-    
-    ax = Fig.add_subplot(3,2,4)
-    plt.plot(QowcB0_Avg, c1, ls='--')
-    plt.plot(QowcB1_Avg, c2, ls='--')
-    plt.plot(QowcB2_Avg, c3, ls='--')
-    plt.plot(QowcB3_Avg, c4, ls='--')
-    plt.plot(QowcB4_Avg, c5, ls='--')
-    plt.ylabel('Cumulative Overwash Flux (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(3,2,2)
-    plt.plot(VolB0_Avg, c1, ls='--')
-    plt.plot(VolB1_Avg, c2, ls='--')
-    plt.plot(VolB2_Avg, c3, ls='--')
-    plt.plot(VolB3_Avg, c4, ls='--')
-    plt.plot(VolB4_Avg, c5, ls='--')
-    plt.ylabel('Barrier Volume (m^3/m)')
-    plt.xlabel('Year')   
-    
-    ax = Fig.add_subplot(3,2,5)
+
+    ax = Fig.add_subplot(3, 2, 1)
+    plt.plot(WidthB0_Avg, c1, ls="--")
+    plt.plot(WidthB1_Avg, c2, ls="--")
+    plt.plot(WidthB2_Avg, c3, ls="--")
+    plt.plot(WidthB3_Avg, c4, ls="--")
+    plt.plot(WidthB4_Avg, c5, ls="--")
+    plt.ylabel("Barrier Width (m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 4)
+    plt.plot(QowcB0_Avg, c1, ls="--")
+    plt.plot(QowcB1_Avg, c2, ls="--")
+    plt.plot(QowcB2_Avg, c3, ls="--")
+    plt.plot(QowcB3_Avg, c4, ls="--")
+    plt.plot(QowcB4_Avg, c5, ls="--")
+    plt.ylabel("Cumulative Overwash Flux (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 2)
+    plt.plot(VolB0_Avg, c1, ls="--")
+    plt.plot(VolB1_Avg, c2, ls="--")
+    plt.plot(VolB2_Avg, c3, ls="--")
+    plt.plot(VolB3_Avg, c4, ls="--")
+    plt.plot(VolB4_Avg, c5, ls="--")
+    plt.ylabel("Barrier Volume (m^3/m)")
+    plt.xlabel("Year")
+
+    ax = Fig.add_subplot(3, 2, 5)
     plt.plot(SAB0_Avg, c1)
     plt.plot(SAB1_Avg, c2)
     plt.plot(SAB2_Avg, c3)
     plt.plot(SAB3_Avg, c4)
     plt.plot(SAB4_Avg, c5)
-    plt.ylabel('Shrub Cover (Count))')
-    plt.xlabel('Year')
-    
+    plt.ylabel("Shrub Cover (Count))")
+    plt.xlabel("Year")
+
     plt.tight_layout(pad=1.5)
     plt.show()
-    
-    
-    
-    
-    
