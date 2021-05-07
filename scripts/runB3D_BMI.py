@@ -6,7 +6,7 @@
 #       - if using Barrier3D for the first time, remember to $ pip install -e .
 
 from barrier3d import Barrier3dBmi
-from scripts import Barrier3D_Plotting_Functions as B3Dfunc
+from barrier3d.utilities_v2 import Barrier3D_Plotting_Functions as B3Dfunc
 import time
 
 # create an instance of the new BMI class, which is the model

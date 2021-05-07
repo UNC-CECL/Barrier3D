@@ -9,7 +9,7 @@ import time
 import matplotlib.pyplot as plt
 
 from barrier3d import Barrier3dBmi
-from scripts import Barrier3D_Plotting_Functions as B3Dfunc
+from barrier3d.utilities_v2 import Barrier3D_Plotting_Functions as B3Dfunc
 
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
@@ -36,7 +36,7 @@ B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
 
 # ----------------------------- #
 
-os.chdir("/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/")
+os.chdir("/V1_NoBMI/")
 
 # (starts running immediately)
 execfile("Barrier3D.py")
