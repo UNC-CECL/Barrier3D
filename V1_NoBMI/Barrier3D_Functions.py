@@ -10,7 +10,7 @@ Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
 # Version Number: 5
-# Updated: 26 August 2020
+# Updated: 30 April 2021
 
 
 # Simulation Functions Included:
@@ -32,13 +32,12 @@ import math
 import random
 import os
 import matplotlib.pyplot as plt
-from matplotlib import cm  # analysis:ignore
-from mpl_toolkits.mplot3d import Axes3D  # analysis:ignore
-import imageio  # analysis:ignore
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+import imageio
 from scipy import signal
 
-# from Barrier3D_Parameters import (
-from V1_NoBMI.Barrier3D_Parameters import (
+from Barrier3D_Parameters import (
     RSLR,
     BayDepth,
     Dmaxel,
@@ -56,7 +55,7 @@ from V1_NoBMI.Barrier3D_Parameters import (
     Female,
     ShrubEl_min,
     ShrubEl_max,
-    TideAmp,
+    MaxShrubHeight,
     SprayDist,
     BurialLimit,
     UprootLimit,
@@ -68,7 +67,6 @@ from V1_NoBMI.Barrier3D_Parameters import (
     disp_sigma,
     SalineLimit,
     PC,
-    SH,
     Shrub_ON,
 )
 
@@ -264,6 +262,43 @@ def FindWidths(InteriorDomain, SL):
 
 
 # ===================================================
+# InteriorNoise
+
+# Adds elevation noise to flat parts of the interior to represent aeolian re-working during interstorm periods
+
+
+def InteriorNoise(InteriorDomain, InteriorWidth):
+
+    zthresh = 0.005  # dam
+    ythresh = 2  # dam
+    gap = 1  # dam
+
+    # Loop through each column and
+    for x in range(BarrierLength):
+        col = InteriorDomain[0 : InteriorWidth[x], x]
+
+        # find continuous sections that are too flat
+        der = np.diff(col)
+
+        der_under = np.where(der < zthresh)[0]
+
+        if len(der_under) > 0:
+            gaps = np.diff(der_under) > gap
+            flat_start = np.insert(der_under[1:][gaps], 0, der_under[0])
+            flat_stop = np.append(der_under[:-1][gaps], der_under[-1])
+
+            # Add noise to flat sections
+            for n in range(1, len(flat_stop)):
+                flat_length = flat_stop[n] - flat_start[n]
+                if flat_length >= ythresh:
+                    # noise = np.random.rand(flat_length) * zthresh
+                    noise = np.random.uniform(-1, 1, flat_length) * zthresh * 2
+                    InteriorDomain[flat_start[n] : flat_stop[n], x] += noise
+
+    return InteriorDomain
+
+
+# ===================================================
 # LTA_SC
 
 # Finds shoreline change for modeled year following Lorenzo-Trueba and Ashton (2014)
@@ -343,61 +378,68 @@ def Shrubs(
     t,
     ShrubDomainFemale,
     ShrubDomainMale,
+    ShrubPercentCover,
+    DeadPercentCover,
     BurialDomain,
     InteriorWidth_Avg,
     DomainWidth,
     ShrubDomainDead,
+    SL,
 ):
 
     ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
 
-    BeachWidth = 60 / 10  # Temp
+    BeachWidth = (
+        50 / 10
+    )  # Calculated based on berm (dune toe) elevation of 1.9, and beach slope of 0.04 (i.e., 1.9/0.04 = 47.5 ~= 50 m)
 
-    ### Burial
+    ### Burial / Uprooting
+    ShrubHeight = ShrubPercentCover * MaxShrubHeight
+    DeadHeight = DeadPercentCover * MaxShrubHeight
 
-    # Find heights of shrub plants
-    Allshrub_t = ShrubDomainAll.astype("int64")
-    ShrubHeight = SH.take(Allshrub_t)
+    for l in range(len(ShrubPercentCover[0])):
+        for w in range(len(ShrubPercentCover)):
+            if ShrubDomainAll[w, l] > 0:
+                if (
+                    BurialDomain[w, l] > ShrubHeight[w, l]
+                    or BurialDomain[w, l] < UprootLimit
+                ):
+                    ShrubDomainFemale[w, l] = 0
+                    ShrubDomainMale[w, l] = 0
 
-    # Kill all shrubs buried by over depth limit or eroded
-    ShrubDomainDead[BurialDomain > (BurialLimit * ShrubHeight)] = ShrubDomainAll[
-        BurialDomain > (BurialLimit * ShrubHeight)
-    ]  # Transfer to dead domain
-    ShrubDomainDead[
-        BurialDomain >= 0.3
-    ] = 0  # If buried by more than 3 m, considered shrub to be completely gone (dead or alive)
-    ShrubDomainDead[BurialDomain < UprootLimit] = ShrubDomainAll[
-        BurialDomain < UprootLimit
-    ]  # Transfer to dead domain
+                elif BurialDomain[w, l] > (BurialLimit * ShrubHeight[w, l]):
+                    ShrubDomainDead[w, l] = ShrubDomainAll[w, l]
+                    ShrubDomainFemale[w, l] = 0
+                    ShrubDomainMale[w, l] = 0
 
-    ShrubDomainFemale[BurialDomain > (BurialLimit * ShrubHeight)] = 0
-    ShrubDomainFemale[BurialDomain < UprootLimit] = 0
-    ShrubDomainMale[BurialDomain > (BurialLimit * ShrubHeight)] = 0
-    ShrubDomainMale[BurialDomain < UprootLimit] = 0
+            elif ShrubDomainDead[w, l] > 0:
+                if (
+                    BurialDomain[w, l] > DeadHeight[w, l]
+                    or BurialDomain[w, l] < UprootLimit
+                ):
+                    ShrubDomainDead[w, l] = 0
 
-    BurialDomain[BurialDomain > (BurialLimit * ShrubHeight)] = 0  # Reset burial domain
-    BurialDomain[BurialDomain < UprootLimit] = 0  # Reset burial domain
-    BurialDomain[BurialDomain >= 0.3] = 0  # Reset burial domain
+    tempAll = ShrubDomainFemale + ShrubDomainMale + ShrubDomainDead
+    BurialDomain[tempAll == 0] = 0  # Reset burial domain
+
     ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
 
     ### Inundation
-    # Remove shrubs that have fallen below Mean High Water (i.e. elevation of 0) (passively inundated by rising back-barrier water elevations)
-
+    # Kill shrubs that have fallen below minimum elevation, remove shrubs that have fallen below Mean High Water (i.e. elevation of 0) (passive loss from rising back-barrier water elevations)
     for w in range(DomainWidth):
         for l in range(BarrierLength):
-            if InteriorDomain[w, l] < 0 and ShrubDomainAll[w, l] > 0:
-                if InteriorDomain[w, l] > -TideAmp:
-                    ShrubDomainDead[w, l] = ShrubDomainAll[
-                        w, l
-                    ]  # Shrub remains as dead if within tidal range (i.e. MHW - tidal range)
-                ShrubDomainFemale[w, l] = 0
-                ShrubDomainMale[w, l] = 0
-            elif (
-                InteriorDomain[w, l] < 0
-                and ShrubDomainDead[w, l] > 0
-                and InteriorDomain[w, l] < -TideAmp
-            ):  # Remove dead shrubs below tidal range
-                ShrubDomainDead[w, l] = 0
+            if InteriorDomain[w, l] < ShrubEl_min:
+                if InteriorDomain[w, l] > SL:
+                    if ShrubDomainFemale[w, l] > 0 or ShrubDomainMale[w, l] > 0:
+                        ShrubDomainDead[w, l] = (
+                            ShrubDomainFemale[w, l] + ShrubDomainMale[w, l]
+                        )  # Shrub remains as dead if above MHW
+                        ShrubDomainFemale[w, l] = 0
+                        ShrubDomainMale[w, l] = 0
+                else:
+                    ShrubDomainDead[w, l] = 0  # Remove dead shrubs below MHW
+                    ShrubDomainFemale[w, l] = 0
+                    ShrubDomainMale[w, l] = 0
 
     ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale  # Recalculate
 
@@ -405,12 +447,15 @@ def Shrubs(
     ShrubDomainFemale[ShrubDomainFemale > 0] += 1
     ShrubDomainMale[ShrubDomainMale > 0] += 1
 
-    ### Randomly drop a seed onto the island each time step
+    # ================================================
+    # Drop Seed
+    # Randomly drop a seed onto the island each time step
     randX = np.random.randint(0, BarrierLength)
     randY = np.random.randint(0, max(1, InteriorWidth_Avg))
     if (
         ShrubDomainFemale[randY, randX] == 0
         and ShrubDomainMale[randY, randX] == 0
+        and ShrubDomainDead[randY, randX] == 0
         and DuneDomainCrest[randX] + BermEl >= Dshrub
         and InteriorDomain[randY, randX] >= ShrubEl_min
         and InteriorDomain[randY, randX] <= ShrubEl_max
@@ -419,6 +464,17 @@ def Shrubs(
             ShrubDomainFemale[randY, randX] = 1
         else:
             ShrubDomainMale[randY, randX] = 1
+
+    # Randomly drop a seed onto the LEFT SIDE of ther island each time step
+    # randX = np.random.randint(0,BarrierLength*0.02) # Can drop anywhere with the first 2% of interior columns
+    # randY = np.random.randint(0,max(1,InteriorWidth_Avg))
+    # if ShrubDomainFemale[randY,randX] == 0 and ShrubDomainMale[randY,randX] == 0 and ShrubDomainDead[randY,randX] == 0 and DuneDomainCrest[randX] + BermEl >= Dshrub and InteriorDomain[randY,randX] >= ShrubEl_min \
+    #     and InteriorDomain[randY,randX] <= ShrubEl_max:
+    #     if random.random() > Female:
+    #         ShrubDomainFemale[randY, randX] = 1
+    #     else:
+    #         ShrubDomainMale[randY, randX] = 1
+    # ================================================
 
     ### Disperse seeds
     for k in range(
@@ -682,6 +738,7 @@ def plot_DuneHeight(DuneDomain, Dmax):
     plt.xlabel("Alongshore Distance (dam)")
     plt.ylabel("Year")
     plt.title("Dune Height (m)")
+    plt.show()
     name = "Output/Dunes"
     duneFig.savefig(name)
 
@@ -690,23 +747,50 @@ def plot_DuneHeight(DuneDomain, Dmax):
 # 2: Elevation Domain For Last Time Step
 
 
-def plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS):
+def plot_ElevTMAX(
+    TMAX, t, DuneDomain, DomainTS, Shrub_ON, PercentCoverTS, DeadPercentCoverTS
+):
 
     if TMAX > t:
         TMAX = t
     Dunes = (DuneDomain[TMAX, :, :] + BermEl) * 10
     Dunes = np.rot90(Dunes)
     Dunes = np.flipud(Dunes)
+    DuneWidth = int(len(Dunes))
     Domain = DomainTS[TMAX] * 10
     Domain = np.vstack([Dunes, Domain])
-    elevFig1 = plt.figure(figsize=(14, 5))
+    if Shrub_ON == 1:
+        Shrubs = PercentCoverTS[t]
+        Dead = DeadPercentCoverTS[t]
+        Sy, Sx = np.argwhere(Shrubs > 0).T
+        Sz = Shrubs[Sy, Sx] * 80  # 30
+        Dy, Dx = np.argwhere(Dead > 0).T
+        Dz = Dead[Dy, Dx] * 80  # 22
+    elevFig1 = plt.figure(figsize=(14, 8))
     ax = elevFig1.add_subplot(111)
     cax = ax.matshow(
         Domain, origin="lower", cmap="terrain", vmin=-1.1, vmax=4.0
     )  # , interpolation='gaussian') # analysis:ignore
+    if Shrub_ON == 1:
+        ax.scatter(
+            Sx,
+            Sy + DuneWidth,
+            marker="$*$",
+            s=Sz,
+            c="black",
+            alpha=0.7,
+            edgecolors="none",
+        )
+        ax.scatter(
+            Dx,
+            Dy + DuneWidth,
+            marker="$*$",
+            s=Dz,
+            c="red",
+            alpha=0.7,
+            edgecolors="none",
+        )
     ax.xaxis.set_ticks_position("bottom")
-    # cbar = elevFig1.colorbar(cax)
-    # cbar.set_label('Elevation (m)', rotation=270)
     plt.xlabel("Alongshore Distance (dam)")
     plt.ylabel("Cross-Shore Diatance (dam)")
     plt.title("Interior Elevation (m)")
@@ -738,7 +822,7 @@ def plot_ElevFrames(TMAX, DomainTS):
         plt.title("Interior Elevation")
         timestr = "Time = " + str(t) + " yrs"
         plt.text(1, 1, timestr)
-        # plt.show()
+        plt.show()
         name = "Output/SimFrames/elev_" + str(t)
         elevFig1.savefig(name)
 
@@ -763,8 +847,8 @@ def plot_ElevAnimation(
     BeachWidth = 6
     OriginY = 10
     AniDomainWidth = int(
-        max(InteriorWidth_AvgTS) + BeachWidth + abs(ShorelineChange) + OriginY + 35
-    )  # was +15
+        max(InteriorWidth_AvgTS) + BeachWidth + abs(ShorelineChange / 10) + OriginY + 25
+    )
 
     for t in range(TMAX):
         # Build beach elevation domain
@@ -804,22 +888,19 @@ def plot_ElevAnimation(
             Dz = Dead[Dy, Dx] * 80  # 22
 
         # Plot and save
-        elevFig1 = plt.figure(figsize=(7, 12))
-        ax = elevFig1.add_subplot(111)
+        elevFig1 = plt.figure(figsize=(15, 13))
+        ax = elevFig1.add_subplot(1, 1, 1)
         cax = ax.matshow(
             AnimateDomain, origin="lower", cmap="terrain", vmin=-1.1, vmax=4.0
         )  # , interpolation='gaussian') # analysis:ignore
         if Shrub_ON == 1:
-            # ax.scatter(Sx, Sy, marker='$*$', s=Sz, c='black', alpha=0.35, edgecolors='none')
-            # ax.scatter(Dx, Dy, marker='$*$', s=Dz, facecolors='none', edgecolors='maroon', alpha=0.35)
             ax.scatter(
-                Sx, Sy, marker="$*$", s=Sz, c="black", alpha=0.6, edgecolors="none"
+                Sx, Sy, marker="$*$", s=Sz, c="black", alpha=0.7, edgecolors="none"
             )
             ax.scatter(
-                Dx, Dy, marker="$*$", s=Dz, c="maroon", alpha=0.5, edgecolors="none"
+                Dx, Dy, marker="$*$", s=Dz, c="red", alpha=0.7, edgecolors="none"
             )
         ax.xaxis.set_ticks_position("bottom")
-        # cbar = elevFig1.colorbar(cax)
         plt.xlabel("Alongshore Distance (dam)")
         plt.ylabel("Cross-Shore Diatance (dam)")
         plt.title("Interior Elevation")
@@ -829,6 +910,10 @@ def plot_ElevAnimation(
         if not os.path.exists(newpath):
             os.makedirs(newpath)
         plt.text(1, 1, timestr)
+        elevFig1.subplots_adjust(right=0.85)
+        # cbar_ax = elevFig1.add_axes([0.78, 0.15, 0.04, 0.70])
+        # cbar = elevFig1.colorbar(cax, cax=cbar_ax)
+        # cbar.set_label('Elevation (m)', rotation=270, labelpad=20)
         name = "Output/SimFrames/elev_" + str(t)
         elevFig1.savefig(name)  # dpi=200
         plt.close(elevFig1)
@@ -858,7 +943,7 @@ def plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX):
         BeachX[i] = SL + add * i
     # Plot full tranects
     plt.figure()
-    for v in range(0, BarrierLength, 20):
+    for v in range(0, BarrierLength, 10):
         CrossElev = InteriorDomain[:, v]
         Dunes = DuneDomain[TMAX - 1, v, :] + BermEl
         CrossElev1 = np.insert(CrossElev, 0, Dunes)
@@ -935,25 +1020,23 @@ def plot_RuInCount(RunUpCount, InundationCount):
 # 9: Shoreface LTA14 transects over time
 
 
-def plot_LTATransects(
-    SL, TMAX, x_b_TS, x_t_TS, x_s_TS, RSLR, DShoreface, BayDepth, BermEl
-):
+def plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS):
 
     xmax = x_b_TS[TMAX - 1] + 20
 
     SFfig = plt.figure(figsize=(20, 5))
     colors = plt.cm.jet(np.linspace(0, 1, TMAX))
 
-    for t in range(0, TMAX, 5):  # Plots one transect every 25 years
+    for t in range(0, TMAX, 25):  # Plots one transect every 25 years
         # Create data points
         Tx = x_t_TS[t]
-        Ty = ((SL + (t * RSLR[t])) - DShoreface) * 10
+        Ty = ((SL + (t * RSLR)) - DShoreface) * 10
         Sx = x_s_TS[t]
-        Sy = (SL + (t * RSLR[t])) * 10
+        Sy = (SL + (t * RSLR)) * 10
         Bx = x_b_TS[t]
-        By = ((SL + (t * RSLR[t])) - BayDepth) * 10
+        By = ((SL + (t * RSLR)) - BayDepth) * 10
         Hx1 = Sx
-        Hy1 = ((t * RSLR[t]) + BermEl) * 10
+        Hy1 = ((t * RSLR) + BermEl) * 10
         Hx2 = Bx
         Hy2 = Hy1
         Mx = xmax
@@ -979,11 +1062,11 @@ def plot_LTATransects(
 # 10: Average Island Elevation Over Time
 
 
-def plot_AvgIslandElev(h_b_TS):
+def plot_AvgIslandElev(AvgInteriorElevationTS):
 
-    beTS = h_b_TS
+    aE = [a * 10 for a in AvgInteriorElevationTS]  # Convert to m
     plt.figure()
-    plt.plot(beTS)
+    plt.plot(aE)
     fig = plt.gcf()
     fig.set_size_inches(14, 5)
     plt.xlabel("Time (yrs)")
@@ -1078,9 +1161,6 @@ def plot_StatsSummary(
     # Overwash Flux
     plt.subplot(6, 1, 4)
     plt.plot(QowTS)
-    #    movingavg = np.convolve(QowTS, np.ones((50,))/50, mode='valid')
-    #    movingavg = [i * 10 for i in movingavg]
-    #    plt.plot(movingavg, 'r--')
     plt.ylabel("Qow (m^3/m)")
 
     # Shoreface Flux
@@ -1143,7 +1223,7 @@ def plot_3DElevTMAX(TMAX, t, SL, DuneDomain, DomainTS):
     )
     ax.set_zlim(0, 4)
 
-    # Plot shrubs
+    # Plot shrubs - Broken?
     # Shrubs = PercentCoverTS[TMAX]
     # Shrubs[Shrubs>0] = 1
     # Shrubs = np.vstack([np.zeros([DuneWidth,BarrierLength]), Shrubs])
@@ -1207,14 +1287,14 @@ def plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain):
         )
         ax.set_zlim(0, 4)
 
-        # Plot shrubs
-        #    Shrubs = PercentCoverTS[t]
-        #    Shrubs[Shrubs>0] = 1
-        #    Shrubs = np.vstack([np.zeros([DuneWidth,BarrierLength]), Shrubs])
-        #    Shrubs = Shrubs * Domain
-        #    Shrubs[Shrubs>0] = Shrubs[Shrubs>0] + 0.1
-        #    Shrubs[Shrubs<1] = None
-        #    ax.scatter(X, Y+1, Shrubs, s=30, c='black')
+        # Plot shrubs - Broken?
+        # Shrubs = PercentCoverTS[t]
+        # Shrubs[Shrubs>0] = 1
+        # Shrubs = np.vstack([np.zeros([DuneWidth,BarrierLength]), Shrubs])
+        # Shrubs = Shrubs * Domain
+        # Shrubs[Shrubs>0] = Shrubs[Shrubs>0] + 0.1
+        # Shrubs[Shrubs<1] = None
+        # ax.scatter(X, Y+1, Shrubs, s=30, c='black')
 
         timestr = "Time = " + str(t) + " yrs"
         ax.set_ylabel(timestr)
@@ -1297,7 +1377,7 @@ def plot_3DElevAnimation(
         timestr = "Time = " + str(t) + " yrs"
         ax.set_ylabel(timestr, labelpad=50)
         ax.view_init(20, 150)  # ax.view_init(20,155)
-        #    plt.subplots_adjust(left=-1.2, right=1.3, top=2.2, bottom=-0.3) # mostly centered
+        # plt.subplots_adjust(left=-1.2, right=1.3, top=2.2, bottom=-0.3) # mostly centered
         # plt.subplots_adjust(left=-0.7, right=1.3, top=2.2, bottom=-0.3) # mostly centered previous
         plt.subplots_adjust(left=-0.25, right=1.05, top=2.3, bottom=-0.2)
         # plt.show()
@@ -1389,7 +1469,7 @@ def plot_ShrubArea(ShrubArea):
 
 
 # ===================================================
-# 21: Storm count over time
+# 21: Storm Count Over Time
 
 
 def plot_StormCount(StormCount):
@@ -1429,7 +1509,7 @@ def plot_AlongshoreDuneHeight(DuneDomain):
 
 
 # ===================================================
-# 23: Calculate shoreline change periodicity
+# 23: Calculate Discontinuous Retreat
 
 
 def calc_ShorelinePeriodicity(TMAX, x_s_TS):
@@ -1438,7 +1518,7 @@ def calc_ShorelinePeriodicity(TMAX, x_s_TS):
     scts = [(x - x_s_TS[0]) * 10 for x in x_s_TS]
 
     # Filter
-    win = 15
+    win = 31
     poly = 3
     der1 = signal.savgol_filter(scts, win, poly, deriv=1)
 
@@ -1446,10 +1526,10 @@ def calc_ShorelinePeriodicity(TMAX, x_s_TS):
     HitUp = []  # Speed-ups
 
     window1 = 3  # Maximum allowed length for gaps in slow periods
-    window2 = 15  # Minimum length required for slow periods, including gaps
+    window2 = 30  # Minimum length required for slow periods, including gaps
     buffer = 3
     thresh1 = 0.5  # Max slope for slow periods
-    thresh2 = 1.5
+    thresh2 = 1
 
     # Find slow periods
     der_under = np.where(der1 < thresh1)[0]
@@ -1460,7 +1540,8 @@ def calc_ShorelinePeriodicity(TMAX, x_s_TS):
         peak_start = np.insert(der_under[1:][gaps], 0, der_under[0])
         peak_stop = np.append(der_under[:-1][gaps], der_under[-1])
 
-        for n in range(len(peak_stop)):
+        # for n in range(len(peak_stop)):
+        for n in range(1, len(peak_stop)):
             if peak_stop[n] - peak_start[n] > window2:
                 if len(HitDown) == 0:
                     if peak_start[n] > buffer:
@@ -1468,8 +1549,11 @@ def calc_ShorelinePeriodicity(TMAX, x_s_TS):
                     if peak_stop[n] < len(scts) - buffer:
                         HitUp.append(peak_stop[n])
                 else:
-                    gap_length = peak_start[n] - HitUp[-1]
-                    gap_slope = (scts[peak_start[n]] - scts[HitUp[-1]]) / gap_length
+                    a = HitUp[-1]
+                    b = peak_start[n]
+                    gap_length = b - a
+                    gap_slope = np.average(der1[a:b])
+                    # gap_slope = np.max(der1[a:b])
                     if gap_length < window2 and gap_slope < thresh2:
                         if peak_stop[n] < len(scts) - buffer:
                             HitUp[-1] = peak_stop[n]
@@ -1708,10 +1792,12 @@ def plot_ShrubAnimation(
 # ===================================================
 # 27: 3D Animation of Island Evolution With Shoreface and Bay
 
+# WARNING 30Apr21: BROKEN, DOES NOT WORK
+
 
 def plot_3DElevAnimation_Super(
     DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, x_t_TS, ShorelineChange
-):  # <---------------------Does not work yet!
+):
 
     BW = 6
     AniDomainWidth = int(
@@ -1805,3 +1891,67 @@ def plot_3DElevAnimation_Super(
         filename = "Output/SimFrames/3DAni_" + str(filenum) + ".png"
         frames.append(imageio.imread(filename))
     imageio.mimsave("Output/SimFrames/3DAni.gif", frames, "GIF-FI")
+
+
+# ===================================================
+# 28: Shrub front location and/or expansion rate
+
+
+def plot_ShrubFront(Shrub_ON, TMAX, PercentCoverTS):
+
+    # Defined as the left 95% of all shrub cells where age > 1
+
+    if Shrub_ON:
+
+        # Initialize
+        percentile = 0.95
+        ShrubFront = []
+        FrontLoc = 0
+
+        # Loop through each year
+        for t in range(TMAX):
+
+            shrub = PercentCoverTS[t]
+            shrub[shrub < 0.05] = 0  # Only counts shrubs older than 1 year
+            ShrubTotal = np.count_nonzero(
+                shrub
+            )  # Total amount of shrub plants in given year
+
+            domainW = len(shrub)
+            domainL = len(shrub[0])
+
+            endshrub = int(ShrubTotal * percentile)
+
+            # Loop through each shrub cell by cross-shore column first to identify which column the the 95th% shrub is in
+            count = 0  # Initialize
+            for l in range(domainL):
+                for w in range(domainW):
+                    if shrub[w, l] > 0:
+                        count += 1
+                        if count == endshrub:
+                            FrontLoc = l  # Column where 95th% shrub is in
+
+            ShrubFront.append(FrontLoc)  # Store in array
+
+        # Plot front location
+        ShrubFront = [i * 10 for i in ShrubFront]
+        plt.figure()
+        plt.plot(ShrubFront)
+        fig = plt.gcf()
+        fig.set_size_inches(14, 7)
+        plt.xlabel("Year")
+        plt.ylabel("Shrub Front (m alongshore)")
+        plt.show()
+
+        # Plot Rate
+        # der1 = (signal.savgol_filter(ShrubFront, 7, 3, deriv=1)) #7,3
+        der1 = np.diff(ShrubFront)
+        der1_rm = np.convolve(der1, np.ones((5,)) / 5, mode="same")
+        plt.figure()
+        plt.plot(der1)
+        plt.plot(der1_rm, c="r")
+        fig = plt.gcf()
+        fig.set_size_inches(14, 7)
+        plt.xlabel("Year")
+        plt.ylabel("Expansion Rate (m/yr)")
+        plt.show()

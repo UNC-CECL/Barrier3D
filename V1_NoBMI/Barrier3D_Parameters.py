@@ -9,24 +9,27 @@ Copyright (C) 2020 Ian R.B. Reeves
 Full copyright notice located in main Barrier3D.py file
 ----------------------------------------------------"""
 
-# Version Number: 5
-# Updated: 26 August 2020
+# Version Number: 4
+# Updated: 30 April 2021
 
 
 # Script sets up all input parameters
 # Converts from meters to decameters for simulation
 
 
-# ==================================================================================================================================
-
 import numpy as np
 import math
 
 
+elevfile = "Parameterization/InitElevHog.npy"
+stormfile = "Parameterization/StormTimeSeries_1000yr.npy"
+dunestartfile = "Parameterization/DuneStart_1000dam.npy"
+growthparamfile = "Parameterization/growthparam_1000dam.npy"
+
 ################################
 ### TIME
 
-TMAX = 150 + 1
+TMAX = 50 + 1
 StormStart = 2
 
 
@@ -40,9 +43,7 @@ BayDepth = 3 / 10
 MHW = 0.46 / 10  # Used as offset to convert given elevations relative to a MHW of 0
 
 # Elevation (decameters)
-InteriorDomain = np.load(
-    "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-elevations.npy"
-)
+InteriorDomain = np.load(elevfile)
 
 # Horizontal Dimensions
 BarrierLength = int(500 / 10)
@@ -59,9 +60,7 @@ DuneWidth = int(20 / 10)
 ################################
 ### Storm Time Series
 StormTimeSeries = True
-StormSeries = np.load(
-    "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-storms.npy"
-)  # TEMP HARDWIRED
+StormSeries = np.load(stormfile)
 
 
 ################################
@@ -72,7 +71,7 @@ Dstart = 0.5 / 10
 BermEl = 1.9 / 10 - MHW
 
 # Initialize dune crest height domain
-if StormTimeSeries == 0:
+if StormTimeSeries:
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0, :, 0] = np.ones([1, BarrierLength]) * (
         Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, BarrierLength))
@@ -80,9 +79,7 @@ if StormTimeSeries == 0:
     for w in range(1, DuneWidth):
         DuneDomain[0, :, w] = DuneDomain[0, :, 0]
 else:
-    DuneStart = np.load(
-        "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-dunes.npy"
-    )  # TEMP HARDWIRED
+    DuneStart = np.load(dunestartfile)
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0, :, 0] = DuneStart[0:BarrierLength]
     for w in range(1, DuneWidth):
@@ -92,12 +89,10 @@ else:
 rmin = 0.35
 rmax = 0.85
 if StormTimeSeries:
-    growthparamstart = np.load(
-        "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/barrier3d-growthparam.npy"
-    )  # TEMP HARDWIRED
-    growthparam = growthparamstart[0:BarrierLength]
-else:
     growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
+else:
+    growthparamstart = np.load(growthparamfile)
+    growthparam = growthparamstart[0:BarrierLength]
 
 # Dune diffusion parameter
 HdDiffu = 0.75 / 10
@@ -160,7 +155,7 @@ OWss_i = 2
 nn = 0.5
 mm = 2
 Rin_r = 2
-Rin_i = 0.25
+Rin_i = 0.1
 MaxUpSlope = 0.25
 threshold_in = 0.25
 
@@ -184,7 +179,7 @@ s_sf_eq = 0.02
 ################################
 ### SHRUBS
 
-# Dispersalm
+# Dispersal
 Shrub_ON = 0
 Seedmin = 100
 Seedmax = 1000
@@ -192,33 +187,30 @@ disp_mu = -0.721891
 disp_sigma = 1.5
 
 # Growth
-Dshrub = 2 / 10
+Dshrub = 2.75 / 10
 GermRate = 0.6
 TimeFruit = 5
 Female = 0.5
-ShrubEl_min = 0.6 / 10 - MHW
+ShrubEl_min = 1.2 / 10 - MHW
 ShrubEl_max = 2.3 / 10 - MHW
-TideAmp = 1.2 / 10
+MaxShrubHeight = 5.3 / 10
 SprayDist = 170 / 10
 
 # Overwash Interaction
-BurialLimit = 0.5 / 10
-UprootLimit = -0.3 / 10
-SalineLimit = 0.05
-Qshrub_max = 0.15
+BurialLimit = 0.75  # percent
+UprootLimit = -0.2 / 10  # Convert to dam
+SalineLimit = 5 / 1000  # Convert to dam^3
+Qshrub_max = 0.15  # percent
 
 # Percent cover change (years 0-9)
 PC = np.array([0, 0.04, 0.08, 0.10, 0.15, 0.15, 0.20, 0.35, 0.80, 1])
 addend = np.ones(TMAX + 50)  # (years 10+)
 PC = np.append(PC, addend)
 
-# Shrub height (with age as proxy)
-SH = np.linspace(0, 0.3, 10)
-addend = np.ones(TMAX + 50)  # (years 10+)
-SH = np.append(SH, addend)
+
+SL = 0
 
 
-################################
 SimParams = [
     TMAX,
     RSLR,
@@ -274,8 +266,8 @@ SimParams = [
     Cx,
     OWss_i,
     OWss_r,
-    TideAmp,
+    MaxShrubHeight,
     SprayDist,
-    SH,
+    SL,
     MaxUpSlope,
 ]

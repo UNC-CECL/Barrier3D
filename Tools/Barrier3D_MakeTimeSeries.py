@@ -270,12 +270,21 @@ def shift_storm_intensity(
     elif fmt == "csv":
         StormList = np.loadtxt(datadir + storm_list_name, delimiter=",")
 
-    # Load Storms
+    # sort the storms based on TWL, from min to max (probably a more elegant way to do this)
+    dur = StormList[:, 1]  # Duration
     simTWL = StormList[:, 2]
+    period = StormList[:, 4]  # Tp
+    Rlow = StormList[:, 6]  # Rlow
+    zip_storm_list = list(zip(simTWL, dur, period, Rlow))
+    zip_storm_list.sort()
+    simTWL_sorted = np.array([simTWL for (simTWL, dur, period, Rlow) in zip_storm_list])
+    dur_sorted = np.array([dur for (simTWL, dur, period, Rlow) in zip_storm_list])
+    period_sorted = np.array([period for (simTWL, dur, period, Rlow) in zip_storm_list])
+    Rlow_sorted = np.array([Rlow for (simTWL, dur, period, Rlow) in zip_storm_list])
 
     # Fit Distribution - Note: this is typically beta for VCR TWLs, so we assume beta here
     dist = distfit(distr="beta")
-    fit = dist.fit_transform(simTWL)
+    fit = dist.fit_transform(simTWL_sorted)
     dist.plot()
     model_parameters = dist.model  # dictionary of beta distribution parameters
     loc = model_parameters["loc"]
@@ -300,15 +309,17 @@ def shift_storm_intensity(
 
         # Select storms for year
         for n in range(numstorm):
-            ST = np.random.beta(a, b) * scale + loc + shift
+            ST = (
+                np.random.beta(a, b) * scale + loc + shift
+            )  # the TWL from the beta distribution
             if ST < 0:
                 ST = 0
-            elif ST > simTWL[-1]:  # np.mean(simTWL):
-                ST = simTWL[-1]  # np.mean(simTWL)
+            elif ST > simTWL_sorted[-1]:
+                ST = simTWL_sorted[-1]
             STmin = Bin[bisect.bisect(Bin, ST) - 1]
             STmax = STmin + 0.1
-            indexMin = bisect.bisect(simTWL, STmin)
-            indexMax = bisect.bisect(simTWL, STmax) - 1
+            indexMin = bisect.bisect(simTWL_sorted, STmin)
+            indexMax = bisect.bisect(simTWL_sorted, STmax) - 1
             if indexMin == 0:
                 storm = 1
             elif indexMin >= indexMax:
@@ -316,10 +327,10 @@ def shift_storm_intensity(
             else:
                 storm = random.randint(indexMin, indexMax)
 
-            dur = StormList[storm, 1]  # Duration
-            Rhigh = StormList[storm, 2]  # TWL
-            period = StormList[storm, 4]  # Tp
-            Rlow = StormList[storm, 6]  # Rlow
+            dur = dur_sorted[storm]
+            Rhigh = simTWL_sorted[storm]
+            period = period_sorted[storm]
+            Rlow = Rlow_sorted[storm]
 
             stormTS[n, 0] = t
             stormTS[n, 1] = Rhigh / 10 - MHW
