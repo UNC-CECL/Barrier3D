@@ -39,6 +39,7 @@ Num = 25  # Duplicates
 name = datetime.today().strftime("%Y_%m%d_%H%M")
 directory = "Output/BatchSims_" + name
 print("BatchSims_" + name)
+
 os.makedirs(directory)
 
 # Batch loops

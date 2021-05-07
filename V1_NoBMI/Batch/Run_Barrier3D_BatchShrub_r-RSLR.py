@@ -8,7 +8,6 @@
 
 # Runs range of RSLR and dune growth rates with and without shrubs
 
-
 # Imports
 import os
 import time
@@ -94,6 +93,7 @@ def makeStormSet():
             stormTS[n, 2] = Rlow / 10 - MHW
             stormTS[n, 3] = period
             stormTS[n, 4] = round(dur / 2)
+            
         # Save
         StormSeries = np.vstack([StormSeries, stormTS])
     return StormSeries
@@ -110,6 +110,7 @@ def makeDuneDomain():
     )
     for w in range(1, DuneWidth):
         DuneDomain[0, :, w] = DuneDomain[0, :, 0]
+
     return DuneDomain, Dstart
 
 

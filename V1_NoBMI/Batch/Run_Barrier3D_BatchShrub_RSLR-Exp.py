@@ -91,6 +91,7 @@ def makeStormSet():
             stormTS[n, 2] = Rlow / 10 - MHW
             stormTS[n, 3] = period
             stormTS[n, 4] = round(dur / 2)
+
         # Save
         StormSeries = np.vstack([StormSeries, stormTS])
     return StormSeries
