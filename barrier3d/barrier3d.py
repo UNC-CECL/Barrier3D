@@ -959,7 +959,7 @@ class Barrier3d:
                             # # Enforce max average interior slope
                             # AvgSlope = min(self._MaxAvgSlope, AvgSlope)
 
-                            # Representative average slope of interior
+                            # Representative average slope of interior (made static - represent. of 200-m wide barrier)
                             AvgSlope = self._BermEl / 20
 
                             C = self._Cx * AvgSlope  # Momentum constant
@@ -1738,3 +1738,11 @@ class Barrier3d:
     @StormStart.setter
     def StormStart(self, value):
         self._StormStart = value
+
+    @property
+    def InteriorWidth_AvgTS(self):
+        return self._InteriorWidth_AvgTS
+
+    @InteriorWidth_AvgTS.setter
+    def InteriorWidth_AvgTS(self, value):
+        self._InteriorWidth_AvgTS = value
