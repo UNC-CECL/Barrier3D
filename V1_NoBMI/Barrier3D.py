@@ -38,7 +38,7 @@
 # IMPORTS
 # ==============================================================================================================================================
 
-import Barrier3D_Functions as func
+import V1_NoBMI.Barrier3D_Functions as func
 import numpy as np
 import math
 import time
@@ -56,7 +56,7 @@ Time = time.time()
 # ==============================================================================================================================================
 
 ### Load Input Parameters
-from Barrier3D_Parameters import (
+from V1_NoBMI.Barrier3D_Parameters import (
     BarrierLength,
     BayDepth,
     BermEl,

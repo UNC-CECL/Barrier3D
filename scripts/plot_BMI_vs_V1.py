@@ -1,50 +1,48 @@
 """
-    Test output from the BMI version versus Ian's original code. Both models source the input storm, dune, and elevation
-    files from: '/Users/KatherineAnardeWheels/PycharmProjects/Barrier3d/tests/test_params/'
+    Test that the BMI version of Barrier 3D (Version 2.0) is equivalent to Ian's original code in Version 1.0. Note that
+    the input files for Version 1.0 are located in `V1_NoBMI/Parameter` and for Version 2.0 in 'tests/test_params/'.
+    Here we test the model with SHRUBS ON.
+
+    NOTE to users:
+      - if using Barrier3D for the first time, remember to $ pip install -e .
 """
 
-import os
 import time
-
 import matplotlib.pyplot as plt
-
 from barrier3d import Barrier3dBmi
-from barrier3d.utilities_v2 import Barrier3D_Plotting_Functions as B3Dfunc
+from barrier3d.utilities import Barrier3D_Plotting_Functions as B3Dfunc
 
+# specify data directories with initial conditions (USER WILL NEED TO MODIFY THESE LINES)
+datadir_V1 = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/"
+datadir_V2 = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/tests/test_params/"
+
+# Version 2.0 ------------------------------
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
-
-# specify data directory with initial conditions
-datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/tests/test_params/barrier3d-parameters.yaml"
-barrier3d.initialize(datadir)
+input_file = "barrier3d-parameters.yaml"
+barrier3d.initialize(datadir_V2+input_file)
 
 # increase time step
 Time = time.time()
 for time_step in range(1, barrier3d._model._TMAX):
-    barrier3d.update()  # update the model by a time step
-
-    # Print time step to screen
+    barrier3d.update()
     print("\r", "Time Step: ", time_step, end="")
-
 SimDuration = time.time() - Time
 print()
 print("Elapsed Time: ", SimDuration, "sec")  # Print elapsed time of simulation
 
-# This is currently the only plotting function that works with the BMI version
-# Plot 1: Dune Height Over Time (input in decameter)
-B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
+# Version 1.0 ------------------------------
+
+# starts running immediately and ends with plots!
+execfile(datadir_V1 + "Barrier3D.py")
 
 # ----------------------------- #
 
-os.chdir("/V1_NoBMI/")
-
-# (starts running immediately)
-execfile("Barrier3D.py")
-
 # Plot 1: Dune Height Over Time (input in decameter)
+B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
 B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
 
-# I also want to check that shoreline change is the same between the two and that shoreface slope starts in equilibrium
+# check that shoreline change is the same between the two and that shoreface slope starts in equilibrium
 plt.figure()
 plt.plot(x_s_TS, "b")
 plt.plot(barrier3d._model.x_s_TS, "g")

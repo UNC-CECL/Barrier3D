@@ -1,14 +1,14 @@
-# Example run script for version 1 of Barrier3D (no BMI)
-#
-# Written by K. Anarde
-#
-import os
-from V1_NoBMI import Barrier3D_Functions as B3Dfunc
+"""
+    Example run script for Version 1.0 of Barrier3D (NoBMI)
+"""
 
-os.chdir("/V1_NoBMI")
+import V1_NoBMI.Barrier3D_Functions as B3Dfunc
 
-# (starts running immediately)
-execfile("Barrier3D.py")
+# USER WILL NEED TO MODIFY THIS LINE
+datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/"
+
+# starts running immediately and ends with plots!
+execfile(datadir + "Barrier3D.py")
 
 # Plot 1: Dune Height Over Time (input in decameter)
 B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
