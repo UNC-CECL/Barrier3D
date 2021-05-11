@@ -722,7 +722,7 @@ class Barrier3d:
         # Dune height loss exclusively from vertical storm erosion
         self._Hd_Loss_TS = np.zeros([self._TMAX, self._BarrierLength])
         self._dune_migration = False  # boolean to track when we shift the dune domain due to shoreline erosion
-
+        self._drown_break = 0
         self._time_index = 1
 
     @classmethod
@@ -1464,7 +1464,7 @@ class Barrier3d:
         # ### update dune domain (erode/prograde) based on on shoreline change
         # ###########################################
 
-        drown_break = 0
+        self._drown_break = 0
         self._dune_migration = (
             False  # boolean to easily track when we shift the dune domain
         )
@@ -1546,7 +1546,7 @@ class Barrier3d:
                     newDuneHeight[newDuneHeight < self._DuneRestart] = self._DuneRestart
                     self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
                     if np.shape(self._InteriorDomain)[0] <= 0:
-                        drown_break = 1
+                        self._drown_break = 1
                         break
                     self._DuneDomain[self._time_index, :, :] = np.roll(
                         self._DuneDomain[self._time_index, :, :], -1, axis=1
@@ -1575,20 +1575,32 @@ class Barrier3d:
             self._ShorelineChangeTS.append(0)
 
         # ### Check for drowning
-        if drown_break == 1:
+        if self._drown_break == 1:
             self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has WIDTH DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
+            # raise Barrier3dError(
+            #     "Barrier has WIDTH DROWNED at t = {time} years".format(
+            #         time=self._time_index
+            #     )
+            # )
+            print(
+                    "Barrier has WIDTH DROWNED at t = {time} years".format(
+                        time=self._time_index
+                    )
             )
+            return  # exit program
         elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
             self._TMAX = self._time_index - 1
-            raise Barrier3dError(
-                "Barrier has HEIGHT DROWNED at t = {time} years".format(
-                    time=self._time_index
-                )
+            # raise Barrier3dError(
+            #     "Barrier has HEIGHT DROWNED at t = {time} years".format(
+            #         time=self._time_index
+            #     )
+            # )
+            print(
+                    "Barrier has HEIGHT DROWNED at t = {time} years".format(
+                        time=self._time_index
+                    )
             )
+            return  # exit program
 
         # ### Recalculate and save DomainWidth and InteriorWidth
         DomainWidth, InteriorWidth, InteriorWidth_Avg = self.FindWidths(
@@ -1746,3 +1758,7 @@ class Barrier3d:
     @InteriorWidth_AvgTS.setter
     def InteriorWidth_AvgTS(self, value):
         self._InteriorWidth_AvgTS = value
+
+    @property
+    def drown_break(self):
+        return self._drown_break
