@@ -1583,9 +1583,9 @@ class Barrier3d:
             #     )
             # )
             print(
-                    "Barrier has WIDTH DROWNED at t = {time} years".format(
-                        time=self._time_index
-                    )
+                "Barrier has WIDTH DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
             )
             return  # exit program
         elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
@@ -1596,9 +1596,9 @@ class Barrier3d:
             #     )
             # )
             print(
-                    "Barrier has HEIGHT DROWNED at t = {time} years".format(
-                        time=self._time_index
-                    )
+                "Barrier has HEIGHT DROWNED at t = {time} years".format(
+                    time=self._time_index
+                )
             )
             return  # exit program
 
