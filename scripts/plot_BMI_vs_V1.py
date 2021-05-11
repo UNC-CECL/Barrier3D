@@ -12,15 +12,15 @@ import matplotlib.pyplot as plt
 from barrier3d import Barrier3dBmi
 from barrier3d.utilities import Barrier3D_Plotting_Functions as B3Dfunc
 
-# specify data directories with initial conditions (USER WILL NEED TO MODIFY THESE LINES)
-datadir_V1 = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/"
-datadir_V2 = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/tests/test_params/"
+# specify data directories with initial conditions
+datadir_V1 = "V1_NoBMI/"
+datadir_V2 = "tests/test_params/"
 
 # Version 2.0 ------------------------------
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
 input_file = "barrier3d-parameters.yaml"
-barrier3d.initialize(datadir_V2+input_file)
+barrier3d.initialize(datadir_V2 + input_file)
 
 # increase time step
 Time = time.time()

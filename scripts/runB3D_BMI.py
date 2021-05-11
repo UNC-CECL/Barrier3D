@@ -12,10 +12,10 @@ import time
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
 
-# specify data directory with initial conditions (USER WILL NEED TO MODIFY THIS LINE)
-datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/tests/test_params/"
+# specify data directory with initial conditions
+datadir = "tests/test_params/"
 input_file = "barrier3d-parameters.yaml"
-barrier3d.initialize(datadir+input_file)
+barrier3d.initialize(datadir + input_file)
 
 # increase time step
 Time = time.time()

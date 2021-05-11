@@ -4,8 +4,7 @@
 
 import V1_NoBMI.Barrier3D_Functions as B3Dfunc
 
-# USER WILL NEED TO MODIFY THIS LINE
-datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/"
+datadir = "V1_NoBMI/"
 
 # starts running immediately and ends with plots!
 execfile(datadir + "Barrier3D.py")

@@ -20,7 +20,7 @@ Full copyright notice located in main Barrier3D.py file
 import numpy as np
 import math
 
-datadir = "/Users/KatherineAnardeWheels/PycharmProjects/Barrier3D/V1_NoBMI/Parameterization/"
+datadir = "V1_NoBMI/Parameterization/"
 elevfile = datadir + "InitElevHog.npy"
 stormfile = datadir + "StormTimeSeries_1000yr.npy"
 dunestartfile = datadir + "DuneStart_1000dam.npy"
