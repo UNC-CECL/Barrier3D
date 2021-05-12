@@ -19,6 +19,7 @@ using the multivariateSeaStorm.m module, developed following the method of ...[1
    "intensity".
 
 """
+import pathlib
 
 import numpy as np
 import random
@@ -30,7 +31,7 @@ from barrier3d.load_input import _guess_format
 
 # Generate storm time series
 def yearly_storms_from_MSSM(
-    datadir,
+    datadir=".",
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     mean_yearly_storms=8.3,
     SD_yearly_storms=5.9,
@@ -46,16 +47,18 @@ def yearly_storms_from_MSSM(
     of storms per year from a list of multivariate sea storms, created using the Wahl et al., 2016 method.
     """
 
+    datadir = pathlib.Path(datadir)
+
     # convert to decameters
     MHW = MHW / 10
     BermEl = BermEl / 10 - MHW  # just for plotting
 
     # load list of storms (created using multivariateSeaStorm.m)
-    fmt = _guess_format(datadir + storm_list_name)
+    fmt = _guess_format(datadir / storm_list_name)
     if fmt == "npy":
-        StormList = np.load(datadir + storm_list_name, allow_pickle=True)
+        StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir + storm_list_name, delimiter=",")
+        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",")
 
     # pad with zeros until storms start
     StormSeries = np.zeros([StormStart, 5])
@@ -129,7 +132,7 @@ def yearly_storms_from_MSSM(
         )
 
     if bSave:
-        np.save(datadir + output_filename, StormSeries)
+        np.save(datadir / output_filename, StormSeries)
 
     return StormSeries
 
@@ -151,17 +154,19 @@ def frequency_storms_from_MSSM(
     2016 method -- that matches the TWL specified for a given return period (in m above MHW), and returns the storm time
     series at the specified return period"""
 
+    datadir = pathlib.Path(datadir)
+
     # convert to decameters
     MHW = MHW / 10
     BermEl = BermEl / 10 - MHW  # just for plotting
     return_period_TWL = return_period_TWL / 10
 
     # load list of storms (created using multivariateSeaStorm.m)
-    fmt = _guess_format(datadir + storm_list_name)
+    fmt = _guess_format(datadir / storm_list_name)
     if fmt == "npy":
-        StormList = np.load(datadir + storm_list_name, allow_pickle=True)
+        StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir + storm_list_name, delimiter=",")
+        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",")
 
     # find storm that has the closest TWL (in m above MHW) to the return period storm
     dur = np.round(
@@ -235,13 +240,13 @@ def frequency_storms_from_MSSM(
         )
 
     if bSave:
-        np.save(datadir + output_filename, StormSeries)
+        np.save(datadir / output_filename, StormSeries)
 
     return StormSeries
 
 
 def shift_storm_intensity(
-    datadir,
+    datadir=".",
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     mean_yearly_storms=8.3,
     SD_yearly_storms=5.9,
@@ -258,17 +263,18 @@ def shift_storm_intensity(
     This function fits a beta distribution to the TWL time series and then shifts the beta distribution to the left
     or right to simulate TWLs of higher or lower intensities
     """
+    datadir = pathlib.Path(datadir)
 
     # convert to decameters
     MHW = MHW / 10
     BermEl = BermEl / 10 - MHW  # just for plotting
 
     # load list of storms (created using multivariateSeaStorm.m)
-    fmt = _guess_format(datadir + storm_list_name)
+    fmt = _guess_format(datadir / storm_list_name)
     if fmt == "npy":
-        StormList = np.load(datadir + storm_list_name, allow_pickle=True)
+        StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir + storm_list_name, delimiter=",")
+        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",")
 
     # sort the storms based on TWL, from min to max (probably a more elegant way to do this)
     dur = StormList[:, 1]  # Duration
@@ -383,13 +389,14 @@ def shift_storm_intensity(
         )
 
     if bSave:
-        np.save(datadir + output_filename, StormSeries)
+        np.save(datadir / output_filename, StormSeries)
 
     return StormSeries
 
 
 # Generate dune height start
 def gen_dune_height_start(datadir, name, Dstart=0.5, ny=1000):
+    datadir = pathlib.Path(datadir)
 
     # convert to decameters
     Dstart = Dstart / 10
@@ -398,12 +405,13 @@ def gen_dune_height_start(datadir, name, Dstart=0.5, ny=1000):
         Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(ny))
     )
 
-    return np.save(datadir + name, DuneStart)
+    return np.save(datadir / name, DuneStart)
 
 
 # Generate along-shore varying rmin & rmax
 def gen_alongshore_variable_rmin_rmax(datadir, name, rmin=0.35, rmax=0.85, ny=1000):
+    datadir = pathlib.Path(datadir)
 
     growthparam = rmin + (rmax - rmin) * np.random.rand(ny)
 
-    return np.save(datadir + name, growthparam)
+    return np.save(datadir / name, growthparam)
