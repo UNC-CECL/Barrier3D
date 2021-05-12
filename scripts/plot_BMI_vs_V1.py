@@ -10,7 +10,7 @@
 import time
 import matplotlib.pyplot as plt
 from barrier3d import Barrier3dBmi
-from barrier3d.utilities import Barrier3D_Plotting_Functions as B3Dfunc
+from tools import Barrier3D_Plotting_Functions as B3Dfunc
 
 # specify data directories with initial conditions
 datadir_V1 = "V1_NoBMI/"

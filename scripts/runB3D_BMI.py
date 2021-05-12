@@ -6,7 +6,7 @@
 """
 
 from barrier3d import Barrier3dBmi
-from barrier3d.utilities import Barrier3D_Plotting_Functions as B3Dfunc
+from tools import Barrier3D_Plotting_Functions as B3Dfunc
 import time
 
 # create an instance of the new BMI class, which is the model
