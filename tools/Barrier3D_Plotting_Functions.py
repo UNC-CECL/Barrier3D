@@ -27,35 +27,6 @@ from scipy import signal
 
 
 # ===================================================
-# 1: Dune Height Over Time
-
-
-def plot_DuneHeight(DuneDomain, Dmax):
-
-    DuneCrest = DuneDomain.max(axis=2)
-    duneFig = plt.figure(figsize=(14, 8))
-    plt.rcParams.update({"font.size": 13})
-    ax = duneFig.add_subplot(111)
-    ax.matshow(
-        (DuneCrest) * 10,
-        origin="lower",
-        cmap="bwr",
-        aspect="auto",
-        vmin=0,
-        vmax=Dmax * 10,
-    )
-    cax = ax.xaxis.set_ticks_position("bottom")  # analysis:ignore
-    # cbar = duneFig.colorbar(cax)
-    # cbar.set_label('Dune Height Above Berm Elevation (m)', rotation=270)
-    plt.xlabel("Alongshore Distance (dam)")
-    plt.ylabel("Year")
-    plt.title("Dune Height (m)")
-    name = "Output/Dunes"
-    # duneFig.savefig(name)
-    duneFig.show()
-
-
-# ===================================================
 # 2: Elevation Domain For Last Time Step
 
 
