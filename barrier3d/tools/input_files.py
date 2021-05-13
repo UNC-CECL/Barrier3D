@@ -1,3 +1,28 @@
+"""
+These functions create, return, and if specified save time series of
+annual storm parameters, initial dune height, and dune growth rates
+for use as inputs in Barrier3D simulations.
+
+References
+----------
+.. [1] Wahl, T., Plant, N. G., & Long, J. W. (2016). Probabilistic assessment of erosion and flooding risk in the
+northern Gulf of Mexico. Journal of Geophysical Research: Oceans, 121(5), 3029-3043.
+
+Notes
+-----
+
+The storm time series can be created using one of three functions, all of
+which require a list of storms generated using the multivariateSeaStorm.m
+module, developed following the method of ...[1]:
+1. yearly_storms_from_MSSM - specify the mean and standard deviation
+   from a normal distribution, which are used to select a random number
+   of storms per year from the MSSM list
+2. frequency_storms_from_MSSM - specify the TWL and frequency of a
+   return period storm, find closest match in MSSM list
+3. shift_storm_intensity - shifts the TWL distribution created in 1) to
+   the left or right to produce storms of different "intensity".
+
+"""
 import bisect
 import pathlib
 import random
@@ -22,8 +47,10 @@ def yearly_storms(
     bSave=False,
     output_filename="StormList_10kyrs_VCR_Berm1pt9m_Slope0pt04",
 ):
-    r"""This function uses a normal distribution (provided the mean and standard deviation) to select a random number
-    of storms per year from a list of multivariate sea storms, created using the Wahl et al., 2016 method.
+    """
+    Use a normal distribution (provided the mean and standard deviation)
+    to select a random number of storms per year from a list of
+    multivariate sea storms, created using the Wahl et al., 2016 method.
     """
 
     datadir = pathlib.Path(datadir)
@@ -130,9 +157,9 @@ def shift_storm_intensity(
     bSave=False,
     output_filename="StormList_10kyrs_VCR_Berm1pt9m_Slope0pt04-lowIntensity",
 ):
-    r"""
-    This function fits a beta distribution to the TWL time series and then shifts the beta distribution to the left
-    or right to simulate TWLs of higher or lower intensities
+    """
+    Fit a beta distribution to the TWL time series and then shift the beta
+    distribution to the left or right to simulate TWLs of higher or lower intensities
     """
     datadir = pathlib.Path(datadir)
 
@@ -278,9 +305,12 @@ def frequency_storms(
     bSave=False,
     output_filename="StormList_50yrRP_2mTWL_1kyrs_VCR_Berm1pt9m_Slope0pt04",
 ):
-    r"""This function selects a storm from the list of multivariate sea storms -- created using the Wahl et al.,
-    2016 method -- that matches the TWL specified for a given return period (in m above MHW), and returns the storm time
-    series at the specified return period"""
+    """
+    Select a storm from the list of multivariate sea storms -- created using
+    the Wahl et al., 2016 method -- that matches the TWL specified for a
+    given return period (in m above MHW), and returns the storm time
+    series at the specified return period
+    """
 
     datadir = pathlib.Path(datadir)
 
@@ -371,3 +401,26 @@ def frequency_storms(
         np.save(datadir / output_filename, StormSeries)
 
     return StormSeries
+
+
+def gen_dune_height_start(datadir, name, Dstart=0.5, ny=1000):
+    """Generate dune height start"""
+    datadir = pathlib.Path(datadir)
+
+    # convert to decameters
+    Dstart = Dstart / 10
+
+    DuneStart = np.ones([ny]) * (
+        Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(ny))
+    )
+
+    return np.save(datadir / name, DuneStart)
+
+
+def gen_alongshore_variable_rmin_rmax(datadir, name, rmin=0.35, rmax=0.85, ny=1000):
+    """Generate along-shore varying rmin & rmax"""
+    datadir = pathlib.Path(datadir)
+
+    growthparam = rmin + (rmax - rmin) * np.random.rand(ny)
+
+    return np.save(datadir / name, growthparam)
