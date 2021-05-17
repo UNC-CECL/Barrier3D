@@ -1676,6 +1676,7 @@ class Barrier3d:
                     time=self._time_index
                 )
             )
+            self._drown_break = 1
             return  # exit program
 
         # ### Recalculate and save DomainWidth and InteriorWidth
@@ -1750,6 +1751,14 @@ class Barrier3d:
     @x_s.setter
     def x_s(self, value):
         self._x_s = value
+
+    @property
+    def x_t(self):
+        return self._x_t
+
+    @x_t.setter
+    def x_t(self, value):
+        self._x_t = value
 
     @property
     def x_b_TS(self):
@@ -1838,3 +1847,35 @@ class Barrier3d:
     @property
     def drown_break(self):
         return self._drown_break
+
+    @property
+    def s_sf_TS(self):
+        return self._s_sf_TS
+
+    @s_sf_TS.setter
+    def s_sf_TS(self, value):
+        self._s_sf_TS = value
+
+    @property
+    def h_b_TS(self):
+        return self._h_b_TS
+
+    @h_b_TS.setter
+    def h_b_TS(self, value):
+        self._h_b_TS = value
+
+    @property
+    def DShoreface(self):
+        return self._DShoreface
+
+    @DShoreface.setter
+    def DShoreface(self, value):
+        self._DShoreface = value
+
+    @property
+    def dune_migration_on(self):
+        return self._dune_migration_on
+
+    @dune_migration_on.setter
+    def dune_migration_on(self, value):
+        self._dune_migration_on = value
