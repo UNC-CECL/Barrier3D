@@ -15,15 +15,14 @@ Full copyright notice located in main Barrier3D.py file
 
 # Script sets up all input parameters
 # Converts from meters to decameters for simulation
-elevation_file = "barrier3d-elevations.npy"  # File that contains initial elevations
-dune_file = "barrier3d-dunes.npy"  # File that contains initial dune values
+elevation_file = "InitElevHog.npy"  # File that contains initial elevations
+dune_file = "DuneStart_1000dam.npy"  # File that contains initial dune values
 growth_param_file = (
-    "barrier3d-growthparam.npy"  # File that contains initial growth parameters
+    "growthparam_1000dam.npy"  # File that contains initial growth parameters
 )
-storm_file = "barrier3d-storms.npy"  # File that contains storm data
+storm_file = "StormTimeSeries_1000yr.npy"  # File that contains storm data
 
-
-TMAX = 151  # [y] Duration of simulation
+TMAX = 51  # [y] Duration of simulation
 StormStart = 2  # [y] Year when storm can start occurring
 BarrierLength = 500.0  # [m] Static length (alongshore) of island segment
 DuneWidth = (
@@ -58,7 +57,7 @@ StormSeries = []  # Time series of storms
 nn = 0.5  # Flow routing constant
 mm = 2.0  # Exponent constant for sediment transport
 Rin_r = 2.0  # Run-up regime infiltration rate (volume of overwash flow lost per m cross-shore per time step)
-Rin_i = 0.25  # Inundation regime infiltration rate (volume of overwash flow lost per m cross-shore per time step)
+Rin_i = 0.1  # Inundation regime infiltration rate (volume of overwash flow lost per m cross-shore per time step)
 Qs_min = 1.0  # [m^3 / hr] Minimum discharge needed for sediment transport
 MaxUpSlope = 0.25  # Maximum slope water can flow upward
 threshold_in = 0.25  # [m^3 / hr] Threshold to determine if in inundation regime
@@ -91,4 +90,4 @@ SalineLimit = (
     5.0  # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
 )
 Qshrub_max = 0.15  # Maximum percentage of overwash reduction through a shrub cell with full percent cover
-MaxShrubHeight = 5.2  # [m] Maximum shrub height
+MaxShrubHeight = 5.3  # [m] Maximum shrub height
