@@ -10,7 +10,7 @@
 import time
 import matplotlib.pyplot as plt
 from barrier3d import Barrier3dBmi
-from tools import Barrier3D_Plotting_Functions as B3Dfunc
+from barrier3d.tools import plot as B3Dfunc
 
 # specify data directories with initial conditions
 datadir_V1 = "V1_NoBMI/"
@@ -39,8 +39,8 @@ execfile(datadir_V1 + "Barrier3D.py")
 # ----------------------------- #
 
 # Plot 1: Dune Height Over Time (input in decameter)
-B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
-B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
+B3Dfunc.plot_dune_height(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
+B3Dfunc.plot_dune_height(DuneDomain, Dmax)
 
 # check that shoreline change is the same between the two and that shoreface slope starts in equilibrium
 plt.figure()

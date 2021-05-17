@@ -6,7 +6,7 @@
 """
 
 from barrier3d import Barrier3dBmi
-from tools import Barrier3D_Plotting_Functions as B3Dfunc
+from barrier3d.tools import plot as B3Dfunc
 import time
 
 # create an instance of the new BMI class, which is the model
@@ -30,8 +30,8 @@ print()
 print("Elapsed Time: ", SimDuration, "sec")  # Print elapsed time of simulation
 
 # Plot 1: Dune Height Over Time (input in decameter)
-B3Dfunc.plot_DuneHeight(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
-B3Dfunc.plot_ShrubPercentCoverTMAX(
+B3Dfunc.plot_dune_height(barrier3d._model._DuneDomain, barrier3d._model._Dmax)
+B3Dfunc.plot_shrub_percent_cover_tmax(
     barrier3d._model._PercentCoverTS,
     barrier3d._model._TMAX,
     barrier3d._model._DeadPercentCoverTS,

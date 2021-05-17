@@ -14,10 +14,10 @@ Notes
 The storm time series can be created using one of three functions, all of
 which require a list of storms generated using the multivariateSeaStorm.m
 module, developed following the method of ...[1]:
-1. yearly_storms_from_MSSM - specify the mean and standard deviation
+1. yearly_storms - specify the mean and standard deviation
    from a normal distribution, which are used to select a random number
    of storms per year from the MSSM list
-2. frequency_storms_from_MSSM - specify the TWL and frequency of a
+2. frequency_storms - specify the TWL and frequency of a
    return period storm, find closest match in MSSM list
 3. shift_storm_intensity - shifts the TWL distribution created in 1) to
    the left or right to produce storms of different "intensity".
