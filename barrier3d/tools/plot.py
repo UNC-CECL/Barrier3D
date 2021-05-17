@@ -76,7 +76,7 @@ def plot_ElevTMAX(
         Dz = Dead[Dy, Dx] * 80
     elevFig1 = plt.figure(figsize=(14, 5))
     ax = elevFig1.add_subplot(111)
-    cax = ax.matshow(
+    ax.matshow(
         Domain, origin="lower", cmap="terrain", vmin=-1.1, vmax=4.0
     )  # , interpolation='gaussian') # analysis:ignore
     if Shrub_ON == 1:
@@ -108,6 +108,6 @@ def plot_ElevTMAX(
     plt.text(1, 1, timestr)
     plt.tight_layout()
     plt.show()
-    name = "Output/FinalElevation"
+    # name = "Output/FinalElevation"
     # elevFig1.savefig(name)
     plt.show()
