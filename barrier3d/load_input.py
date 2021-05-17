@@ -214,7 +214,6 @@ def load_growth_param(path_to_file, fmt="npy"):
 def _process_raw_input(params):
     params["RNG"] = np.random.default_rng(seed=1973)
 
-    # params["TMAX"] = int(params["TMAX"]) + 1
     params["TMAX"] = int(params["TMAX"])
     params["StormStart"] = int(params["StormStart"])
 
@@ -293,24 +292,40 @@ def _process_raw_input(params):
         params["DuneDomain"][0, :, 0] = params["DuneStart"][0 : params["BarrierLength"]]
         params.pop("DuneStart")
     else:
-        params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
-            params["Dstart"]
-            + (
-                -0.01
-                + (0.01 - (-0.01)) * params["RNG"].random((1, params["BarrierLength"]))
+        if params["SeededRNG"]:
+            params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
+                params["Dstart"]
+                + (
+                    -0.01
+                    + (0.01 - (-0.01))
+                    * params["RNG"].random((1, params["BarrierLength"]))
+                )
             )
-            # + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"]))
-        )
+        else:
+            params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
+                params["Dstart"]
+                + (
+                    -0.01
+                    + (
+                        -0.01
+                        + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"])
+                    )
+                )
+            )
     params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
 
     if "GrowthStart" in params:
         params["growthparam"] = params["GrowthStart"][0 : params["BarrierLength"]]
         params.pop("GrowthStart")
     else:
-        params["growthparam"] = params["rmin"] + (
-            params["rmax"] - params["rmin"]
-        ) * params["RNG"].random((1, params["BarrierLength"]))
-        # ) * np.random.rand(1, params["BarrierLength"])
+        if params["SeededRNG"]:
+            params["growthparam"] = params["rmin"] + (
+                params["rmax"] - params["rmin"]
+            ) * params["RNG"].random((1, params["BarrierLength"]))
+        else:
+            params["growthparam"] = params["rmin"] + (
+                params["rmax"] - params["rmin"]
+            ) * np.random.rand(1, params["BarrierLength"])
 
     params["HdDiffu"] /= 10.0
 
@@ -357,7 +372,7 @@ def _process_raw_input(params):
     params["Dshrub"] /= 10.0
     params["ShrubEl_min"] = params["ShrubEl_min"] / 10.0 - params["MHW"]
     params["ShrubEl_max"] = params["ShrubEl_max"] / 10.0 - params["MHW"]
-    params["TideAmp"] /= 10.0
+    # params["TideAmp"] /= 10.0
     params["SprayDist"] /= 10.0
     params["MaxShrubHeight"] /= 10.0
 

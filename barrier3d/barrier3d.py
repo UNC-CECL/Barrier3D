@@ -1,8 +1,7 @@
 import math
 import numpy as np
 from .load_input import load_inputs
-
-# import random
+import random
 
 
 class Barrier3dError(Exception):
@@ -154,10 +153,12 @@ class Barrier3d:
         # ================================================
         # Drop Seed
         # Randomly drop a seed onto the island each time step
-        # randX = np.random.randint(0, self._BarrierLength)
-        # randY = np.random.randint(0, max(1, InteriorWidth_Avg))
-        randX = self._RNG.integers(0, self._BarrierLength)
-        randY = self._RNG.integers(0, max(1, InteriorWidth_Avg))
+        if self._seeded_RNG_on:
+            randX = self._RNG.integers(0, self._BarrierLength)
+            randY = self._RNG.integers(0, max(1, InteriorWidth_Avg))
+        else:
+            randX = np.random.randint(0, self._BarrierLength)
+            randY = np.random.randint(0, max(1, InteriorWidth_Avg))
         if (
             ShrubDomainFemale[randY, randX] == 0
             and ShrubDomainMale[randY, randX] == 0
@@ -166,10 +167,16 @@ class Barrier3d:
             and InteriorDomain[randY, randX] >= self._ShrubEl_min
             and InteriorDomain[randY, randX] <= self._ShrubEl_max
         ):
-            if self._RNG.uniform() > self._Female:
-                ShrubDomainFemale[randY, randX] = 1
+            if self._seeded_RNG_on:
+                if self._RNG.uniform() > self._Female:
+                    ShrubDomainFemale[randY, randX] = 1
+                else:
+                    ShrubDomainMale[randY, randX] = 1
             else:
-                ShrubDomainMale[randY, randX] = 1
+                if np.random.uniform() > self._Female:
+                    ShrubDomainFemale[randY, randX] = 1
+                else:
+                    ShrubDomainMale[randY, randX] = 1
 
         # # Randomly drop a seed onto the LEFT SIDE of the island each time step
         # # randX = np.random.randint(0,BarrierLength*0.02) # Can drop anywhere with the first 2% of interior columns
@@ -199,29 +206,41 @@ class Barrier3d:
                 ]
                 numShrubCells = len(fruiting_shrub)
                 # Determine how many seeds in each cell
-                # Seedspercell = np.random.randint(
-                Seedspercell = self._RNG.integers(
-                    self._Seedmin, high=self._Seedmax, size=numShrubCells
-                )
-                # For each shrub cell, determine survival rate for the cell in this year
-                SeedSurvYear = self._GermRate * self._RNG.random(numShrubCells)
-                # SeedSurvYear = self._GermRate * np.random.rand(numShrubCells)
+                if self._seeded_RNG_on:
+                    Seedspercell = self._RNG.integers(
+                        self._Seedmin, high=self._Seedmax, size=numShrubCells
+                    )
+                    # For each shrub cell, determine survival rate for the cell in this year
+                    SeedSurvYear = self._GermRate * self._RNG.random(numShrubCells)
+                else:
+                    Seedspercell = np.random.randint(
+                        self._Seedmin, high=self._Seedmax, size=numShrubCells
+                    )
+                    SeedSurvYear = self._GermRate * np.random.rand(numShrubCells)
 
                 for i in range(numShrubCells):
                     # For each shrub cell producing seeds, generate a random # of random numbers each rep. a single seed
-                    randseeds = self._RNG.random(Seedspercell[i])
-                    # randseeds = np.random.rand(Seedspercell[i])
+                    if self._seeded_RNG_on:
+                        randseeds = self._RNG.random(Seedspercell[i])
+                    else:
+                        randseeds = np.random.rand(Seedspercell[i])
                     # Find how many seeds produced in each cell actually survive
                     Survivors = len(randseeds[randseeds < SeedSurvYear[i]])
 
                     # Determine distance, rounding to nearest integer
                     if Survivors > 0:
-                        DispDist = np.round(
-                            # np.random.lognormal(
-                            self._RNG.lognormal(
-                                self._disp_mu, self._disp_sigma, Survivors
+                        if self._seeded_RNG_on:
+                            DispDist = np.round(
+                                self._RNG.lognormal(
+                                    self._disp_mu, self._disp_sigma, Survivors
+                                )
                             )
-                        )
+                        else:
+                            DispDist = np.round(
+                                np.random.lognormal(
+                                    self._disp_mu, self._disp_sigma, Survivors
+                                )
+                            )
                     else:
                         DispDist = []
 
@@ -258,8 +277,10 @@ class Barrier3d:
                                     targetY = originX
                                     targetX = originY
                                 else:
-                                    # xx = random.randint(0, (len(col)) - 1)
-                                    xx = self._RNG.integers(0, (len(col)) - 1)
+                                    if self._seeded_RNG_on:
+                                        xx = self._RNG.integers(0, (len(col)) - 1)
+                                    else:
+                                        xx = random.randint(0, (len(col)) - 1)
                                     matTargetX = col[xx]
                                     matTargetY = row[xx]
 
@@ -292,24 +313,47 @@ class Barrier3d:
                                         >= self._Dshrub
                                     ):
                                         # Decide if the tree wll be a female or male
-                                        if self._RNG.uniform() > self._Female:
-                                            ShrubDomainFemale[targetY, targetX] = 1
-                                        else:
-                                            ShrubDomainMale[targetY, targetX] = 1
-
-                                    # Shrubs can establish without dune if locaed a certain distance from shoreline...
-                                    elif (
-                                        BeachWidth + self._DuneWidth + targetY
-                                        > self._SprayDist
-                                    ):
-                                        if (
-                                            self._RNG.uniform() > 0.5
-                                        ):  # ... but have about 50% chance of survival
-                                            # Decide if the tree wll be a female or male
+                                        if self._seeded_RNG_on:
                                             if self._RNG.uniform() > self._Female:
                                                 ShrubDomainFemale[targetY, targetX] = 1
                                             else:
                                                 ShrubDomainMale[targetY, targetX] = 1
+                                        else:
+                                            if np.random.uniform() > self._Female:
+                                                ShrubDomainFemale[targetY, targetX] = 1
+                                            else:
+                                                ShrubDomainMale[targetY, targetX] = 1
+                                    # Shrubs can establish without dune if located a certain distance from shoreline...
+                                    elif (
+                                        BeachWidth + self._DuneWidth + targetY
+                                        > self._SprayDist
+                                    ):
+                                        if self._seeded_RNG_on:
+                                            if (
+                                                self._RNG.uniform() > 0.5
+                                            ):  # ... but have about 50% chance of survival
+                                                # Decide if the tree wll be a female or male
+                                                if self._RNG.uniform() > self._Female:
+                                                    ShrubDomainFemale[
+                                                        targetY, targetX
+                                                    ] = 1
+                                                else:
+                                                    ShrubDomainMale[
+                                                        targetY, targetX
+                                                    ] = 1
+                                        else:
+                                            if (
+                                                np.random.uniform() > 0.5
+                                            ):  # ... but have about 50% chance of survival
+                                                # Decide if the tree wll be a female or male
+                                                if np.random.uniform() > self._Female:
+                                                    ShrubDomainFemale[
+                                                        targetY, targetX
+                                                    ] = 1
+                                                else:
+                                                    ShrubDomainMale[
+                                                        targetY, targetX
+                                                    ] = 1
 
         ShrubDomainAll = ShrubDomainFemale + ShrubDomainMale
 
@@ -647,7 +691,6 @@ class Barrier3d:
         self._TimeFruit = kwds.pop("TimeFruit")
         self._TMAX = kwds.pop("TMAX")
         self._UprootLimit = kwds.pop("UprootLimit")
-        self._TideAmp = kwds.pop("TideAmp")
         self._SprayDist = kwds.pop("SprayDist")
         self._MaxUpSlope = kwds.pop("MaxUpSlope")
         self._DuneParamStart = kwds.pop("DuneParamStart")
@@ -658,6 +701,9 @@ class Barrier3d:
         self._x_t = kwds.pop("x_t")
         self._rmin = kwds.pop("rmin")
         self._rmax = kwds.pop("rmax")
+        self._seeded_RNG_on = kwds.pop(
+            "SeededRNG"
+        )  # if True, use seeded random number generator
 
         if len(kwds) > 0:
             raise ValueError(
@@ -665,7 +711,6 @@ class Barrier3d:
             )
 
         # ### Initialize Shrubs
-
         self._PercentCoverTS = [None] * self._TMAX
         self._PercentCoverTS[0] = np.zeros([self._DomainWidth, self._BarrierLength])
         self._DeadPercentCoverTS = [None] * self._TMAX
@@ -685,7 +730,7 @@ class Barrier3d:
         self._ShrubArea = [0]
         self._MaxAvgSlope = self._BermEl / 10
 
-        # ### Initialize variables
+        # ### Initialize other variables
         self._DomainTS = [
             None
         ] * self._TMAX  # Stores the elevation domain for each timestep
@@ -696,33 +741,37 @@ class Barrier3d:
         self._StormCount = [0]
         self._InundationCount = 0
         self._RunUpCount = 0
-
-        # use FindWidths to calculate the average interior width for setting initial back barrier shoreline
-        _, _, InteriorWidth_Avg = self.FindWidths(self._InteriorDomain, self._SL)
-        # self._InteriorWidth_AvgTS = [self._DomainWidth]
-        self._InteriorWidth_AvgTS = [InteriorWidth_Avg]
         self._QowTS = [0]  # (m^3/m)
-        # self._x_t = 0  # (dam) Start location of shoreface toe
         self._x_s = self._x_t + LShoreface  # (dam) Start location of shoreline
         self._x_t_TS = [self._x_t]  # (dam) Shoreface toe locations for each time step
         self._x_s_TS = [self._x_s]  # (dam) Shoreline locations for each time step
-        # self._x_b_TS = [
-        #     (self._x_s + self._DomainWidth)
-        # ]  # (dam) Bay shoreline locations for each time step
-        self._x_b_TS = [
-            (self._x_s + InteriorWidth_Avg)
-        ]  # (dam) Bay shoreline locations for each time step
         self._h_b_TS = [
             (np.average(self._InteriorDomain[self._InteriorDomain >= self._SL]))
         ]  # (dam) average height of barrier for each time step
         self._s_sf_TS = [(self._DShoreface / LShoreface)]
         self._Hd_AverageTS = [Dstart]
         self._QsfTS = [0]  # (m^3/m)
+        self._Hd_Loss_TS = np.zeros(
+            [self._TMAX, self._BarrierLength]
+        )  # Dune height loss from vertical storm erosion
 
-        # Dune height loss exclusively from vertical storm erosion
-        self._Hd_Loss_TS = np.zeros([self._TMAX, self._BarrierLength])
-        self._dune_migration = False  # boolean to track when we shift the dune domain due to shoreline erosion
+        # variables changed/added in Version 2.0
+        # self._x_t = 0  # (dam) Start location of shoreface toe -- added as an input variable
+        # use FindWidths to calculate the average interior width for setting initial back barrier shoreline
+        _, _, InteriorWidth_Avg = self.FindWidths(self._InteriorDomain, self._SL)
+        # self._InteriorWidth_AvgTS = [self._DomainWidth]
+        self._InteriorWidth_AvgTS = [InteriorWidth_Avg]
+        # self._x_b_TS = [
+        #     (self._x_s + self._DomainWidth)
+        # ]  # (dam) Bay shoreline locations for each time step
+        self._x_b_TS = [
+            (self._x_s + InteriorWidth_Avg)
+        ]  # (dam) Bay shoreline locations for each time step
+        self._dune_migrated = False  # boolean to track when we shift the dune domain due to shoreline erosion
         self._drown_break = 0
+        self._dune_migration_on = True  # allow dunes to migrate
+        self._interior_noise_on = False  # add noise to flat parts of interior domain
+
         self._time_index = 1
 
     @classmethod
@@ -1421,9 +1470,11 @@ class Barrier3d:
         # Record storm data
         self._StormCount.append(numstorm)
 
-        # Optional: Add noise to flat parts of interior domain
-        # if self._time_index > self._StormStart:
-        #     self._InteriorDomain = self.InteriorNoise(self._InteriorDomain, InteriorWidth)
+        if self._interior_noise_on:  # add noise to flat parts of interior domain
+            if self._time_index > self._StormStart:
+                self._InteriorDomain = self.InteriorNoise(
+                    self._InteriorDomain, InteriorWidth
+                )
 
         # ###########################################
         # ### Ocean Shoreline Change
@@ -1465,114 +1516,139 @@ class Barrier3d:
         # ###########################################
 
         self._drown_break = 0
-        self._dune_migration = (
+        self._dune_migrated = (
             False  # boolean to easily track when we shift the dune domain
         )
+        if self._dune_migration_on:
+            SCR = (
+                self._x_s_TS[-1] - self._x_s_TS[-2]
+            ) * -1  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
 
-        SCR = (
-            self._x_s_TS[-1] - self._x_s_TS[-2]
-        ) * -1  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
+            self._SCRagg = (
+                self._SCRagg + SCR
+            )  # Account for any residual shoreline change (less than cell size) from previous time step
 
-        self._SCRagg = (
-            self._SCRagg + SCR
-        )  # Account for any residual shoreline change (less than cell size) from previous time step
+            if abs(self._SCRagg) >= 1:
+                sc = math.floor(abs(self._SCRagg))
+                self._dune_migrated = True  # shift dune domain
 
-        if abs(self._SCRagg) >= 1:
-            sc = math.floor(abs(self._SCRagg))
-            self._dune_migration = True  # shift dune domain
+                if (
+                    self._SCRagg > 0
+                ):  # Positive = prograde, add row(s) to front of interior domain
+                    for d in range(sc):
+                        # New interior row added with elev. of previous dune field
+                        # (i.e. previous dune row now part of int.)
+                        self._InteriorDomain = np.vstack(
+                            [
+                                self._DuneDomain[self._time_index, :, -1]
+                                + self._BermEl,
+                                self._InteriorDomain,
+                            ]
+                        )
+                        if self._DuneParamStart == 0:
+                            if self._seeded_RNG_on:
+                                newDuneHeight = np.ones([self._BarrierLength]) * (
+                                    0.005
+                                    + (
+                                        -0.005
+                                        + (0.005 - (-0.005))
+                                        * self._RNG.random(self._BarrierLength)
+                                    )
+                                )
+                            else:
+                                newDuneHeight = np.ones([self._BarrierLength]) * (
+                                    0.005
+                                    + (
+                                        -0.005
+                                        + (0.005 - (-0.005))
+                                        * np.random.rand(self._BarrierLength)
+                                    )
+                                )
+                        else:
+                            newDuneHeight = np.ones([self._BarrierLength]) * 0.01
 
-            if (
-                self._SCRagg > 0
-            ):  # Positive = prograde, add row(s) to front of interior domain
-                for d in range(sc):
-                    # New interior row added with elev. of previous dune field
-                    # (i.e. previous dune row now part of int.)
-                    self._InteriorDomain = np.vstack(
-                        [
-                            self._DuneDomain[self._time_index, :, -1] + self._BermEl,
-                            self._InteriorDomain,
-                        ]
-                    )
-                    if self._DuneParamStart == 0:
-                        newDuneHeight = np.ones([self._BarrierLength]) * (
-                            0.005
-                            + (
-                                -0.005
-                                + (0.005 - (-0.005))
-                                * self._RNG.random(self._BarrierLength)
+                        self._DuneDomain[self._time_index, :, :] = np.roll(
+                            self._DuneDomain[self._time_index, :, :], 1, axis=1
+                        )
+                        self._DuneDomain[self._time_index, :, 0] = newDuneHeight
+
+                        # Update shrub domains too
+                        self._ShrubDomainFemale = np.concatenate(
+                            (
+                                np.zeros([1, self._BarrierLength]),
+                                self._ShrubDomainFemale,
                             )
                         )
-                    else:
-                        newDuneHeight = np.ones([self._BarrierLength]) * 0.01
+                        self._ShrubDomainMale = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubDomainMale)
+                        )
+                        self._ShrubDomainDead = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._ShrubDomainDead)
+                        )
+                        self._ShrubPercentCover = np.concatenate(
+                            (
+                                np.zeros([1, self._BarrierLength]),
+                                self._ShrubPercentCover,
+                            )
+                        )
+                        self._DeadPercentCover = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._DeadPercentCover)
+                        )
+                        self._BurialDomain = np.concatenate(
+                            (np.zeros([1, self._BarrierLength]), self._BurialDomain)
+                        )
 
-                    self._DuneDomain[self._time_index, :, :] = np.roll(
-                        self._DuneDomain[self._time_index, :, :], 1, axis=1
-                    )
-                    self._DuneDomain[self._time_index, :, 0] = newDuneHeight
+                    # DomainWidth = DomainWidth + sc  # Update width of interior domain
+                    self._ShorelineChange = self._ShorelineChange + sc
+                    self._ShorelineChangeTS.append(+sc)
+                    self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
 
-                    # Update shrub domains too
-                    self._ShrubDomainFemale = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainFemale)
-                    )
-                    self._ShrubDomainMale = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainMale)
-                    )
-                    self._ShrubDomainDead = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubDomainDead)
-                    )
-                    self._ShrubPercentCover = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._ShrubPercentCover)
-                    )
-                    self._DeadPercentCover = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._DeadPercentCover)
-                    )
-                    self._BurialDomain = np.concatenate(
-                        (np.zeros([1, self._BarrierLength]), self._BurialDomain)
-                    )
+                elif (
+                    self._SCRagg < 0
+                ):  # Negative = erode, remove front row(s) of interior domain
+                    for d in range(sc):
+                        newDuneElev = self._InteriorDomain[
+                            0, :
+                        ]  # First row of interior will now become new part of active dune field
+                        newDuneHeight = newDuneElev - self._BermEl
+                        newDuneHeight[
+                            newDuneHeight < self._DuneRestart
+                        ] = self._DuneRestart
+                        self._InteriorDomain = np.delete(
+                            self._InteriorDomain, 0, axis=0
+                        )
+                        if np.shape(self._InteriorDomain)[0] <= 0:
+                            self._drown_break = 1
+                            break
+                        self._DuneDomain[self._time_index, :, :] = np.roll(
+                            self._DuneDomain[self._time_index, :, :], -1, axis=1
+                        )
+                        self._DuneDomain[self._time_index, :, -1] = newDuneHeight
 
-                # DomainWidth = DomainWidth + sc  # Update width of interior domain
-                self._ShorelineChange = self._ShorelineChange + sc
-                self._ShorelineChangeTS.append(+sc)
-                self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
+                        # Update shrub domains too
+                        self._ShrubDomainFemale = np.delete(
+                            self._ShrubDomainFemale, 0, axis=0
+                        )
+                        self._ShrubDomainMale = np.delete(
+                            self._ShrubDomainMale, 0, axis=0
+                        )
+                        self._ShrubDomainDead = np.delete(
+                            self._ShrubDomainDead, 0, axis=0
+                        )
+                        self._ShrubPercentCover = np.delete(
+                            self._ShrubPercentCover, 0, axis=0
+                        )
+                        self._DeadPercentCover = np.delete(
+                            self._DeadPercentCover, 0, axis=0
+                        )
+                        self._BurialDomain = np.delete(self._BurialDomain, 0, axis=0)
 
-            elif (
-                self._SCRagg < 0
-            ):  # Negative = erode, remove front row(s) of interior domain
-                for d in range(sc):
-                    newDuneElev = self._InteriorDomain[
-                        0, :
-                    ]  # First row of interior will now become new part of active dune field
-                    newDuneHeight = newDuneElev - self._BermEl
-                    newDuneHeight[newDuneHeight < self._DuneRestart] = self._DuneRestart
-                    self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
-                    if np.shape(self._InteriorDomain)[0] <= 0:
-                        self._drown_break = 1
-                        break
-                    self._DuneDomain[self._time_index, :, :] = np.roll(
-                        self._DuneDomain[self._time_index, :, :], -1, axis=1
-                    )
-                    self._DuneDomain[self._time_index, :, -1] = newDuneHeight
-
-                    # Update shrub domains too
-                    self._ShrubDomainFemale = np.delete(
-                        self._ShrubDomainFemale, 0, axis=0
-                    )
-                    self._ShrubDomainMale = np.delete(self._ShrubDomainMale, 0, axis=0)
-                    self._ShrubDomainDead = np.delete(self._ShrubDomainDead, 0, axis=0)
-                    self._ShrubPercentCover = np.delete(
-                        self._ShrubPercentCover, 0, axis=0
-                    )
-                    self._DeadPercentCover = np.delete(
-                        self._DeadPercentCover, 0, axis=0
-                    )
-                    self._BurialDomain = np.delete(self._BurialDomain, 0, axis=0)
-
-                # DomainWidth = DomainWidth - sc  # Update width of interior domain
-                self._ShorelineChange = self._ShorelineChange - sc
-                self._ShorelineChangeTS.append(-sc)
-                self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
-        else:
-            self._ShorelineChangeTS.append(0)
+                    # DomainWidth = DomainWidth - sc  # Update width of interior domain
+                    self._ShorelineChange = self._ShorelineChange - sc
+                    self._ShorelineChangeTS.append(-sc)
+                    self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
+            else:
+                self._ShorelineChangeTS.append(0)
 
         # ### Check for drowning
         if self._drown_break == 1:
@@ -1716,8 +1792,8 @@ class Barrier3d:
         self._DomainTS = value
 
     @property
-    def dune_migration(self):
-        return self._dune_migration
+    def dune_migrated(self):
+        return self._dune_migrated
 
     @property
     def BermEl(self):

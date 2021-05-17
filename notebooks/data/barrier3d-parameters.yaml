@@ -62,3 +62,4 @@ SalineLimit: 5                  # [m^3 / hr] Dishcharge limit to determine shrub
 Qshrub_max: 0.15                # Maximum percentage of overwash reduction through a shrub cell with full percent cover
 MaxShrubHeight: 5.3             # [m] Maximum shrub height
 ShorefaceToe: 0                 # [m] Start location of shoreface toe
+SeededRNG: True                 # Use seeded random number generator for reproducibility

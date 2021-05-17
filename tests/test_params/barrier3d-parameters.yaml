@@ -54,7 +54,6 @@ TimeFruit: 5.0                  # [yr] Age shrubs need to be before they start f
 Female: 0.5                     # Percentage of shrubs that are female
 ShrubEl_min: 1.2                # [m] Elevation range for shrub growth, minimum bound
 ShrubEl_max: 2.3                # [m] Elevation range for shrub growth, maximum bound
-TideAmp: 1.2                    # [m] Tidal amplitude
 SprayDist: 170                  # [m] Distance from ocean shoreline that shrubs can establish
 BurialLimit: 0.75               # [m] Maximum percentage of height that a shrub can be buried up to before dying
 UprootLimit: -0.2               # [m] Shrubs eroded beyond this limit killed
@@ -62,3 +61,4 @@ SalineLimit: 5                  # [m^3 / hr] Dishcharge limit to determine shrub
 Qshrub_max: 0.15                # Maximum percentage of overwash reduction through a shrub cell with full percent cover
 MaxShrubHeight: 5.3             # [m] Maximum shrub height
 ShorefaceToe: 0                 # [m] Start location of shoreface toe
+SeededRNG: True                 # Use seeded random number generator for reproducibility
