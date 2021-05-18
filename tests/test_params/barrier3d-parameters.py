@@ -1,42 +1,20 @@
-# Parameter value loading script for
-
-# ~ Barrier3D ~
-# A spatially explicit exploratory model of barrier island evolution in three dimensions
-
-
-"""----------------------------------------------------
-Copyright (C) 2020 Ian R.B. Reeves
-Full copyright notice located in main Barrier3D.py file
-----------------------------------------------------"""
-
-# Version Number: 4
-# Updated: 26 August 2020
-
-
-# Script sets up all input parameters
-# Converts from meters to decameters for simulation
 elevation_file = "InitElevHog.npy"  # File that contains initial elevations
 dune_file = "DuneStart_1000dam.npy"  # File that contains initial dune values
 growth_param_file = (
     "growthparam_1000dam.npy"  # File that contains initial growth parameters
 )
 storm_file = "StormTimeSeries_1000yr.npy"  # File that contains storm data
-
 TMAX = 51  # [y] Duration of simulation
-StormStart = 2  # [y] Year when storm can start occurring
+StormStart = 2  # [y] Year when storm can start occurring (NOTE: if changed, need new storm time series)
 BarrierLength = 500.0  # [m] Static length (alongshore) of island segment
-DuneWidth = (
-    20.0  # [m] Width (cross-shore) of island dune field; for illustration purposes only
-)
-LShoreface = 500.0  # [m] Length of shoreface
+DuneWidth = 20.0  # [m] Width (cross-shore) of island dune field
+LShoreface = 500.0  # [m] Initial length of shoreface
 DShoreface = 10.0  # [m] Height of shoreface
-BayDepth = 3.0  # [m] Depth of bay benind island segment
-MHW = 0.46  # [m] Elevation of Mean High Water
+BayDepth = 3.0  # [m] Depth of bay behind island segment
+MHW = 0.46  # [m] Elevation of Mean High Water (NOTE: if changed, need new storm time series)
 DuneParamStart = True  # Dune height will come from external file
-Dstart = 0.50  # [m] Initial height of dune domain above berm elevation
-BermEl = (
-    1.9  # [m] Static elevation of berm; berm elevation + dune height = dune elevation
-)
+Dstart = 0.5  # [m] Initial height of dune domain above berm elevation
+BermEl = 1.9  # [m] Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)
 GrowthParamStart = True  # Dune growth parameter will come from external file
 rmin = 0.35  # Minimum growth rate for logistic dune growth
 rmax = 0.85  # Maximum growth rate for logistic dune growth
@@ -48,11 +26,7 @@ DuneRestart = 0.075  # [m] Restart height for dunes lowered to essentially zero
 Rat = 0.0  # [m / y] Rate of shoreline reatreat attributed to alongshore transport; (-) = erosion, (+) = accretion
 RSLR_Constant = True  # Relative sea-level rise rate will be constant, otherwise logistic growth function used for time series
 RSLR_const = 0.004  # [m / y] Relative sea-level rise rate
-# mean_storm = 8.3                 # For a random number of storms per year sampled from normal distribution
-# SD_storm = 5.9                   # For a random number of storms per year sampled from normal distribution
-# numstorm = 0                     # For a single constant number of storms per year
 beta = 0.04  # Beach slope for runup calculations
-# StormTimeSeries = True           # Storms will come from a time series
 StormSeries = []  # Time series of storms
 nn = 0.5  # Flow routing constant
 mm = 2.0  # Exponent constant for sediment transport
@@ -71,7 +45,7 @@ OWss_i = 2  # Overwash substep
 OWss_r = 1  # Overwash substep
 k_sf = 5000.0  # [m^3 / m / y] Shoreface flux rate constant
 s_sf_eq = 0.02  # Equilibrium shoreface slope
-Shrub_ON = True  # 1 = shrubs on in simulation, 0 = shrubs off
+Shrub_ON = 0  # 1 = shrubs on in simulation, 0 = shrubs off
 Seedmin = 100.0  # [1 / yr] Seeds produced per shrub per year (fecundity)
 Seedmax = 1000.0  # [1 / yr] Seeds produced per shrub per year (fecundity)
 disp_mu = -0.721891  # For lognormal probability distribution of seed dispersal distance
@@ -82,12 +56,13 @@ TimeFruit = 5.0  # [yr] Age shrubs need to be before they start fruiting
 Female = 0.5  # Percentage of shrubs that are female
 ShrubEl_min = 1.2  # [m] Elevation range for shrub growth, minimum bound
 ShrubEl_max = 2.3  # [m] Elevation range for shrub growth, maximum bound
-TideAmp = 1.2  # [m] Tidal amplitude
 SprayDist = 170  # [m] Distance from ocean shoreline that shrubs can establish
-BurialLimit = 0.75  # [m] Shrubs buried beyond this limit killed
+BurialLimit = 0.75  # [m] Maximum percentage of height that a shrub can be buried up to before dying
 UprootLimit = -0.2  # [m] Shrubs eroded beyond this limit killed
 SalineLimit = (
-    5.0  # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
+    5  # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
 )
 Qshrub_max = 0.15  # Maximum percentage of overwash reduction through a shrub cell with full percent cover
 MaxShrubHeight = 5.3  # [m] Maximum shrub height
+ShorefaceToe = 0  # [m] Start location of shoreface toe
+SeededRNG = True  # Use seeded random number generator for reproducibility

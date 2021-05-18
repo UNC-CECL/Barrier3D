@@ -184,7 +184,7 @@ s_sf_eq = 0.02
 ### SHRUBS
 
 # Dispersal
-Shrub_ON = 1
+Shrub_ON = 0
 Seedmin = 100
 Seedmax = 1000
 disp_mu = -0.721891
