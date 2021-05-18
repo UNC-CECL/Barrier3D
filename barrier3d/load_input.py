@@ -236,48 +236,6 @@ def _process_raw_input(params):
     else:
         params["BarrierLength"] = params["InteriorDomain"].shape[1]
 
-    if False:
-        z = params["InteriorDomain"] / 10.0 - params["MHW"]
-        z[z <= 0.0] = -params["BayDepth"]
-        # above_water = np.any(z > 0, axis=0)
-        # z = z[:, above_water]
-        # NOTE: if we haven't already flipped/rotated
-        u = 1
-        while u == 1:  # Remove all rows that have zero subaerial cells
-            if all(z[:, -1] <= 0):
-                z = z[:, :-1]
-            else:
-                u = 0
-        # while np.all(z[:, -1] <= 0):
-        #     z = z[:, :-1]
-        # NOTE: if we have already flipped/rotated
-        # u = 1
-        # while u == 1:  # Remove all rows that have zero subaerial cells
-        #     if all(z[0, :] <= 0):
-        #         z = z[1:, :]
-        #     else:
-        #         u = 0
-
-        # NOTE: We do this in the process step
-        params["InteriorDomain"] = np.flipud(np.rot90(z))
-
-        if len(params["InteriorDomain"][0]) > params["BarrierLength"]:
-            # Reduce to specified max length
-            params["InteriorDomain"] = params["InteriorDomain"][
-                :, : params["BarrierLength"]
-            ]
-        else:
-            params["BarrierLength"] = len(params["InteriorDomain"][0])
-
-    # intElev = intElev / 10.0 - params["MHW"]
-    # intElev[intElev <= 0.0] = - params["BayDepth"]
-
-    # NOTE: This removes ALL columns that have zero subaerial cells
-    # intElev = intElev[:, np.all(intElev <= 0, axis=0)]
-
-    # Flip to correct orientation
-    # params["InteriorDomain"] = np.flipud(np.rot90(intElev))
-
     params["DomainWidth"] = len(params["InteriorDomain"])
 
     params["Dstart"] /= 10.0
