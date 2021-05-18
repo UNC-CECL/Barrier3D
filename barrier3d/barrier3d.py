@@ -1765,10 +1765,6 @@ class Barrier3d:
         return self._x_b_TS
 
     @property
-    def h_b_TS(self):
-        return self._h_b_TS
-
-    @property
     def growthparam(self):
         return self._growthparam
 
