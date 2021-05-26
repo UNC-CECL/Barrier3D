@@ -20,11 +20,11 @@ Full copyright notice located in main Barrier3D.py file
 import numpy as np
 import math
 
-
-elevfile = "Parameterization/InitElevHog.npy"
-stormfile = "Parameterization/StormTimeSeries_1000yr.npy"
-dunestartfile = "Parameterization/DuneStart_1000dam.npy"
-growthparamfile = "Parameterization/growthparam_1000dam.npy"
+datadir = "V1_NoBMI/Parameterization/"
+elevfile = datadir + "InitElevHog.npy"
+stormfile = datadir + "StormTimeSeries_1000yr.npy"
+dunestartfile = datadir + "DuneStart_1000dam.npy"
+growthparamfile = datadir + "growthparam_1000dam.npy"
 
 ################################
 ### TIME
@@ -65,34 +65,38 @@ StormSeries = np.load(stormfile)
 
 ################################
 ### DUNES
+DuneParamStart = True
 
 # Dune height refers to heigh of dune above the static berm elevation
 Dstart = 0.5 / 10
 BermEl = 1.9 / 10 - MHW
 
 # Initialize dune crest height domain
-if StormTimeSeries:
+if DuneParamStart:
+    DuneStart = np.load(dunestartfile)
+    DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
+    DuneDomain[0, :, 0] = DuneStart[0:BarrierLength]
+    for w in range(1, DuneWidth):
+        DuneDomain[0, :, w] = DuneDomain[0, :, 0]
+else:
     DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
     DuneDomain[0, :, 0] = np.ones([1, BarrierLength]) * (
         Dstart + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, BarrierLength))
     )
     for w in range(1, DuneWidth):
         DuneDomain[0, :, w] = DuneDomain[0, :, 0]
-else:
-    DuneStart = np.load(dunestartfile)
-    DuneDomain = np.zeros([TMAX, BarrierLength, DuneWidth])
-    DuneDomain[0, :, 0] = DuneStart[0:BarrierLength]
-    for w in range(1, DuneWidth):
-        DuneDomain[0, :, w] = DuneDomain[0, :, 0]
+
 
 # Dune growth parameter
+GrowthParamStart = True
+
 rmin = 0.35
 rmax = 0.85
-if StormTimeSeries:
-    growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
-else:
+if GrowthParamStart:
     growthparamstart = np.load(growthparamfile)
     growthparam = growthparamstart[0:BarrierLength]
+else:
+    growthparam = rmin + (rmax - rmin) * np.random.rand(1, BarrierLength)
 
 # Dune diffusion parameter
 HdDiffu = 0.75 / 10

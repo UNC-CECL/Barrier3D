@@ -43,7 +43,7 @@ OWss_i: 2                       # Overwash substep
 OWss_r: 1                       # Overwash substep
 k_sf: 5000.0                    # [m^3 / m / y] Shoreface flux rate constant
 s_sf_eq: 0.02                   # Equilibrium shoreface slope
-Shrub_ON: 0                     # 1 = shrubs on in simulation, 0 = shrubs off
+Shrub_ON: 1                     # 1 = shrubs on in simulation, 0 = shrubs off
 Seedmin: 100.0                  # [1 / yr] Seeds produced per shrub per year (fecundity)
 Seedmax: 1000.0                 # [1 / yr] Seeds produced per shrub per year (fecundity)
 disp_mu: -0.721891              # For lognormal probability distribution of seed dispersal distance
@@ -54,6 +54,7 @@ TimeFruit: 5.0                  # [yr] Age shrubs need to be before they start f
 Female: 0.5                     # Percentage of shrubs that are female
 ShrubEl_min: 1.2                # [m] Elevation range for shrub growth, minimum bound
 ShrubEl_max: 2.3                # [m] Elevation range for shrub growth, maximum bound
+TideAmp: 1.2                    # [m] Tidal amplitude
 SprayDist: 170                  # [m] Distance from ocean shoreline that shrubs can establish
 BurialLimit: 0.75               # [m] Maximum percentage of height that a shrub can be buried up to before dying
 UprootLimit: -0.2               # [m] Shrubs eroded beyond this limit killed

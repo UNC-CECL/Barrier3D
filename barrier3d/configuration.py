@@ -356,13 +356,13 @@ class Barrier3dConfiguration(Configuration):
         description="Elevation range for shrub growth, maximum bound",
         validators=[Range(lower=0)],
     )
-    TideAmp = FloatField(
-        "TideAmp",
-        default=1.2,
-        units="m",
-        description="Tidal amplitude",
-        validators=[Range(lower=0)],
-    )
+    # TideAmp = FloatField(
+    #     "TideAmp",
+    #     default=1.2,
+    #     units="m",
+    #     description="Tidal amplitude",
+    #     validators=[Range(lower=0)],
+    # )
     SprayDist = FloatField(
         "SprayDist",
         default=170,
@@ -421,13 +421,11 @@ class Barrier3dConfiguration(Configuration):
         units="m",
         description="Start location of shoreface toe ",
     )
-
-    # StormSeriesFile: StringField(
-    #     "ShorefaceToe",
-    #     default=0,
-    #     units="m",
-    #     description="Start location of shoreface toe ",
-    # )
+    SeededRNG = BooleanField(
+        "SeededRNG",
+        default=True,
+        description="Use seeded random number generator for reproducibility",
+    )
 
     @classmethod
     def from_py(cls, path_to_py):

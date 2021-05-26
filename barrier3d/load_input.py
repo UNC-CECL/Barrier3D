@@ -214,7 +214,6 @@ def load_growth_param(path_to_file, fmt="npy"):
 def _process_raw_input(params):
     params["RNG"] = np.random.default_rng(seed=1973)
 
-    # params["TMAX"] = int(params["TMAX"]) + 1
     params["TMAX"] = int(params["TMAX"])
     params["StormStart"] = int(params["StormStart"])
 
@@ -237,48 +236,6 @@ def _process_raw_input(params):
     else:
         params["BarrierLength"] = params["InteriorDomain"].shape[1]
 
-    if False:
-        z = params["InteriorDomain"] / 10.0 - params["MHW"]
-        z[z <= 0.0] = -params["BayDepth"]
-        # above_water = np.any(z > 0, axis=0)
-        # z = z[:, above_water]
-        # NOTE: if we haven't already flipped/rotated
-        u = 1
-        while u == 1:  # Remove all rows that have zero subaerial cells
-            if all(z[:, -1] <= 0):
-                z = z[:, :-1]
-            else:
-                u = 0
-        # while np.all(z[:, -1] <= 0):
-        #     z = z[:, :-1]
-        # NOTE: if we have already flipped/rotated
-        # u = 1
-        # while u == 1:  # Remove all rows that have zero subaerial cells
-        #     if all(z[0, :] <= 0):
-        #         z = z[1:, :]
-        #     else:
-        #         u = 0
-
-        # NOTE: We do this in the process step
-        params["InteriorDomain"] = np.flipud(np.rot90(z))
-
-        if len(params["InteriorDomain"][0]) > params["BarrierLength"]:
-            # Reduce to specified max length
-            params["InteriorDomain"] = params["InteriorDomain"][
-                :, : params["BarrierLength"]
-            ]
-        else:
-            params["BarrierLength"] = len(params["InteriorDomain"][0])
-
-    # intElev = intElev / 10.0 - params["MHW"]
-    # intElev[intElev <= 0.0] = - params["BayDepth"]
-
-    # NOTE: This removes ALL columns that have zero subaerial cells
-    # intElev = intElev[:, np.all(intElev <= 0, axis=0)]
-
-    # Flip to correct orientation
-    # params["InteriorDomain"] = np.flipud(np.rot90(intElev))
-
     params["DomainWidth"] = len(params["InteriorDomain"])
 
     params["Dstart"] /= 10.0
@@ -293,24 +250,40 @@ def _process_raw_input(params):
         params["DuneDomain"][0, :, 0] = params["DuneStart"][0 : params["BarrierLength"]]
         params.pop("DuneStart")
     else:
-        params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
-            params["Dstart"]
-            + (
-                -0.01
-                + (0.01 - (-0.01)) * params["RNG"].random((1, params["BarrierLength"]))
+        if params["SeededRNG"]:
+            params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
+                params["Dstart"]
+                + (
+                    -0.01
+                    + (0.01 - (-0.01))
+                    * params["RNG"].random((1, params["BarrierLength"]))
+                )
             )
-            # + (-0.01 + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"]))
-        )
+        else:
+            params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
+                params["Dstart"]
+                + (
+                    -0.01
+                    + (
+                        -0.01
+                        + (0.01 - (-0.01)) * np.random.rand(1, params["BarrierLength"])
+                    )
+                )
+            )
     params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
 
     if "GrowthStart" in params:
         params["growthparam"] = params["GrowthStart"][0 : params["BarrierLength"]]
         params.pop("GrowthStart")
     else:
-        params["growthparam"] = params["rmin"] + (
-            params["rmax"] - params["rmin"]
-        ) * params["RNG"].random((1, params["BarrierLength"]))
-        # ) * np.random.rand(1, params["BarrierLength"])
+        if params["SeededRNG"]:
+            params["growthparam"] = params["rmin"] + (
+                params["rmax"] - params["rmin"]
+            ) * params["RNG"].random((1, params["BarrierLength"]))
+        else:
+            params["growthparam"] = params["rmin"] + (
+                params["rmax"] - params["rmin"]
+            ) * np.random.rand(1, params["BarrierLength"])
 
     params["HdDiffu"] /= 10.0
 
@@ -357,7 +330,7 @@ def _process_raw_input(params):
     params["Dshrub"] /= 10.0
     params["ShrubEl_min"] = params["ShrubEl_min"] / 10.0 - params["MHW"]
     params["ShrubEl_max"] = params["ShrubEl_max"] / 10.0 - params["MHW"]
-    params["TideAmp"] /= 10.0
+    # params["TideAmp"] /= 10.0
     params["SprayDist"] /= 10.0
     params["MaxShrubHeight"] /= 10.0
 
