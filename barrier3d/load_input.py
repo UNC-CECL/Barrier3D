@@ -314,13 +314,15 @@ def _process_raw_input(params):
         # starting from 0.003 m/yr (AD2000); note Figure 3a is in m/cyr (divide by 100 to get m/yr)
         params["RSLR"] = []
         alpha = 0.022  # maximum achievable rate, m/yr -- probability maximum = 0.0075 m/y, 68% upper bound = 0.022 m/yr
-        beta = alpha / 0.003 - 1  # 0.003 is constant: corresponds to 0.003 m/yr at AD2000
+        beta = (
+            alpha / 0.003 - 1
+        )  # 0.003 is constant: corresponds to 0.003 m/yr at AD2000
         gamma = 600  # yr -- probability maximum = 450, 68% upper bound = 600 (KA: changed from Ian's estimates)
         C = 12  # constant
-        for t in range(0, params["TMAX"]):  # this is range shown in Figure 3a of Rohling, starting at AD2000
-            delta = (
-                alpha / (1 + beta * math.exp(-t / gamma * C))
-            )
+        for t in range(
+            0, params["TMAX"]
+        ):  # this is range shown in Figure 3a of Rohling, starting at AD2000
+            delta = alpha / (1 + beta * math.exp(-t / gamma * C))
             params["RSLR"].append(delta / 10)  # Convert from m/yr to dam/yr
 
     # Shoreface
