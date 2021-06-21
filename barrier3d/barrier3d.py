@@ -1875,3 +1875,11 @@ class Barrier3d:
     @dune_migration_on.setter
     def dune_migration_on(self, value):
         self._dune_migration_on = value
+
+    @property
+    def RSLR(self):
+        return self._RSLR
+
+    @RSLR.setter
+    def RSLR(self, value):
+        self._RSLR = value
