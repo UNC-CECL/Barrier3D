@@ -973,7 +973,7 @@ class Barrier3d:
                     duration = dur[n] * substep
                     width = (
                         np.shape(self._InteriorDomain)[0] + 1 + add
-                    )  # (dam) Add one for Dunes and 25 for bay
+                    )  # (dam) Add one for Dunes (really a row for setting water elevation and 25 for bay)
                     Elevation = np.zeros([duration, width, self._BarrierLength])
                     Dunes = Dunes_prestorm + self._BermEl
                     Bay = np.ones([add, self._BarrierLength]) * -self._BayDepth
