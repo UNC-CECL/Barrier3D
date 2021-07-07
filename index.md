@@ -1,13 +1,13 @@
 
 ![Barrier3D](/images/Barrier3D.png)
 
-_Last Updated: 13 Jan 2021_
+_Last Updated: 7 July 2021_
 
 ## About
 
 *Barrier3D* resolves cross-shore and alongshore topographic variations and simulates the morphological evolution of a barrier segment over time scales of years to centuries. The model explicitly yet efficiently simulates dune evolution, storm overwash, and a dynamically evolving shoreface in response to individual storm events and sea-level rise.
 
-Barrier3D is built with the Basic Model Interface (BMI; https://bmi.readthedocs.io/).
+Barrier3D _v2_ is built with the Basic Model Interface (BMI; https://bmi.readthedocs.io/) and is structured such that the model class `Barrier3D` is contained within the package `barrier3d`. The _v2_ model can be implemented using a command line interface (see below). An example run script is also provided in `scripts/runB3d_BMI.py`. The _v1_ and _v2_ models produce identical output (see `scripts/plot_BMI_vs_V1.py`). 
 
 _Copyright (C) 2021 Ian R.B. Reeves (principal developer) licensed under the GNU General Public License v3.0_
 
@@ -120,7 +120,6 @@ TimeFruit: 5.0                  # [yr] Age shrubs need to be before they start f
 Female: 0.5                     # Percentage of shrubs that are female
 ShrubEl_min: 0.6                # [m] Elevation range for shrub growth, minimum bound
 ShrubEl_max: 2.3                # [m] Elevation range for shrub growth, maximum bound
-TideAmp: 1.2                    # [m] Tidal amplitude
 SprayDist: 170.0                # [m] Distance from ocean shoreline that shrubs can establish
 BurialLimit: 0.5                # [m] Shrubs buried beyond this limit killed
 UprootLimit: -0.3               # [m] Shrubs eroded beyond this limit killed
@@ -137,9 +136,13 @@ Other input files can be shown in a similar fashion:
   $ b3d show [dunes|elevations|growthparam|parameters|storms]$
 ```
 
-## Output Files and Plotting
+## Plotting
 
-TBC...
+Plotting functions can be found in:
+
+```
+barrier3d/tools/plot.py
+```
 
 
 ## Examples
@@ -168,4 +171,6 @@ An example python run script using the BMI class is provided in `tests/runB3d_BM
 
 ## Further Reading
 
-TBC...
+An comprehensive description and discussion of Barrier3D can be found in:
+
+__Reeves et al. (2021). Dune Dynamics Drive Discontinuous Barrier Retreat. _Geophysical Research Letters_. https://doi.org/10.1029/2021GL092958__
