@@ -7,7 +7,7 @@ _Last Updated: 7 July 2021_
 
 *Barrier3D* resolves cross-shore and alongshore topographic variations and simulates the morphological evolution of a barrier segment over time scales of years to centuries. The model explicitly yet efficiently simulates dune evolution, storm overwash, and a dynamically evolving shoreface in response to individual storm events and sea-level rise.
 
-Barrier3D _v2_ is built with the Basic Model Interface (BMI; https://bmi.readthedocs.io/) and is structured such that the model class `Barrier3D` is contained within the package `barrier3d`. The _v2_ model can be implemented using a command line interface (see below). An example run script is also provided in `scripts/runB3d_BMI.py`. The _v1_ and _v2_ models produce identical output (see `scripts/plot_BMI_vs_V1.py`). 
+Barrier3D _v2_ is built with the Basic Model Interface ([BMI](https://bmi.readthedocs.io/)) and is structured such that the model class `Barrier3D` is contained within the package `barrier3d`. The _v2_ model can be implemented using a command line interface (see below). An example run script is also provided in `scripts/runB3d_BMI.py`. The _v1_ and _v2_ models produce identical output (see `scripts/plot_BMI_vs_V1.py`). 
 
 _Copyright (C) 2021 Ian R.B. Reeves (principal developer) licensed under the GNU General Public License v3.0_
 
@@ -173,4 +173,4 @@ An example python run script using the BMI class is provided in `scripts/runB3d_
 
 An comprehensive description and discussion of Barrier3D can be found in:
 
-__Reeves et al. (2021). Dune Dynamics Drive Discontinuous Barrier Retreat. _Geophysical Research Letters_. https://doi.org/10.1029/2021GL092958__
+#### Reeves, I.R.B., Moore, L.J., Murray, A.B., Anarde, K.A., & Goldstein, E.B. (2021). Dune Dynamics Drive Discontinuous Barrier Retreat. _Geophysical Research Letters_. https://doi.org/10.1029/2021GL092958
