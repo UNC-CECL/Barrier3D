@@ -1883,3 +1883,7 @@ class Barrier3d:
     @RSLR.setter
     def RSLR(self, value):
         self._RSLR = value
+
+    @property
+    def BayDepth(self):
+        return self._BayDepth
