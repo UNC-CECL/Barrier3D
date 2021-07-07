@@ -167,7 +167,7 @@ simulation.  To run *Barrier3D* using this file:
 
 Use the *--help* option to get help about other command line options.
 
-An example python run script using the BMI class is provided in `tests/runB3d_BMI.py`.
+An example python run script using the BMI class is provided in `scripts/runB3d_BMI.py`.
 
 ## Further Reading
 
