@@ -767,7 +767,6 @@ class Barrier3d:
         self._x_b_TS = [
             (self._x_s + InteriorWidth_Avg)
         ]  # (dam) Bay shoreline locations for each time step
-        self._dune_migrated = False  # boolean to track when we shift the dune domain due to shoreline erosion
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
@@ -1516,9 +1515,7 @@ class Barrier3d:
         # ###########################################
 
         self._drown_break = 0
-        self._dune_migrated = (
-            False  # boolean to easily track when we shift the dune domain
-        )
+
         if self._dune_migration_on:
             SCR = (
                 self._x_s_TS[-1] - self._x_s_TS[-2]
@@ -1530,7 +1527,6 @@ class Barrier3d:
 
             if abs(self._SCRagg) >= 1:
                 sc = math.floor(abs(self._SCRagg))
-                self._dune_migrated = True  # shift dune domain
 
                 if (
                     self._SCRagg > 0
@@ -1797,10 +1793,6 @@ class Barrier3d:
         self._DomainTS = value
 
     @property
-    def dune_migrated(self):
-        return self._dune_migrated
-
-    @property
     def BermEl(self):
         return self._BermEl
 
@@ -1875,6 +1867,10 @@ class Barrier3d:
     @dune_migration_on.setter
     def dune_migration_on(self, value):
         self._dune_migration_on = value
+
+    @property
+    def ShorelineChangeTS(self):
+        return self._ShorelineChangeTS
 
     @property
     def RSLR(self):
