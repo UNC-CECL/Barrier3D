@@ -1883,3 +1883,7 @@ class Barrier3d:
     @property
     def BayDepth(self):
         return self._BayDepth
+
+    @property
+    def DuneRestart(self):
+        return self._DuneRestart
