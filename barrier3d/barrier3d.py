@@ -1875,3 +1875,7 @@ class Barrier3d:
     @dune_migration_on.setter
     def dune_migration_on(self, value):
         self._dune_migration_on = value
+
+    @property
+    def InteriorWidth_AvgTS(self):
+        return self._InteriorWidth_AvgTS
