@@ -1879,3 +1879,7 @@ class Barrier3d:
     @property
     def InteriorWidth_AvgTS(self):
         return self._InteriorWidth_AvgTS
+
+    @property
+    def TMAX(self):
+        return self._TMAX

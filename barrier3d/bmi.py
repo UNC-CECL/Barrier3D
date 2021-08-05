@@ -189,3 +189,7 @@ class Barrier3dBmi(Bmi):
 
     def set_value_at_indices(self, name, ids, src):
         raise NotImplementedError("set_value_at_indices")
+
+    @property
+    def model(self):
+        return self._model
