@@ -771,6 +771,7 @@ class Barrier3d:
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
+        self._bay_routing_width = 10  # Width for bay section of overwash routing domain
 
         self._time_index = 1
 
@@ -969,14 +970,14 @@ class Barrier3d:
                         self._RunUpCount += 1
 
                     # Set Domain
-                    add = 10
+                    self._bay_routing_width = 10
                     duration = dur[n] * substep
                     width = (
-                        np.shape(self._InteriorDomain)[0] + 1 + add
+                            np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
                     )  # (dam) Add one for Dunes and 25 for bay
                     Elevation = np.zeros([duration, width, self._BarrierLength])
                     Dunes = Dunes_prestorm + self._BermEl
-                    Bay = np.ones([add, self._BarrierLength]) * -self._BayDepth
+                    Bay = np.ones([self._bay_routing_width, self._BarrierLength]) * -self._BayDepth
                     Elevation[0, :, :] = np.vstack([Dunes, self._InteriorDomain, Bay])
 
                     # Initialize Memory Storage Arrays
@@ -1883,3 +1884,8 @@ class Barrier3d:
     @property
     def TMAX(self):
         return self._TMAX
+
+    @property
+    def bay_routing_width(self):
+        return self._bay_routing_width
+
