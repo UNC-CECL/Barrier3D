@@ -553,6 +553,7 @@ class Barrier3d:
         QsfTS,
         t,
         h_b_TS,
+        f,  # shoreface_fine_fraction
     ):
         """Finds shoreline change for modeled year following Lorenzo-Trueba and Ashton (2014)"""
 
@@ -587,7 +588,7 @@ class Barrier3d:
         x_t_dt = (4 * Qsf * (h_b + d_sf) / (d_sf * (2 * h_b + d_sf))) + (
             2 * self._RSLR[t] / s_sf
         )
-        x_s_dt = 2 * (Qow + Qdg + self._Qat) / ((2 * h_b) + d_sf) - (
+        x_s_dt = 2 * (Qow + Qdg + self._Qat) / ((2 * h_b + d_sf) * (1 - f)) - (
             4 * Qsf * (h_b + d_sf) / (((2 * h_b) + d_sf) ** 2)
         )  # Dune growth and alongshore transport added to LTA14 formulation
 
@@ -772,7 +773,7 @@ class Barrier3d:
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
         self._bay_routing_width = 10  # Width for bay section of overwash routing domain
-
+        self._shoreface_fine_fraction = 0  # Fraction of the shoreface height that is made up of fine material from the back-barrier bay; affects barrier migration
         self._time_index = 1
 
     @classmethod
@@ -1508,6 +1509,7 @@ class Barrier3d:
             self._QsfTS,
             self._time_index,
             self._h_b_TS,
+            self._shoreface_fine_fraction,
         )
 
     def update_dune_domain(self):
@@ -1888,4 +1890,8 @@ class Barrier3d:
     @property
     def bay_routing_width(self):
         return self._bay_routing_width
+
+    @property
+    def shoreface_fine_fraction(self):
+        return self._shoreface_fine_fraction
 
