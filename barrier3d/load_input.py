@@ -298,8 +298,8 @@ def _process_raw_input(params):
     params["DuneRestart"] /= 10.0
 
     # Volume of sediment lost via alongshore transport
-    params["Rat"] = params["Rat"] / 10.0
-    # params["Rat"] = params["Rat"] / -10.0
+    # params["Rat"] = params["Rat"] / 10.0
+    params["Rat"] = params["Rat"] / -10.0
     params["Qat"] = params["Rat"] * params["DShoreface"]
     params.pop("Rat")
 
