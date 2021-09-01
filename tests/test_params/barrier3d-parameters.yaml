@@ -21,7 +21,7 @@ Dmaxel: 3.4                     # [m NAVD88] Maximum elevation of dunes
 C1: 8.8                         # [m] Empirical dune erosion parameter
 C2: 4.6                         # [m] Empirical dune erosion parameter
 DuneRestart: 0.075              # [m] Restart height for dunes lowered to essentially zero
-Rat: 0.0                        # [m / y] Rate of shoreline reatreat attributed to alongshore transport; (-) = erosion, (+) = accretion
+Rat: 0.0                        # [m / y] Rate of shoreline retreat attributed to alongshore transport; (-) = erosion, (+) = accretion
 RSLR_Constant: True             # Relative sea-level rise rate will be constant, otherwise logistic growth function used for time series
 RSLR_const: 0.004               # [m / y] Relative sea-level rise rate
 beta: 0.04                      # Beach slope for runup calculations
