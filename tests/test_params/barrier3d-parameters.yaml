@@ -1,5 +1,5 @@
-elevation_file: "InitElevHog.npy" # File that contains initial elevations
-dune_file: "DuneStart_1000dam.npy"  # File that contains initial dune values
+elevation_file: "InitElevHog.npy" # File that contains initial elevations [m MHW]
+dune_file: "DuneStart_1000dam.npy"  # File that contains initial dune height values [m]
 growth_param_file: "growthparam_1000dam.npy" # File that contains initial growth parameters
 storm_file: "StormTimeSeries_1000yr.npy" # File that contains storm data
 TMAX: 51                        # [y] Duration of simulation
@@ -9,19 +9,19 @@ DuneWidth: 20.0                 # [m] Width (cross-shore) of island dune field
 LShoreface: 500.0               # [m] Initial length of shoreface
 DShoreface: 10.0                # [m] Height of shoreface
 BayDepth: 3.0                   # [m] Depth of bay behind island segment
-MHW: 0.46                       # [m] Elevation of Mean High Water (NOTE: if changed, need new storm time series)
+MHW: 0.46                       # [m NAVD88] Elevation of Mean High Water (NOTE: if changed, need new storm time series)
 DuneParamStart: True            # Dune height will come from external file
 Dstart: 0.5                     # [m] Initial height of dune domain above berm elevation
-BermEl: 1.9                     # [m] Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)
+BermEl: 1.9                     # [m NAVD88] Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)
 GrowthParamStart: True          # Dune growth parameter will come from external file
 rmin: 0.35                      # Minimum growth rate for logistic dune growth
 rmax: 0.85                      # Maximum growth rate for logistic dune growth
 HdDiffu: 0.75                   # [m] Dune diffusion parameter (i.e. max height offset between adjacent dune cells)
-Dmaxel: 3.4                     # [m] Maximum elevation of dunes
+Dmaxel: 3.4                     # [m NAVD88] Maximum elevation of dunes
 C1: 8.8                         # [m] Empirical dune erosion parameter
 C2: 4.6                         # [m] Empirical dune erosion parameter
 DuneRestart: 0.075              # [m] Restart height for dunes lowered to essentially zero
-Rat: 0.0                        # [m / y] Rate of shoreline reatreat attributed to alongshore transport; (-) = erosion, (+) = accretion
+Rat: 0.0                        # [m / y] Rate of shoreline retreat attributed to alongshore transport; (-) = erosion, (+) = accretion
 RSLR_Constant: True             # Relative sea-level rise rate will be constant, otherwise logistic growth function used for time series
 RSLR_const: 0.004               # [m / y] Relative sea-level rise rate
 beta: 0.04                      # Beach slope for runup calculations
@@ -52,8 +52,8 @@ Dshrub: 2.75                    # [m] Minimum elevation of fronting dune for shr
 GermRate: 0.6                   # Germination rate
 TimeFruit: 5.0                  # [yr] Age shrubs need to be before they start fruiting
 Female: 0.5                     # Percentage of shrubs that are female
-ShrubEl_min: 1.2                # [m] Elevation range for shrub growth, minimum bound
-ShrubEl_max: 2.3                # [m] Elevation range for shrub growth, maximum bound
+ShrubEl_min: 1.2                # [m NAVD88] Elevation range for shrub growth, minimum bound
+ShrubEl_max: 2.3                # [m NAVD88] Elevation range for shrub growth, maximum bound
 SprayDist: 170                  # [m] Distance from ocean shoreline that shrubs can establish
 BurialLimit: 0.75               # [m] Maximum percentage of height that a shrub can be buried up to before dying
 UprootLimit: -0.2               # [m] Shrubs eroded beyond this limit killed
