@@ -1895,3 +1895,10 @@ class Barrier3d:
     def shoreface_fine_fraction(self):
         return self._shoreface_fine_fraction
 
+    @property
+    def BarrierLength(self):
+        return self._BarrierLength
+
+    @property
+    def SL(self):
+        return self._SL
