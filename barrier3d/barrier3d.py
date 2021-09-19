@@ -1880,10 +1880,6 @@ class Barrier3d:
         self._dune_migration_on = value
 
     @property
-    def InteriorWidth_AvgTS(self):
-        return self._InteriorWidth_AvgTS
-
-    @property
     def TMAX(self):
         return self._TMAX
 
@@ -1902,3 +1898,27 @@ class Barrier3d:
     @property
     def SL(self):
         return self._SL
+
+    @property
+    def ShrubDomainFemale(self):
+        return self._ShrubDomainFemale
+
+    @property
+    def ShrubDomainMale(self):
+        return self._ShrubDomainMale
+
+    @property
+    def ShrubDomainDead(self):
+        return self._ShrubDomainDead
+
+    @property
+    def ShrubPercentCover(self):
+        return self._ShrubPercentCover
+
+    @property
+    def DeadPercentCover(self):
+        return self._DeadPercentCover
+
+    @property
+    def BurialDomain(self):
+        return self._BurialDomain
