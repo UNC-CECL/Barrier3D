@@ -1908,6 +1908,10 @@ class Barrier3d:
         return self._ShrubDomainMale
 
     @property
+    def ShrubDomainAll(self):
+        return self._ShrubDomainAll
+
+    @property
     def ShrubDomainDead(self):
         return self._ShrubDomainDead
 
