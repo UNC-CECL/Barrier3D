@@ -1926,3 +1926,7 @@ class Barrier3d:
     @property
     def BurialDomain(self):
         return self._BurialDomain
+
+    @property
+    def ShorelineChange(self):
+        return self._ShorelineChange
