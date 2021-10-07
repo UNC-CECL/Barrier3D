@@ -1887,3 +1887,11 @@ class Barrier3d:
     @property
     def DuneRestart(self):
         return self._DuneRestart
+
+    @property
+    def BarrierLength(self):
+        return self._BarrierLength
+
+    @property
+    def SL(self):
+        return self._SL
