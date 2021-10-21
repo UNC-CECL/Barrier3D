@@ -1930,3 +1930,11 @@ class Barrier3d:
     @property
     def ShorelineChange(self):
         return self._ShorelineChange
+
+    @property
+    def ShorelineChangeTS(self):
+        return self._ShorelineChangeTS
+
+    @property
+    def RSLR(self):
+        return self._RSLR
