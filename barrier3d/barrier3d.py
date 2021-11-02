@@ -1896,3 +1896,7 @@ class Barrier3d:
     @property
     def SL(self):
         return self._SL
+
+    @property
+    def SCRagg(self):
+        return self._SCRagg
