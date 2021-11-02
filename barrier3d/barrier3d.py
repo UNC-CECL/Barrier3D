@@ -735,8 +735,7 @@ class Barrier3d:
             None
         ] * self._TMAX  # Stores the elevation domain for each timestep
         self._DomainTS[0] = self._InteriorDomain
-        self._SCRagg = 0  # Counter variable for shoreline change that is less than 1 cell size per year
-        self._ShorelineChangeTS = [0]
+        self._ShorelineChangeTS = np.zeros([self._TMAX])
         self._ShorelineChange = 0  # (dam) Total amount of shoreline change
         self._StormCount = [0]
         self._InundationCount = 0
@@ -749,6 +748,10 @@ class Barrier3d:
             (np.average(self._InteriorDomain[self._InteriorDomain >= self._SL]))
         ]  # (dam) average height of barrier for each time step
         self._s_sf_TS = [(self._DShoreface / LShoreface)]
+        self._SCRagg = np.zeros(
+            [self._TMAX]
+        )  # Counter variable for shoreline change that is less than 1 cell size per year
+        self._SCRagg[0] = (self._x_s % 1) * -1  # initialize with erosion
         self._Hd_AverageTS = [Dstart]
         self._QsfTS = [0]  # (m^3/m)
         self._Hd_Loss_TS = np.zeros(
@@ -1521,15 +1524,15 @@ class Barrier3d:
                 self._x_s_TS[-1] - self._x_s_TS[-2]
             ) * -1  # (dam) Change rate of ocean-fronting shoreline: (+) = progradation, (-) = erosion
 
-            self._SCRagg = (
-                self._SCRagg + SCR
+            self._SCRagg[self._time_index] = (
+                self._SCRagg[self._time_index - 1] + SCR
             )  # Account for any residual shoreline change (less than cell size) from previous time step
 
-            if abs(self._SCRagg) >= 1:
-                sc = math.floor(abs(self._SCRagg))
+            if abs(self._SCRagg[self._time_index]) >= 1:
+                sc = math.floor(abs(self._SCRagg[self._time_index]))
 
                 if (
-                    self._SCRagg > 0
+                    self._SCRagg[self._time_index] > 0
                 ):  # Positive = prograde, add row(s) to front of interior domain
                     for d in range(sc):
                         # New interior row added with elev. of previous dune field
@@ -1596,11 +1599,13 @@ class Barrier3d:
 
                     # DomainWidth = DomainWidth + sc  # Update width of interior domain
                     self._ShorelineChange = self._ShorelineChange + sc
-                    self._ShorelineChangeTS.append(+sc)
-                    self._SCRagg = self._SCRagg - sc  # Reset, leaving residual
+                    self._ShorelineChangeTS[self._time_index] = sc
+                    self._SCRagg[self._time_index] = (
+                        self._SCRagg[self._time_index] - sc
+                    )  # Reset, leaving residual
 
                 elif (
-                    self._SCRagg < 0
+                    self._SCRagg[self._time_index] < 0
                 ):  # Negative = erode, remove front row(s) of interior domain
                     for d in range(sc):
                         newDuneElev = self._InteriorDomain[
@@ -1641,19 +1646,20 @@ class Barrier3d:
 
                     # DomainWidth = DomainWidth - sc  # Update width of interior domain
                     self._ShorelineChange = self._ShorelineChange - sc
-                    self._ShorelineChangeTS.append(-sc)
-                    self._SCRagg = self._SCRagg + sc  # Reset, leaving residual
+                    self._ShorelineChangeTS[
+                        self._time_index
+                    ] = -sc  # the floored number corresponding to cells moved
+                    self._SCRagg[self._time_index] = (
+                        self._SCRagg[self._time_index] + sc
+                    )  # Reset, leaving residual
             else:
-                self._ShorelineChangeTS.append(0)
+                self._ShorelineChangeTS[
+                    self._time_index
+                ] = 0  # redundant because the new time array is zeros, but keep
 
         # ### Check for drowning
         if self._drown_break == 1:
             self._TMAX = self._time_index - 1
-            # raise Barrier3dError(
-            #     "Barrier has WIDTH DROWNED at t = {time} years".format(
-            #         time=self._time_index
-            #     )
-            # )
             print(
                 "Barrier has WIDTH DROWNED at t = {time} years".format(
                     time=self._time_index
@@ -1662,11 +1668,6 @@ class Barrier3d:
             return  # exit program
         elif all(j <= self._SL for j in self._InteriorDomain[0, :]):
             self._TMAX = self._time_index - 1
-            # raise Barrier3dError(
-            #     "Barrier has HEIGHT DROWNED at t = {time} years".format(
-            #         time=self._time_index
-            #     )
-            # )
             print(
                 "Barrier has HEIGHT DROWNED at t = {time} years".format(
                     time=self._time_index
