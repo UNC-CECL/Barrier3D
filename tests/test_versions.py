@@ -1,13 +1,12 @@
 import numpy as np
 from barrier3d import Barrier3dBmi
-import pytest
 
 
 def current_version_check_against_V1():
 
     # specify data directories with initial conditions
     datadir_V1 = "V1_NoBMI/"
-    datadir_current = "tests/test_versions/"
+    datadir_current = "tests/test_versions_inputs/"
 
     # create an instance of the new BMI class, which is the model
     barrier3d = Barrier3dBmi()
