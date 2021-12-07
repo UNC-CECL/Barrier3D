@@ -772,7 +772,7 @@ class Barrier3d:
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
-        self._bay_routing_width = 10  # Width for bay section of overwash routing domain
+        self._bay_routing_width = 15  # Width for bay section of overwash routing domain
         self._shoreface_fine_fraction = 0  # Fraction of the shoreface height that is made up of fine material from the back-barrier bay; affects barrier migration
         self._time_index = 1
 
@@ -971,7 +971,7 @@ class Barrier3d:
                         self._RunUpCount += 1
 
                     # Set Domain
-                    self._bay_routing_width = 10
+                    self._bay_routing_width = 15
                     duration = dur[n] * substep
                     width = (
                             np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
@@ -1334,11 +1334,15 @@ class Barrier3d:
                                     Qs3 = np.nan_to_num(Qs3)
 
                                     # ### Calculate Net Erosion/Accretion
-                                    if Elevation[TS, d, i] > self._SL or any(
-                                        z > self._SL
-                                        for z in Elevation[TS, d + 1 : d + 10, i]
-                                    ):  # If cell is subaerial, elevation change is determined by difference between
-                                        # flux in vs. flux out
+                                    # if Elevation[TS, d, i] > self._SL or any(
+                                    #     z > self._SL
+                                    #     for z in Elevation[TS, d + 1 : d + 10, i]
+                                    # ):  # If cell is subaerial, elevation change is determined by difference between
+                                    #     # flux in vs. flux out
+                                    if Elevation[TS, d, i] > (self._SL - 0.07) or any(
+                                        z > (self._SL - 0.07)
+                                        for z in Elevation[TS, d + 1: d + 10, i]
+                                    ):
                                         if i > 0:
                                             SedFluxIn[TS, d + 1, i - 1] += Qs1
 
