@@ -2,6 +2,7 @@ import math
 import numpy as np
 from .load_input import load_inputs
 import random
+import copy
 
 
 class Barrier3dError(Exception):
@@ -987,6 +988,8 @@ class Barrier3d:
             # Select number of storms for this time step from normal distribution
             TSloc = np.argwhere(self._StormSeries[:, 0] == self._time_index)
             numstorm = int(len(TSloc))  # analysis:ignore
+
+            self._PreStorm_InteriorDomain = copy.deepcopy(self._InteriorDomain)
 
             if numstorm > 0:
                 start = TSloc[0, 0]
