@@ -909,6 +909,7 @@ class Barrier3d:
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
+        self._PreStorm_InteriorDomain = self._InteriorDomain
 
         self._time_index = 1
 
@@ -984,12 +985,12 @@ class Barrier3d:
         DuneLoss = 0
         numstorm = 0
 
+        self._PreStorm_InteriorDomain = copy.deepcopy(self._InteriorDomain)
+
         if self._time_index >= self._StormStart:
             # Select number of storms for this time step from normal distribution
             TSloc = np.argwhere(self._StormSeries[:, 0] == self._time_index)
             numstorm = int(len(TSloc))  # analysis:ignore
-
-            self._PreStorm_InteriorDomain = copy.deepcopy(self._InteriorDomain)
 
             if numstorm > 0:
                 start = TSloc[0, 0]
@@ -1928,3 +1929,7 @@ class Barrier3d:
     @property
     def SCRagg(self):
         return self._SCRagg
+
+    @property
+    def PreStorm_InteriorDomain(self):
+        return self._PreStorm_InteriorDomain
