@@ -1333,16 +1333,12 @@ class Barrier3d:
                                     Qs2 = np.nan_to_num(Qs2)
                                     Qs3 = np.nan_to_num(Qs3)
 
-                                    # ### Calculate Net Erosion/Accretion
-                                    # if Elevation[TS, d, i] > self._SL or any(
-                                    #     z > self._SL
-                                    #     for z in Elevation[TS, d + 1 : d + 10, i]
-                                    # ):  # If cell is subaerial, elevation change is determined by difference between
-                                    #     # flux in vs. flux out
-                                    if Elevation[TS, d, i] > (self._SL - 0.07) or any(
-                                        z > (self._SL - 0.07)
-                                        for z in Elevation[TS, d + 1: d + 10, i]
-                                    ):
+                                    ### Calculate Net Erosion/Accretion
+                                    if Elevation[TS, d, i] > self._SL or any(
+                                        z > self._SL
+                                        for z in Elevation[TS, d + 1 : d + 10, i]
+                                    ):  # If cell is subaerial, elevation change is determined by difference between
+                                        # flux in vs. flux out
                                         if i > 0:
                                             SedFluxIn[TS, d + 1, i - 1] += Qs1
 
