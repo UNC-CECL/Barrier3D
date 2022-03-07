@@ -971,7 +971,6 @@ class Barrier3d:
                         self._RunUpCount += 1
 
                     # Set Domain
-                    self._bay_routing_width = 15
                     duration = dur[n] * substep
                     width = (
                             np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
@@ -1938,3 +1937,15 @@ class Barrier3d:
     @property
     def RSLR(self):
         return self._RSLR
+
+    @property
+    def Hd_AverageTS(self):
+        return self._Hd_AverageTS
+
+    @property
+    def Dmaxel(self):
+        return self._Dmaxel
+
+    @property
+    def DuneWidth(self):
+        return self._DuneWidth
