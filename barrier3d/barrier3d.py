@@ -785,8 +785,8 @@ class Barrier3d:
         return cls(**load_inputs(path_to_xlsx, prefix="barrier3d", fmt="xlsx"))
 
     @classmethod
-    def from_yaml(cls, path_to_yaml):
-        return cls(**load_inputs(path_to_yaml, prefix="barrier3d", fmt="yaml"))
+    def from_yaml(cls, path_to_yaml, prefix="barrier-3d"):
+        return cls(**load_inputs(path_to_yaml, prefix=prefix, fmt="yaml"))
 
     def update(self):
 

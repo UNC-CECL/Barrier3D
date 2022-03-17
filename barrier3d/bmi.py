@@ -29,13 +29,16 @@ class Barrier3dBmi(Bmi):
 
     def initialize(self, config_file):
         filepath = pathlib.Path(config_file)
+        parameter_file_prefix = config_file.replace("-parameters.yaml", "")
+        parameter_file_prefix = parameter_file_prefix.split("/").pop()
 
-        if filepath.name != "barrier3d-parameters.yaml":
-            raise ValueError(
-                "barrier3d parameter file must be named barrier3d-parameters.yaml"
-            )
+        # if filepath.name != "barrier3d-parameters.yaml":  # IR 15Mar22: commented out to allow for prefixes in input parameter file name for batch simulations
+        #     raise ValueError(
+        #         "barrier3d parameter file must be named barrier3d-parameters.yaml"
+        #     )
 
-        self._model = Barrier3d.from_path(filepath.parent, fmt="yaml")
+        # self._model = Barrier3d.from_path(filepath.parent, prefix=prefix, fmt="yaml")
+        self._model = Barrier3d.from_yaml(filepath.parent, prefix=parameter_file_prefix)
 
         self._values = {
             "overwash_flux": lambda: np.array(self._model.QowTS[:]),
