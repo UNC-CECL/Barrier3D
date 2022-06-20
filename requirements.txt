@@ -18,4 +18,4 @@ joblib~=0.17.0
 cascade~=0.0.1.dev0
 tqdm~=4.60.0
 brie~=0.1.0.dev0
-chome~=0.0.1.dev0
+chom~=0.0.1.dev0
