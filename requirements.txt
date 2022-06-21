@@ -1,5 +1,5 @@
 bmipy~=2.0
-click~=7.1.2
+click~=8.0.0
 exconfig~=0.2.0
 numpy~=1.19.4
 pandas~=1.1.4
@@ -13,9 +13,5 @@ imageio~=2.9.0
 scipy~=1.5.4
 setuptools~=50.3.2
 distfit~=1.4.0
-barrier3d~=0.1.0.dev0
 joblib~=0.17.0
-cascade~=0.0.1.dev0
 tqdm~=4.60.0
-brie~=0.1.0.dev0
-chome~=0.0.1.dev0
