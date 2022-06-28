@@ -5,3 +5,7 @@
 A spatially explicit exploratory model of coastal barrier evolution.
 
 ### Full documentation for Barrier3D is available at: <https://unc-cecl.github.io/Barrier3D/>
+
+There are two primary branches for this repository:
+`Barrier3D-v1.0` -- created by Ian Reeves and used in Reeves et al., 2021
+`master` -- contains a basical model interface, written by Eric Hutton and Katherine Anarde and used in Anarde et al., (in prep)
