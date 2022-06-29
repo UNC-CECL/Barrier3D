@@ -16,4 +16,3 @@ exec(open(datadir + "Barrier3D.py").read())
 
 # Plot 1: Dune Height Over Time (input in decameter)
 B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
-
