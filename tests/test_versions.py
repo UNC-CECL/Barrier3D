@@ -45,4 +45,3 @@ def test_BMI_against_V1(datadir):
     assert np.all(
         barrier3d._model._QowTS == QowTS
     )  # because we are producing less overwash
-
