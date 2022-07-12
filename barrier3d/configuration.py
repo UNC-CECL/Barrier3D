@@ -85,7 +85,7 @@ class Barrier3dConfiguration(Configuration):
         "BayDepth",
         default=3.0,
         units="m",
-        description="Depth of bay benind island segment",
+        description="Depth of bay behind island segment",
         validators=[Range(lower=0)],
     )
     MHW = FloatField(
