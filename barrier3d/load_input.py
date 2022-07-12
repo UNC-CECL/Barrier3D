@@ -51,7 +51,7 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
 
         params["InteriorDomain"] = load_elevation(
             params.pop("elevation_file"), fmt=None
-        )  # interior elevations must come from a time series
+        )  # interior elevations must come from an external file
 
         params["StormSeries"] = load_storms(
             params.pop("storm_file"), fmt=None
@@ -223,9 +223,6 @@ def _process_raw_input(params):
     params["DShoreface"] /= 10.0
     params["BayDepth"] /= 10.0
     params["MHW"] /= 10.0
-
-    # intElev = load_initial_elevation(morph)
-
     params["BarrierLength"] = int(params["BarrierLength"] / 10.0)
     params["DuneWidth"] = int(params["DuneWidth"] / 10.0)
 
