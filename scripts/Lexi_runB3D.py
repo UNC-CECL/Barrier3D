@@ -23,7 +23,7 @@ for time_step in range(1, b3d._TMAX):
     b3d.update()  # update the model's main time loop
     b3d.update_dune_domain()  # now update the dune domain and increase time by one year
     # Print time step to screen
-    print("\r", "Time Step: ", time_step, end="")
+    print("\r", "Time Step: ", time_step, end="\n")
 
 # fig2 = plt.figure()
 # ax2 = fig2.add_subplot(111)
