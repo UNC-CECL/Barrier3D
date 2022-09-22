@@ -994,7 +994,7 @@ class Barrier3d:
                         # Calculate discharge through each dune cell
                         Vdune = math.sqrt(2 * 9.8 * (Rexcess * 10)) / 10  # (dam/s)
                         Qdune = Vdune * Rexcess * 3600  # (dam^3/hr)
-
+                        print("Qdune =", Qdune)
                         # Set discharge at dune gap
                         Discharge[:, 0, start:stop] = Qdune
 
