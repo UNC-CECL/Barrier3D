@@ -1,9 +1,9 @@
 bmipy~=2.0
-click~=7.1.2
+click~=8.0.0
 exconfig~=0.2.0
 numpy~=1.19.4
 pandas~=1.1.4
-pyyaml
+pyyaml~=5.4.1
 xlrd~=1.2.0
 
 pytest~=6.1.2
@@ -13,3 +13,12 @@ imageio~=2.9.0
 scipy~=1.5.4
 setuptools~=50.3.2
 distfit~=1.4.0
+joblib~=0.17.0
+tqdm~=4.60.0
+
+black
+isort
+
+pytest
+pytest-cov
+pytest-datadir

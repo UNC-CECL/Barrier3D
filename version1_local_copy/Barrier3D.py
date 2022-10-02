@@ -38,7 +38,7 @@
 # IMPORTS
 # ==============================================================================================================================================
 
-import V1_NoBMI.Barrier3D_Functions as func
+import version1_local_copy.Barrier3D_Functions as func
 import numpy as np
 import math
 import time
@@ -56,7 +56,7 @@ Time = time.time()
 # ==============================================================================================================================================
 
 ### Load Input Parameters
-from V1_NoBMI.Barrier3D_Parameters import (
+from version1_local_copy.Barrier3D_Parameters import (
     BarrierLength,
     BayDepth,
     BermEl,
@@ -1047,114 +1047,114 @@ else:
 # ==============================================================================================================================================
 
 
-# 1: Dune Height Over Time
-func.plot_DuneHeight(DuneDomain, Dmax)
-
-
-# 2: Elevation Domain For Last Time Step
-func.plot_ElevTMAX(
-    TMAX, t, DuneDomain, DomainTS, Shrub_ON, PercentCoverTS, DeadPercentCoverTS
-)
-
-
-## 3: Elevation Domain Frames
-# func.plot_ElevFrames(TMAX, DomainTS)
-
-
-## 4: Animation Frames of Barrier and Dune Elevation
-# func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
-
-
-# 5: Cross-Shore Transect Every 100 m Alongshore For Last Time Step
-func.plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX)
-
-
-# 6: Shoreline Positions Over Time
-func.plot_ShorelinePositions(x_s_TS, x_b_TS)
-
-
-# 7: Shoreline Change Rate Over Time
-# func.plot_ShorelineChangeRate(x_s_TS)
-
-
-## 8: OW vs IN count
-func.plot_RuInCount(RunUpCount, InundationCount)
-
-
-## 9: Shoreface LTA14 transects over time
-# func.plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS)
-
-
-## 10: Average Island Elevation Over Time
-# func.plot_AvgIslandElev(AvgInteriorElevationTS)
-
-
-## 11: Shoreface Slope Over Time
-# func.plot_ShorefaceSlope(s_sf_TS)
-
-
-## 12: Average Interior Width Over Time
-# func.plot_AvgInteriorWidth(InteriorWidth_AvgTS)
-
-
-## 13: Shoreface Overwash Flux Over Time
-# func.plot_OverwashFlux(QowTS)
-
-
-# 14: Stats Summary: Width, Berm Elevation, SF Slope, Shoreline Change, and Overwash Flux Over Time (all in one)
-func.plot_StatsSummary(
-    s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS
-)
-
-
-## 15: 3D Plot of Island Domain For Last Time Step
-# func.plot_3DElevTMAX(TMAX, t, SL, DuneDomain, DomainTS)
-
-
-## 16: 3D Animation Frames of Island Elevation (no translation) <-------------- BROKEN!
-# func.plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain)
-
-
-## 17: 3D Animation Frames of Island Evolution (with translation)
-# func.plot_3DElevAnimation(DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, ShorelineChange)
-
-
-## 18: Shrub Age Domain at Simulation End
-func.plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS)
-
-
-## 19: Percent Cover Domain at Simulation End
-func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS)
-
-
-# 20: Shrub Area Over Time
-func.plot_ShrubArea(ShrubArea)
-
-
-# 21: Storm count over time
-func.plot_StormCount(StormCount)
-
-
-# 22: Alongshore Dune Height Over Time
-# func.plot_AlongshoreDuneHeight(DuneDomain)
-
-
-# 23: Calculate shoreline change periodicity
-# SCperiod, AvgFastDur, AvgSlowDur = func.calc_ShorelinePeriodicity(TMAX, x_s_TS)
-# print('SCperiod: ', SCperiod)
-
-
-# 24: Average dune height with storm TWLs
-func.plot_DuneStorm(Hd_AverageTS, StormSeries, TMAX)
-
-
-# 25: Seabed Profile
-func.plot_SeabedProfile(SL, TMAX, x_t_TS)
-
-
-# 26: Shrub Island Animation
-# func.plot_ShrubAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
-
-
-# 28: Shrub front location and/or expansion rate
-func.plot_ShrubFront(Shrub_ON, TMAX, PercentCoverTS)
+# # 1: Dune Height Over Time
+# func.plot_DuneHeight(DuneDomain, Dmax)
+#
+#
+# # 2: Elevation Domain For Last Time Step
+# func.plot_ElevTMAX(
+#     TMAX, t, DuneDomain, DomainTS, Shrub_ON, PercentCoverTS, DeadPercentCoverTS
+# )
+#
+#
+# ## 3: Elevation Domain Frames
+# # func.plot_ElevFrames(TMAX, DomainTS)
+#
+#
+# ## 4: Animation Frames of Barrier and Dune Elevation
+# # func.plot_ElevAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
+#
+#
+# # 5: Cross-Shore Transect Every 100 m Alongshore For Last Time Step
+# func.plot_XShoreTransects(InteriorDomain, DuneDomain, SL, TMAX)
+#
+#
+# # 6: Shoreline Positions Over Time
+# func.plot_ShorelinePositions(x_s_TS, x_b_TS)
+#
+#
+# # 7: Shoreline Change Rate Over Time
+# # func.plot_ShorelineChangeRate(x_s_TS)
+#
+#
+# ## 8: OW vs IN count
+# func.plot_RuInCount(RunUpCount, InundationCount)
+#
+#
+# ## 9: Shoreface LTA14 transects over time
+# # func.plot_LTATransects(SL, TMAX, x_b_TS, x_t_TS, x_s_TS)
+#
+#
+# ## 10: Average Island Elevation Over Time
+# # func.plot_AvgIslandElev(AvgInteriorElevationTS)
+#
+#
+# ## 11: Shoreface Slope Over Time
+# # func.plot_ShorefaceSlope(s_sf_TS)
+#
+#
+# ## 12: Average Interior Width Over Time
+# # func.plot_AvgInteriorWidth(InteriorWidth_AvgTS)
+#
+#
+# ## 13: Shoreface Overwash Flux Over Time
+# # func.plot_OverwashFlux(QowTS)
+#
+#
+# # 14: Stats Summary: Width, Berm Elevation, SF Slope, Shoreline Change, and Overwash Flux Over Time (all in one)
+# func.plot_StatsSummary(
+#     s_sf_TS, x_s_TS, TMAX, InteriorWidth_AvgTS, QowTS, QsfTS, Hd_AverageTS
+# )
+#
+#
+# ## 15: 3D Plot of Island Domain For Last Time Step
+# # func.plot_3DElevTMAX(TMAX, t, SL, DuneDomain, DomainTS)
+#
+#
+# ## 16: 3D Animation Frames of Island Elevation (no translation) <-------------- BROKEN!
+# # func.plot_3DElevFrames(DomainTS, SL, TMAX, DuneDomain)
+#
+#
+# ## 17: 3D Animation Frames of Island Evolution (with translation)
+# # func.plot_3DElevAnimation(DomainTS, SL, TMAX, DuneDomain, DomainWidth, x_s_TS, ShorelineChange)
+#
+#
+# ## 18: Shrub Age Domain at Simulation End
+# func.plot_ShrubAgeTMAX(ShrubDomainAll, ShrubDeadTS)
+#
+#
+# ## 19: Percent Cover Domain at Simulation End
+# func.plot_ShrubPercentCoverTMAX(PercentCoverTS, TMAX, DeadPercentCoverTS)
+#
+#
+# # 20: Shrub Area Over Time
+# func.plot_ShrubArea(ShrubArea)
+#
+#
+# # 21: Storm count over time
+# func.plot_StormCount(StormCount)
+#
+#
+# # 22: Alongshore Dune Height Over Time
+# # func.plot_AlongshoreDuneHeight(DuneDomain)
+#
+#
+# # 23: Calculate shoreline change periodicity
+# # SCperiod, AvgFastDur, AvgSlowDur = func.calc_ShorelinePeriodicity(TMAX, x_s_TS)
+# # print('SCperiod: ', SCperiod)
+#
+#
+# # 24: Average dune height with storm TWLs
+# func.plot_DuneStorm(Hd_AverageTS, StormSeries, TMAX)
+#
+#
+# # 25: Seabed Profile
+# func.plot_SeabedProfile(SL, TMAX, x_t_TS)
+#
+#
+# # 26: Shrub Island Animation
+# # func.plot_ShrubAnimation(InteriorWidth_AvgTS, ShorelineChange, DomainTS, DuneDomain, SL, x_s_TS, Shrub_ON, PercentCoverTS, TMAX, DeadPercentCoverTS)
+#
+#
+# # 28: Shrub front location and/or expansion rate
+# func.plot_ShrubFront(Shrub_ON, TMAX, PercentCoverTS)

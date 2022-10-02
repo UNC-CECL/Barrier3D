@@ -18,13 +18,13 @@ class Barrier3dConfiguration(Configuration):
     elevation_file = Field(
         "elevation_file",
         default="barrier3d-elevations.npy",
-        description="File that contains initial elevations",
+        description="File that contains initial elevations in [m MHH]",
         validators=[Path(file_okay=True, dir_okay=False)],
     )
     dune_file = Field(
         "dune_file",
         default="barrier3d-dunes.npy",
-        description="File that contains initial dune values",
+        description="File that contains initial dune height values [m]",
         validators=[Path(file_okay=True, dir_okay=False)],
     )
     growth_param_file = Field(
@@ -85,13 +85,13 @@ class Barrier3dConfiguration(Configuration):
         "BayDepth",
         default=3.0,
         units="m",
-        description="Depth of bay benind island segment",
+        description="Depth of bay behind island segment",
         validators=[Range(lower=0)],
     )
     MHW = FloatField(
         "MHW",
         default=0.46,
-        units="m",
+        units="m NAVD88",
         description="Elevation of Mean High Water (NOTE: if changed, need new storm time series)",
         validators=[Range(lower=0)],
     )
@@ -105,7 +105,7 @@ class Barrier3dConfiguration(Configuration):
     BermEl = FloatField(
         "BermEl",
         default=1.9,
-        units="m",
+        units="m NAVD88",
         description="Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)",
         validators=[Range(lower=0)],
     )
@@ -129,7 +129,7 @@ class Barrier3dConfiguration(Configuration):
     Dmaxel = FloatField(
         "Dmaxel",
         default=3.4,
-        units="m",
+        units="m NAVD88",
         description="Maximum elevation of dunes",
         validators=[Range(lower=0)],
     )
@@ -345,14 +345,14 @@ class Barrier3dConfiguration(Configuration):
     ShrubEl_min = FloatField(
         "ShrubEl_min",
         default=1.2,
-        units="m",
+        units="m NAVD88",
         description="Elevation range for shrub growth, minimum bound",
         validators=[Range(lower=0)],
     )
     ShrubEl_max = FloatField(
         "ShrubEl_max",
         default=2.3,
-        units="m",
+        units="m NAVD88",
         description="Elevation range for shrub growth, maximum bound",
         validators=[Range(lower=0)],
     )

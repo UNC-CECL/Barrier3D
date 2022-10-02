@@ -51,7 +51,7 @@ def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
 
         params["InteriorDomain"] = load_elevation(
             params.pop("elevation_file"), fmt=None
-        )  # interior elevations must come from a time series
+        )  # interior elevations must come from an external file
 
         params["StormSeries"] = load_storms(
             params.pop("storm_file"), fmt=None
@@ -223,9 +223,6 @@ def _process_raw_input(params):
     params["DShoreface"] /= 10.0
     params["BayDepth"] /= 10.0
     params["MHW"] /= 10.0
-
-    # intElev = load_initial_elevation(morph)
-
     params["BarrierLength"] = int(params["BarrierLength"] / 10.0)
     params["DuneWidth"] = int(params["DuneWidth"] / 10.0)
 
@@ -298,8 +295,8 @@ def _process_raw_input(params):
     params["DuneRestart"] /= 10.0
 
     # Volume of sediment lost via alongshore transport
-    params["Rat"] = params["Rat"] / 10.0
-    # params["Rat"] = params["Rat"] / -10.0
+    # params["Rat"] = params["Rat"] / 10.0
+    params["Rat"] = params["Rat"] / -10.0
     params["Qat"] = params["Rat"] * params["DShoreface"]
     params.pop("Rat")
 
@@ -310,17 +307,20 @@ def _process_raw_input(params):
         params["RSLR_const"] /= 10.0
         params["RSLR"] = [params["RSLR_const"]] * params["TMAX"]
     else:
-        # Logistic RSLR rate projection - Rohling et al. (2013)
+        # Logistic RSLR rate projection - Rohling et al. (2013): gives a logistic growth curve
+        # starting from 0.003 m/yr (AD2000); note Figure 3a is in m/cyr (divide by 100 to get m/yr)
         params["RSLR"] = []
-        alpha = 0.75  # m/yr -- probability maximum = 0.75, 68% upper bound = 2.0
-        beta = alpha / 0.003 - 1  # constant
-        gamma = 350  # yr -- probability maximum = 350, 68% upper bound = 900
+        alpha = 0.022  # maximum achievable rate, m/yr -- probability maximum = 0.0075 m/y, 68% upper bound = 0.022 m/yr
+        beta = (
+            alpha / 0.003 - 1
+        )  # 0.003 is constant: corresponds to 0.003 m/yr at AD2000
+        gamma = 600  # yr -- probability maximum = 450, 68% upper bound = 600 (KA: changed from Ian's estimates)
         C = 12  # constant
-        for t in range(150, params["TMAX"] + 150):
-            delta = (
-                alpha / (1 + beta * math.exp(-t / gamma * C)) / 10000 * 10
-            )  # Convert from m/cy to dam/yr
-            params["RSLR"].append(delta)
+        for t in range(
+            0, params["TMAX"]
+        ):  # this is range shown in Figure 3a of Rohling, starting at AD2000
+            delta = alpha / (1 + beta * math.exp(-t / gamma * C))
+            params["RSLR"].append(delta / 10)  # Convert from m/yr to dam/yr
 
     # Shoreface
     params["x_t"] = params["ShorefaceToe"] / 10.0

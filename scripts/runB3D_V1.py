@@ -1,19 +1,18 @@
 """
-    Example run script for Version 1.0 of Barrier3D (NoBMI)
+    Example run script for Version 1.0 of Barrier3D (NoBMI). Note, you must be in the top Barrier3D working directory.
 """
+import version1_local_copy.Barrier3D_Functions as B3Dfunc
 
-import V1_NoBMI.Barrier3D_Functions as B3Dfunc
+datadir = "version1_local_copy/"
 
-datadir = "V1_NoBMI/"
+TMAX = []
+t = []
+DuneDomain = []
+DomainTS = []
+Dmax = []
 
 # starts running immediately and ends with plots!
-execfile(datadir + "Barrier3D.py")
+exec(open(datadir + "Barrier3D.py").read())
 
 # Plot 1: Dune Height Over Time (input in decameter)
 B3Dfunc.plot_DuneHeight(DuneDomain, Dmax)
-
-# Plot 2: Elevation Domain For Last Time Step
-B3Dfunc.plot_ElevTMAX(TMAX, t, DuneDomain, DomainTS)
-
-# 3: Elevation Domain Frames
-B3Dfunc.plot_ElevFrames(TMAX, DomainTS)
