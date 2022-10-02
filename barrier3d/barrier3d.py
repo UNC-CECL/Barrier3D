@@ -909,7 +909,7 @@ class Barrier3d:
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
-        self._bay_routing_width = 15  # Width for bay section of overwash routing domain
+        self._bay_routing_width = 10  # Width for bay section of overwash routing domain
         self._PreStorm_InteriorDomain = self._InteriorDomain
 
         self._time_index = 1
@@ -1977,10 +1977,6 @@ class Barrier3d:
     @property
     def DuneRestart(self):
         return self._DuneRestart
-
-    @property
-    def BarrierLength(self):
-        return self._BarrierLength
 
     @property
     def SCRagg(self):
