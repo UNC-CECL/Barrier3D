@@ -909,6 +909,7 @@ class Barrier3d:
         self._drown_break = 0
         self._dune_migration_on = True  # allow dunes to migrate
         self._interior_noise_on = False  # add noise to flat parts of interior domain
+        self._bay_routing_width = 15  # Width for bay section of overwash routing domain
         self._PreStorm_InteriorDomain = self._InteriorDomain
 
         self._time_index = 1
@@ -1110,14 +1111,13 @@ class Barrier3d:
                         self._RunUpCount += 1
 
                     # Set Domain
-                    add = 10
                     duration = dur[n] * substep
                     width = (
-                        np.shape(self._InteriorDomain)[0] + 1 + add
-                    )  # (dam) Add one for Dunes (really a row for setting water elevation and 25 for bay)
+                            np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
+                    )  # (dam) Add one for Dunes and 25 for bay
                     Elevation = np.zeros([duration, width, self._BarrierLength])
                     Dunes = Dunes_prestorm + self._BermEl
-                    Bay = np.ones([add, self._BarrierLength]) * -self._BayDepth
+                    Bay = np.ones([self._bay_routing_width, self._BarrierLength]) * -self._BayDepth
                     Elevation[0, :, :] = np.vstack([Dunes, self._InteriorDomain, Bay])
 
                     # Initialize Memory Storage Arrays
@@ -1472,7 +1472,7 @@ class Barrier3d:
                                     Qs2 = np.nan_to_num(Qs2)
                                     Qs3 = np.nan_to_num(Qs3)
 
-                                    # ### Calculate Net Erosion/Accretion
+                                    ### Calculate Net Erosion/Accretion
                                     if Elevation[TS, d, i] > self._SL or any(
                                         z > self._SL
                                         for z in Elevation[TS, d + 1 : d + 10, i]
@@ -1899,6 +1899,50 @@ class Barrier3d:
         self._dune_migration_on = value
 
     @property
+    def TMAX(self):
+        return self._TMAX
+
+    @property
+    def bay_routing_width(self):
+        return self._bay_routing_width
+
+    @property
+    def BarrierLength(self):
+        return self._BarrierLength
+
+    @property
+    def ShrubDomainFemale(self):
+        return self._ShrubDomainFemale
+
+    @property
+    def ShrubDomainMale(self):
+        return self._ShrubDomainMale
+
+    @property
+    def ShrubDomainAll(self):
+        return self._ShrubDomainAll
+
+    @property
+    def ShrubDomainDead(self):
+        return self._ShrubDomainDead
+
+    @property
+    def ShrubPercentCover(self):
+        return self._ShrubPercentCover
+
+    @property
+    def DeadPercentCover(self):
+        return self._DeadPercentCover
+
+    @property
+    def BurialDomain(self):
+        return self._BurialDomain
+
+    @property
+    def ShorelineChange(self):
+        return self._ShorelineChange
+
+    @property
     def ShorelineChangeTS(self):
         return self._ShorelineChangeTS
 
@@ -1909,6 +1953,22 @@ class Barrier3d:
     @RSLR.setter
     def RSLR(self, value):
         self._RSLR = value
+        
+    @property
+    def SL(self):
+        return self._SL
+        
+    @property
+    def Hd_AverageTS(self):
+        return self._Hd_AverageTS
+
+    @property
+    def Dmaxel(self):
+        return self._Dmaxel
+
+    @property
+    def DuneWidth(self):
+        return self._DuneWidth
 
     @property
     def BayDepth(self):
@@ -1921,10 +1981,6 @@ class Barrier3d:
     @property
     def BarrierLength(self):
         return self._BarrierLength
-
-    @property
-    def SL(self):
-        return self._SL
 
     @property
     def SCRagg(self):

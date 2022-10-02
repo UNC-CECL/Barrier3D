@@ -64,7 +64,7 @@ def yearly_storms(
     if fmt == "npy":
         StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",")
+        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",", encoding='utf-8-sig')
 
     # pad with zeros until storms start
     StormSeries = np.zeros([StormStart, 5])
