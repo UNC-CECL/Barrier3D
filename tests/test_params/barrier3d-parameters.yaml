@@ -4,7 +4,7 @@ growth_param_file: "growthparam_1000dam.npy" # File that contains initial growth
 storm_file: "StormTimeSeries_1000yr.npy" # File that contains storm data
 TMAX: 51                        # [y] Duration of simulation
 StormStart: 2                   # [y] Year when storm can start occurring (NOTE: if changed, need new storm time series)
-BarrierLength: 100.0            # [m] Static length (alongshore) of island segment
+BarrierLength: 500.0            # [m] Static length (alongshore) of island segment
 DuneWidth: 20.0                 # [m] Width (cross-shore) of island dune field
 LShoreface: 500.0               # [m] Initial length of shoreface
 DShoreface: 10.0                # [m] Height of shoreface
