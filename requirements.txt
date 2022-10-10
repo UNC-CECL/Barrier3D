@@ -3,7 +3,7 @@ click~=8.0.0
 exconfig~=0.2.0
 numpy~=1.19.4
 pandas~=1.1.4
-pyyaml~=5.4.1
+pyyaml
 xlrd~=1.2.0
 
 pytest~=6.1.2
@@ -19,6 +19,5 @@ tqdm~=4.60.0
 black
 isort
 
-pytest
 pytest-cov
 pytest-datadir
