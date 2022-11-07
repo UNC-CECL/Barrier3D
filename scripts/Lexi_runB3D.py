@@ -1,29 +1,83 @@
 from scripts import helper_functions as hlp
 from barrier3d import Barrier3d
 from matplotlib import pyplot as plt
+import numpy as np
+import os
+from cascade.outwasher_reorg_b3d import plot_ElevAnimation
+
+
+path = "C:/Users/Lexi/Documents/Research/Outwasher/Output/"
+runID = "b3d_domains"
+newpath = path + runID + "/"
 
 b3d = Barrier3d.from_yaml("tests/test_params/")
 
-print("Cx = ", b3d._Cx)
-AvgSlope = b3d._BermEl / 20
-print("B3D avg slope of the interior = ", AvgSlope)
+# print("Cx = ", b3d._Cx)
+# AvgSlope = b3d._BermEl / 20
+# print("B3D avg slope of the interior = ", AvgSlope)
 
-# fig1 = plt.figure()
-# ax1 = fig1.add_subplot(111)
-# mat = ax1.matshow(
-#     b3d.InteriorDomain, cmap="terrain"
-# )
-# fig1.colorbar(mat)
-# ax1.set_title("Initial Elevation $(dam)$")
-# ax1.set_ylabel("barrier width (dam)")
-# ax1.set_xlabel("barrier length (dam)")
-# plt.show()
-
+directory = "C:/Users/Lexi/Documents/Research/Outwasher/Output/b3d_domains/"
+if not os.path.exists(directory):
+    os.makedirs(directory)
+os.chdir(directory)
+# hours = b3d._TMAX
+# elevs = np.zeros([b3d._TMAX, b3d._DomainWidth, b3d._BarrierLength])
 for time_step in range(1, b3d._TMAX):
     b3d.update()  # update the model's main time loop
     b3d.update_dune_domain()  # now update the dune domain and increase time by one year
+    int_domain = np.flip(b3d.InteriorDomain)
+    os.chdir(directory)
+    newpath = "Elevations/"
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    os.chdir(newpath)
+
+    AnimateDomain = int_domain
+
+    # Plot and save
+    plt.rcParams.update({"font.size": 15})
+    elevFig1 = plt.figure(figsize=(15, 7))
+    ax = elevFig1.add_subplot(111)
+    cax = ax.matshow(
+        AnimateDomain,
+        # origin="upper",
+        cmap="terrain",
+        vmin=-0.3, vmax=0.4
+    )  # , interpolation='gaussian') # analysis:ignore
+    ax.xaxis.set_ticks_position("bottom")
+    elevFig1.colorbar(cax)
+    plt.xlabel("Alongshore Distance (dam)")
+    plt.ylabel("Cross-Shore Distance (dam)")
+    plt.title("Elevation (dam)")
+    plt.tight_layout()
+    timestr = "Time = " + str(time_step) + " hrs"
+    plt.text(1, 1, timestr)
+    name = "elev_" + str(time_step)
+    elevFig1.savefig(name, facecolor='w')  # dpi=200
+    plt.close(elevFig1)
     # Print time step to screen
     print("\r", "Time Step: ", time_step, end="\n")
+
+print("\r", "Qow: ", b3d._QowTS, end="\n")
+# for time_step in range(1, 10):  # b3d._TMAX):
+#     b3d.update()  # update the model's main time loop
+#     b3d.update_dune_domain()  # now update the dune domain and increase time by one year
+#     int_domain = np.flip(b3d.InteriorDomain)
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111)
+#     # fig1, (ax1, ax3) = plt.subplots(1, 2, sharey=True)
+#     mat = ax.matshow(
+#         int_domain,
+#         cmap="terrain",
+#         vmin=-0.25, vmax=0.25,
+#     )
+#     fig.colorbar(mat)
+#     ax.set_title("Initial Elevation $(dam)$")
+#     ax.set_ylabel("barrier width (dam)")
+#     ax.set_xlabel("barrier length (dam)")
+#     plt.gca().xaxis.tick_bottom()
+#     # Print time step to screen
+#     print("\r", "Time Step: ", time_step, end="\n")
 
 # fig2 = plt.figure()
 # ax2 = fig2.add_subplot(111)
