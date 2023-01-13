@@ -567,6 +567,7 @@ class Barrier3d:
             Qow = Qow - DuneLoss  # Account for dune contribution to overwash volume
         else:
             Qow = 0  # Excess DuneLoss assumed lost offshore
+            Qow = 0  # Excess DuneLoss assumed lost offshore
 
         if Qdg < 0:
             Qdg = 0
@@ -1887,3 +1888,12 @@ class Barrier3d:
     @property
     def DuneRestart(self):
         return self._DuneRestart
+
+    @property
+    def SL(self):
+        return self._SL
+
+    @property
+    def BarrierLength(self):
+        return self._BarrierLength
+
