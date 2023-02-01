@@ -14,7 +14,7 @@ def test_parameters_to_expected(datadir):
         expected = dict(
             [(k, v) for k, v in mod.__dict__.items() if not k.startswith("_")]
         )
-        actual = load_inputs(datadir, prefix="barrier3d", fmt="yaml")
+        actual = load_inputs(datadir, prefix="barrier3d-default", fmt="yaml")
 
     for key in actual:
         assert key in expected
@@ -26,8 +26,8 @@ def test_parameters_to_expected(datadir):
 
 
 def test_barrier3d_configuration(datadir):
-    expected = load_inputs(datadir, prefix="barrier3d", fmt="py")
-    actual = load_inputs(datadir, prefix="barrier3d", fmt="yaml")
+    expected = load_inputs(datadir, prefix="barrier3d-default", fmt="py")
+    actual = load_inputs(datadir, prefix="barrier3d-default", fmt="yaml")
 
     assert set(actual.keys()) - set(expected.keys()) == set(), "found extra keys"
     assert set(expected.keys()) - set(actual.keys()) == set(), "missing keys"
@@ -51,7 +51,7 @@ def test_barrier3d_configuration(datadir):
 
 def test_bad_input_format(datadir):
     with pytest.raises(ValueError):
-        load_inputs(datadir, prefix="barrier3d", fmt="xlsx")
+        load_inputs(datadir, prefix="barrier3d-default", fmt="xlsx")
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
@@ -67,18 +67,18 @@ def test_missing_folder(datadir):
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
 def test_barrier3d_init(datadir, fmt):
-    params = load_inputs(datadir, prefix="barrier3d", fmt=fmt)
+    params = load_inputs(datadir, prefix="barrier3d-default", fmt=fmt)
     barrier3d = Barrier3d(**params)
     assert isinstance(barrier3d, Barrier3d)
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
 def test_barrier3d_from_path(datadir, fmt):
-    barrier3d = Barrier3d.from_path(datadir, fmt=fmt)
+    barrier3d = Barrier3d.from_path(datadir, prefix="barrier3d-default", fmt=fmt)
     assert isinstance(barrier3d, Barrier3d)
 
 
 @pytest.mark.parametrize("fmt", ["yaml", "py"])
 def test_barrier3d_update(datadir, fmt):
-    barrier3d = Barrier3d.from_path(datadir, fmt=fmt)
+    barrier3d = Barrier3d.from_path(datadir, prefix="barrier3d-default", fmt=fmt)
     barrier3d.update()

@@ -27,7 +27,7 @@ def test_BMI_against_V1(datadir):
     # Version 2.0 and beyond (contains a BMI) ------------------------------
     # NOTE: putting this in a separate function also didn't work (b/c of pytest usage of datadir)
     barrier3d = Barrier3dBmi()
-    barrier3d.initialize(str(datadir) + "/barrier3d-parameters.yaml")
+    barrier3d.initialize(str(datadir) + "/barrier3d-default-parameters.yaml")
 
     # increase time step
     for time_step in range(1, barrier3d._model._TMAX):

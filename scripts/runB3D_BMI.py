@@ -14,7 +14,7 @@ barrier3d = Barrier3dBmi()
 
 # specify data directory with initial conditions
 datadir = "tests/test_params/"
-input_file = "barrier3d-parameters.yaml"
+input_file = "barrier3d-default-parameters.yaml"
 barrier3d.initialize(datadir + input_file)
 
 # increase time step

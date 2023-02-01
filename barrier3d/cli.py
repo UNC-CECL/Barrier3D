@@ -19,7 +19,7 @@ err = partial(click.secho, fg="red", err=True)
 
 def csv_contents(infile):
     datadir = pathlib.Path(pkg_resources.resource_filename("barrier3d", "data"))
-    with open(datadir / f"barrier3d-{infile}.csv") as fp:
+    with open(datadir / f"barrier3d-default-{infile}.csv") as fp:
         return fp.read()
 
 
@@ -158,11 +158,11 @@ def show(infile: str) -> None:
 def setup() -> None:
     """Setup a folder of input files for a simulation."""
     files = {
-        "parameters": pathlib.Path("barrier3d-parameters.yaml"),
-        "elevations": pathlib.Path("barrier3d-elevations.csv"),
-        "dunes": pathlib.Path("barrier3d-dunes.csv"),
-        "growthparam": pathlib.Path("barrier3d-growthparam.csv"),
-        "storms": pathlib.Path("barrier3d-storms.csv"),
+        "parameters": pathlib.Path("barrier3d-default-parameters.yaml"),
+        "elevations": pathlib.Path("barrier3d-default-elevations.csv"),
+        "dunes": pathlib.Path("barrier3d-default-dunes.csv"),
+        "growthparam": pathlib.Path("barrier3d-default-growthparam.csv"),
+        "storms": pathlib.Path("barrier3d-default-storms.csv"),
     }
 
     existing_files = [name for name in files.values() if name.exists()]

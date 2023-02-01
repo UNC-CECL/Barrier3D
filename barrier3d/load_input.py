@@ -17,7 +17,7 @@ def as_cwd(path):
     os.chdir(prev_cwd)
 
 
-def load_inputs(path_to_folder, prefix="barrier3d", fmt="yaml"):
+def load_inputs(path_to_folder, prefix="barrier3d-default", fmt="yaml"):
     """Load input parameter and elevation data for Barrier3d.
 
     Parameters

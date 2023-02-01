@@ -19,7 +19,7 @@ datadir_V2 = "tests/test_params/"
 # Version 2.0 ------------------------------
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()
-input_file = "barrier3d-parameters.yaml"
+input_file = "barrier3d-default-parameters.yaml"
 barrier3d.initialize(datadir_V2 + input_file)
 
 # increase time step

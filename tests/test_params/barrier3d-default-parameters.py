@@ -1,9 +1,9 @@
-elevation_file = "InitElevHog.npy"  # File that contains initial elevations
-dune_file = "DuneStart_1000dam.npy"  # File that contains initial dune values
+elevation_file = "barrier3d-default-elevations.npy"  # File that contains initial elevations
+dune_file = "barrier3d-default-dunes.npy"  # File that contains initial dune values
 growth_param_file = (
-    "growthparam_1000dam.npy"  # File that contains initial growth parameters
+    "barrier3d-default-growthparam.npy"  # File that contains initial growth parameters
 )
-storm_file = "StormTimeSeries_1000yr.npy"  # File that contains storm data
+storm_file = "barrier3d-default-storms.npy"  # File that contains storm data
 TMAX = 51  # [y] Duration of simulation
 StormStart = 2  # [y] Year when storm can start occurring (NOTE: if changed, need new storm time series)
 BarrierLength = 500.0  # [m] Static length (alongshore) of island segment

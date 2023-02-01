@@ -32,9 +32,9 @@ class Barrier3dBmi(Bmi):
         parameter_file_prefix = config_file.replace("-parameters.yaml", "")
         parameter_file_prefix = parameter_file_prefix.split("/").pop()
 
-        # if filepath.name != "barrier3d-parameters.yaml":  # IR 15Mar22: commented out to allow for prefixes in input parameter file name for batch simulations
+        # if filepath.name != "barrier3d-default-parameters.yaml":  # IR 15Mar22: commented out to allow for prefixes in input parameter file name for batch simulations
         #     raise ValueError(
-        #         "barrier3d parameter file must be named barrier3d-parameters.yaml"
+        #         "barrier3d parameter file must be named barrier3d-default-parameters.yaml"
         #     )
 
         # self._model = Barrier3d.from_path(filepath.parent, prefix=prefix, fmt="yaml")

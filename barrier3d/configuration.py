@@ -17,19 +17,19 @@ from exconfig.validators import Path, Range
 class Barrier3dConfiguration(Configuration):
     elevation_file = Field(
         "elevation_file",
-        default="barrier3d-elevations.npy",
+        default="barrier3d-default-elevations.npy",
         description="File that contains initial elevations in [m MHH]",
         validators=[Path(file_okay=True, dir_okay=False)],
     )
     dune_file = Field(
         "dune_file",
-        default="barrier3d-dunes.npy",
+        default="barrier3d-default-dunes.npy",
         description="File that contains initial dune height values [m]",
         validators=[Path(file_okay=True, dir_okay=False)],
     )
     growth_param_file = Field(
         "growth_param_file",
-        default="barrier3d-growthparam.npy",
+        default="barrier3d-default-growthparam.npy",
         description="File that contains initial growth parameters",
         validators=[Path(file_okay=True, dir_okay=False)],
     )

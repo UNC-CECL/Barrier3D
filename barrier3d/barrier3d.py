@@ -915,12 +915,12 @@ class Barrier3d:
         self._time_index = 1
 
     @classmethod
-    def from_path(cls, path_to_folder, fmt="yaml"):
-        return cls(**load_inputs(path_to_folder, prefix="barrier3d", fmt=fmt))
+    def from_path(cls, path_to_folder, prefix="barrier3d", fmt="yaml"):
+        return cls(**load_inputs(path_to_folder, prefix=prefix, fmt=fmt))
 
     @classmethod
-    def from_xlsx(cls, path_to_xlsx):
-        return cls(**load_inputs(path_to_xlsx, prefix="barrier3d", fmt="xlsx"))
+    def from_xlsx(cls, path_to_xlsx, prefix="barrier3d"):
+        return cls(**load_inputs(path_to_xlsx, prefix=prefix, fmt="xlsx"))
 
     @classmethod
     def from_yaml(cls, path_to_yaml, prefix="barrier3d"):
