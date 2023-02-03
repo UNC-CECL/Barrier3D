@@ -3,12 +3,12 @@ from setuptools import setup, find_packages
 
 setup(
     name="barrier3d",
-    version="0.1.0.dev0",
-    description="A spatially explicit exploratory model of barrier island evolution in three dimensions",
+    version="2.0",
+    description="A spatially explicit exploratory model of barrier island evolution",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Ian Reeves",
-    author_email="reevesi@live.unc.edu",
+    author_email="ian.reeves@whoi.edu",
     url="https://github.com/UNC-CECL/Barrier3D",
     classifiers=[
         "Intended Audience :: Science/Research",
