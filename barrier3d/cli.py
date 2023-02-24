@@ -11,7 +11,7 @@ import pkg_resources
 
 from . import __version__
 from .barrier3d import Barrier3d
-from .configuration import Barrier3dConfiguration
+from .settings import Barrier3dConfiguration
 
 out = partial(click.secho, bold=True, err=True)
 err = partial(click.secho, fg="red", err=True)

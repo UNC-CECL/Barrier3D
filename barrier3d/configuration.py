@@ -1,448 +1,385 @@
-import pathlib
+from contextlib import suppress
+import os
+import textwrap
 
-import numpy as np
-import pandas
-from exconfig import (
-    ArrayField,
-    BooleanField,
-    Configuration,
+from pydantic import (
+    BaseModel,
     Field,
-    FloatField,
-    IntegerField,
+    FilePath,
+    ValidationError,
+    NonNegativeFloat,
+    NonPositiveFloat,
+    NonNegativeInt,
+    PositiveInt,
+    confloat,
+    conint,
+    conlist,
+    validator,
 )
-from exconfig.validators import Path, Range
 
 
-class Barrier3dConfiguration(Configuration):
-    elevation_file = Field(
-        "elevation_file",
-        default="barrier3d-default-elevations.npy",
+class Barrier3dConfiguration(BaseModel):
+    elevation_file: FilePath = Field(
+        "barrier3d-default-elevations.npy",
         description="File that contains initial elevations in [m MHH]",
-        validators=[Path(file_okay=True, dir_okay=False)],
     )
-    dune_file = Field(
-        "dune_file",
-        default="barrier3d-default-dunes.npy",
+    dune_file: FilePath = Field(
+        "barrier3d-default-dunes.npy",
         description="File that contains initial dune height values [m]",
-        validators=[Path(file_okay=True, dir_okay=False)],
     )
-    growth_param_file = Field(
-        "growth_param_file",
-        default="barrier3d-default-growthparam.npy",
+    growth_param_file: FilePath = Field(
+        "barrier3d-default-growthparam.npy",
         description="File that contains initial growth parameters",
-        validators=[Path(file_okay=True, dir_okay=False)],
     )
-    storm_file = Field(
-        "storm_file",
-        default="barrier3d-storms.npy",
-        description="File that contains storm data",
-        validators=[Path(file_okay=True, dir_okay=False)],
+    storm_file: FilePath = Field(
+        "barrier3d-default-storms.npy", description="File that contains storm data"
     )
-    TMAX = IntegerField(
-        "TMAX",
-        default=150,
-        units="y",
+
+    TMAX: PositiveInt = Field(
+        150,
         description="Duration of simulation",
-        validators=[Range(lower=0)],
+        unit="y",
     )
-    StormStart = IntegerField(
-        "StormStart",
-        default=2,
-        units="y",
-        description="Year when storm can start occurring (NOTE: if changed, need new storm time series)",
-        validators=[Range(lower=0)],
+    StormStart: PositiveInt = Field(
+        2,
+        description=(
+            "Year when storm can start occurring (NOTE: if changed, need new storm "
+            "time series)"
+        ),
+        unit="y",
     )
-    BarrierLength = FloatField(
-        "BarrierLength",
-        default=500.0,
-        units="m",
+    BarrierLength: NonNegativeFloat = Field(
+        500.0,
         description="Static length (alongshore) of island segment",
-        validators=[Range(lower=0)],
+        unit="m",
     )
-    DuneWidth = FloatField(
-        "DuneWidth",
-        default=20.0,
-        units="m",
-        description="Width (cross-shore) of island dune field; for illustration purposes only",
-        validators=[Range(lower=0)],
+    DuneWidth: NonNegativeFloat = Field(
+        20.0,
+        description=(
+            "Width (cross-shore) of island dune field; for illustration purposes only"
+        ),
+        unit="m",
     )
-    LShoreface = FloatField(
-        "LShoreface",
-        default=500.0,
-        units="m",
+    LShoreface: NonNegativeFloat = Field(
+        500.0,
         description="Length of shoreface",
-        validators=[Range(lower=0)],
+        unit="m",
     )
-    DShoreface = FloatField(
-        "DShoreface",
-        default=10.0,
-        units="m",
+    DShoreface: NonNegativeFloat = Field(
+        10.0,
         description="Height of shoreface",
-        validators=[Range(lower=0)],
+        unit="m",
     )
-    BayDepth = FloatField(
-        "BayDepth",
-        default=3.0,
-        units="m",
+    BayDepth: NonNegativeFloat = Field(
+        3.0,
         description="Depth of bay behind island segment",
-        validators=[Range(lower=0)],
+        unit="m",
     )
-    MHW = FloatField(
-        "MHW",
-        default=0.46,
-        units="m NAVD88",
-        description="Elevation of Mean High Water (NOTE: if changed, need new storm time series)",
-        validators=[Range(lower=0)],
+    MHW: NonNegativeFloat = Field(
+        0.46,
+        description=(
+            "Elevation of Mean High Water (NOTE: if changed, need new storm time "
+            "series)"
+        ),
+        unit="m NAVD88",
     )
-    Dstart = FloatField(
-        "Dstart",
-        default=0.50,
-        units="m",
-        description="Initial height of dune domain above berm elevation",
-        validators=[Range(lower=0)],
+    Dstart: NonNegativeFloat = Field(
+        0.5, description="Initial height of dune domain above berm elevation", unit="m"
     )
-    BermEl = FloatField(
-        "BermEl",
-        default=1.9,
-        units="m NAVD88",
-        description="Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)",
-        validators=[Range(lower=0)],
+    BermEl: NonNegativeFloat = Field(
+        1.9,
+        description=(
+            "Static elevation of berm; berm elevation + dune height = dune elevation "
+            "(NOTE: if changed, need new MSSM and storms)"
+        ),
+        unit="m NAVD88",
     )
-    rmin = FloatField(
-        "rmin",
-        default=0.35,
+    rmin: float = Field(
+        0.35,
         description="Minimum growth rate for logistic dune growth",
     )
-    rmax = FloatField(
-        "rmax",
-        default=0.85,
+    rmax: float = Field(
+        0.85,
         description="Maximum growth rate for logistic dune growth",
     )
-    HdDiffu = FloatField(
-        "HdDiffu",
-        default=0.75,
-        units="m",
-        description="Dune diffusion parameter (i.e. max height offset between adjacent dune cells)",
-        validators=[Range(lower=0)],
+    HdDiffu: NonNegativeFloat = Field(
+        0.75,
+        description=(
+            "Dune diffusion parameter (i.e. max height offset between adjacent dune "
+            "cells)"
+        ),
+        unit="m",
     )
-    Dmaxel = FloatField(
-        "Dmaxel",
-        default=3.4,
-        units="m NAVD88",
+    Dmaxel: NonNegativeFloat = Field(
+        3.4,
         description="Maximum elevation of dunes",
-        validators=[Range(lower=0)],
+        unit="m NAVD88",
     )
-    C1 = FloatField(
-        "C1",
-        default=8.8,
-        units="m",
-        description="Empirical dune erosion parameter",
-    )
-    C2 = FloatField(
-        "C2",
-        default=4.6,
-        units="m",
-        description="Empirical dune erosion parameter",
-    )
-    DuneRestart = FloatField(
-        "DuneRestart",
-        default=0.075,
-        units="m",
+    C1: float = Field(8.8, description="Empirical dune erosion parameter", unit="m")
+    C2: float = Field(4.6, description="Empirical dune erosion parameter", unit="m")
+    DuneRestart: NonNegativeFloat = Field(
+        0.075,
         description="Restart height for dunes lowered to essentially zero",
-        validators=[Range(lower=0)],
+        unit="m",
     )
-    Rat = FloatField(
-        "Rat",
-        default=0,
-        units="m / y",
-        description="Rate of shoreline retreat attributed to alongshore transport; (-) = erosion, (+) = accretion",
+    Rat: float = Field(
+        0.0,
+        description=(
+            "Rate of shoreline retreat attributed to alongshore transport; "
+            "(-) = erosion, (+) = accretion"
+        ),
+        unit="m / y",
     )
-    RSLR_Constant = BooleanField(
-        "RSLR_Constant",
-        default=True,
-        description="Relative sea-level rise rate will be constant, otherwise logistic growth function used for time series",
+    RSLR_Constant: bool = Field(
+        True,
+        description=(
+            "Relative sea-level rise rate will be constant, otherwise logistic growth "
+            "function used for time series"
+        ),
     )
-    RSLR_const = FloatField(
-        "RSLR_const",
-        default=0.004,
-        units="m / y",
+    RSLR_const: float = Field(
+        0.004,
         description="Relative sea-level rise rate",
+        unit="m / y",
     )
-    beta = FloatField(
-        "beta",
-        default=0.04,
+    beta: NonNegativeFloat = Field(
+        0.04,
         description="Beach slope for runup calculations",
-        validators=[Range(lower=0)],
     )
-    #    StormTimeSeries = BooleanField(
-    #        "StormTimeSeries",
-    #        default=True,
-    #        description="Storms will come from a time series",
-    #    )
-    StormSeries = ArrayField(
-        "StormSeries",
-        default=(),
+    StormSeries: conlist(item_type=NonNegativeFloat) = Field(
+        [],
         description="Time series of storms",
     )
-    nn = FloatField(
-        "nn",
-        default=0.5,
+    nn: float = Field(
+        0.5,
         description="Flow routing constant",
     )
-    mm = FloatField(
-        "mm",
-        default=2.0,
+    mm: float = Field(
+        2.0,
         description="Exponent constant for sediment transport",
     )
-    Rin_r = FloatField(
-        "Rin_r",
-        default=2,
-        description="Run-up regime infiltration rate (volume of overwash flow lost per m cross-shore per time step)",
+    Rin_r: float = Field(
+        2.0,
+        description=(
+            "Run-up regime infiltration rate (volume of overwash flow lost per m "
+            "cross-shore per time step)"
+        ),
     )
-    Rin_i = FloatField(
-        "Rin_i",
-        default=0.25,
-        description="Inundation regime infiltration rate (volume of overwash flow lost per m cross-shore per time step)",
+    Rin_i: float = Field(
+        0.25,
+        description=(
+            "Inundation regime infiltration rate (volume of overwash flow lost per m "
+            "cross-shore per time step)"
+        )
     )
-    Qs_min = FloatField(
-        "Qs_min",
-        default=1.0,
-        units="m^3 / hr",
-        description="Minimum discharge needed for sediment transport",
+    Qs_min: float = Field(
+        1.0,
+        description="Minimum discharge needed for sediment transport", unit="m^3 / hr",
     )
-    MaxUpSlope = FloatField(
-        "MaxUpSlope",
-        default=0.25,
-        units="m / m",
-        description="Maximum slope water can flow upward",
+    MaxUpSlope: float = Field(
+        0.25,
+        description="Maximum slope water can flow upward", unit="m / m",
+                             )
+    threshold_in: float = Field(
+        0.25,
+        description="Threshold to determine if in inundation regime", unit="m^3 / hr",
     )
-    threshold_in = FloatField(
-        "threshold_in",
-        default=0.25,
-        units="m^3 / hr",
-        description="Threshold to determine if in inundation regime",
-    )
-    Kr = FloatField(
-        "Kr",
-        default=0.000075,
+    Kr: float = Field(
+        0.000075,
         description="Sediment flux constant, run-up regime",
     )
-    Ki = FloatField(
-        "Ki",
-        default=0.0000075,
+        
+    Ki: float = Field(
+        0.0000075,
         description="Sediment flux constant, inundation regime",
     )
-    Cbb_r = FloatField(
-        "Cbb_r",
-        default=0.5,
-        units="",
-        description="Coefficient for exponential decay of sediment load entering back-barrier bay in run-up regime",
-        validators=[Range(lower=0, upper=1)],
+    Cbb_r: confloat(gt=0.0, lt=1.0) = Field(
+        0.5,
+        description=(
+            "Coefficient for exponential decay of sediment load entering back-barrier "
+            "bay in run-up regime"
+        ),
     )
-    Cbb_i = FloatField(
-        "Cbb_i",
-        default=0.8,
-        units="",
-        description="Coefficient for exponential decay of sediment load entering back-barrier bay in inundation regime",
-        validators=[Range(lower=0, upper=1)],
+    Cbb_i: confloat(gt=0.0, lt=1.0) = Field(
+        0.8,
+        description=(
+            "Coefficient for exponential decay of sediment load entering back-barrier "
+            "bay in inundation regime"
+        )
     )
-    Qs_bb_min = FloatField(
-        "Qs_bb_min",
-        default=1,
-        units="m^3 / hr",
-        description="Minimum sediment flux in back-barrier bay (below which sediment won't flux)",
-        validators=[Range(lower=0)],
+    Qs_bb_min: NonNegativeFloat = Field(
+        1.0,
+        description=(
+            "Minimum sediment flux in back-barrier bay (below which sediment won't "
+            "flux)"
+        ),
+        unit="m^3 / hr"
     )
-    Cx = FloatField(
-        "Cx",
-        default=10.0,
-        units="",
-        description="Multiplier with the average slope of the interior for constant C in inundation transport rule",
-        validators=[Range(lower=0)],
+    Cx: NonNegativeFloat = Field(
+        10.0,
+        description=(
+            "Multiplier with the average slope of the interior for constant C in "
+            "inundation transport rule"
+        )
     )
-    OWss_i = IntegerField(
-        "OWss_i",
-        default=2,
-        description="Overwash substep",
-        validators=[Range(lower=1)],
+    OWss_i: conint(ge=1) = Field( 2, description="Overwash substep")
+    OWss_r: conint(ge=1) = Field(1, description= "Overwash substep")
+    k_sf: float = Field(
+        5000,
+        description="Shoreface flux rate constant", unit="m^3 / m / y",
     )
-    OWss_r = IntegerField(
-        "OWss_r",
-        default=1,
-        description="Overwash substep",
-        validators=[Range(lower=1)],
-    )
-    k_sf = FloatField(
-        "k_sf",
-        default=5000,
-        units="m^3 / m / y",
-        description="Shoreface flux rate constant",
-    )
-    s_sf_eq = FloatField(
-        "s_sf_eq",
-        default=0.02,
-        units="",
+    s_sf_eq: float = Field(
+        0.02,
         description="Equilibrium shoreface slope",
     )
-    Shrub_ON = BooleanField(
-        "Shrub_ON",
-        default=False,
-        description="1 = shrubs on in simulation, 0 = shrubs off",
+    Shrub_ON: bool = Field(
+        False,
+        description="1 = shrubs on in simulation, 0 = shrubs off"
     )
-    Seedmin = FloatField(
-        "Seedmin",
-        default=1000,
-        units="1 / yr",
-        description="Seeds produced per shrub per year (fecundity)",
-        validators=[Range(lower=0)],
+    Seedmin: NonNegativeFloat = Field(
+        1000.0,
+        description="Seeds produced per shrub per year (fecundity)", unit="1 / yr"
     )
-    Seedmax = FloatField(
-        "Seedmax",
-        default=10000,
-        units="1 / yr",
-        description="Seeds produced per shrub per year (fecundity)",
-        validators=[Range(lower=0)],
+    Seedmax: NonNegativeFloat = Field(
+        10000.0,
+        description="Seeds produced per shrub per year (fecundity)", unit="1 / yr"
     )
-    disp_mu = FloatField(
-        "disp_mu",
-        default=-0.721891,
-        description="For lognormal probability distribution of seed dispersal distance",
+    disp_mu: float = Field(
+        -0.721891,
+        description="For lognormal probability distribution of seed dispersal distance"
     )
-    disp_sigma = FloatField(
-        "disp_sigma",
-        default=1.5,
-        description="For lognormal probability distribution of seed dispersal distance",
+    disp_sigma: float = Field(
+        1.5,
+        description="For lognormal probability distribution of seed dispersal distance"
     )
-    Dshrub = FloatField(
-        "Dshrub",
-        default=2.75,
-        units="m",
-        description="Minimum elevation of fronting dune for shrub growth",
-        validators=[Range(lower=0)],
+    Dshrub: NonNegativeFloat = Field(
+        2.75,
+        description="Minimum elevation of fronting dune for shrub growth", unit="m"
     )
-    GermRate = FloatField(
-        "GermRate",
-        default=0.6,
-        units="",
-        description="Germination rate",
-        validators=[Range(lower=0, upper=1)],
+    GermRate: confloat(ge=0.0, le=1.0) = Field(
+        0.6,
+        description="Germination rate"
     )
-    TimeFruit = FloatField(
-        "TimeFruit",
-        default=5,
-        units="yr",
-        description="Age shrubs need to be before they start fruiting",
-        validators=[Range(lower=0)],
+    TimeFruit: NonNegativeFloat = Field(
+        5.0,
+        description="Age shrubs need to be before they start fruiting", unit="y"
     )
-    Female = FloatField(
-        "Female",
-        default=0.5,
-        units="",
-        description="Percentage of shrubs that are female",
-        validators=[Range(lower=0, upper=1)],
+    Female: confloat(ge=0.0, le=1.0) = Field(
+        0.5,
+        description="Percentage of shrubs that are female"
     )
-    ShrubEl_min = FloatField(
-        "ShrubEl_min",
-        default=1.2,
-        units="m NAVD88",
-        description="Elevation range for shrub growth, minimum bound",
-        validators=[Range(lower=0)],
+    ShrubEl_min: NonNegativeFloat = Field(
+        1.2,
+        description="Elevation range for shrub growth, minimum bound", unit="m NAVD88"
     )
-    ShrubEl_max = FloatField(
-        "ShrubEl_max",
-        default=2.3,
-        units="m NAVD88",
-        description="Elevation range for shrub growth, maximum bound",
-        validators=[Range(lower=0)],
+    ShrubEl_max: NonNegativeFloat = Field(
+        2.3,
+        description="Elevation range for shrub growth, maximum bound", unit="m NAVD88"
     )
-    # TideAmp = FloatField(
-    #     "TideAmp",
-    #     default=1.2,
-    #     units="m",
-    #     description="Tidal amplitude",
-    #     validators=[Range(lower=0)],
-    # )
-    SprayDist = FloatField(
-        "SprayDist",
-        default=170,
-        units="m",
-        description="Distance from ocean shoreline that shrubs can establish",
-        validators=[Range(lower=0)],
+    SprayDist: NonNegativeFloat = Field(
+        170.0,
+        description="Distance from ocean shoreline that shrubs can establish", unit="m"
     )
-    BurialLimit = FloatField(
-        "BurialLimit",
-        default=0.75,
-        units="m",
-        description="Maximum percentage of height that a shrub can be buried up to before dying",
-        validators=[Range(lower=0)],
+    BurialLimit: NonNegativeFloat = Field(
+        0.75,
+        description=(
+            "Maximum percentage of height that a shrub can be buried up to before dying"
+        ),
+        unit="m"
     )
-    UprootLimit = FloatField(
-        "UprootLimit",
-        default=-0.2,
-        units="m",
-        description="Shrubs eroded beyond this limit killed",
-        validators=[Range(upper=0)],
+    UprootLimit: NonPositiveFloat = Field(
+        -0.2,
+        description="Shrubs eroded beyond this limit killed", unit="m"
     )
-    SalineLimit = FloatField(
-        "SalineLimit",
-        default=0.05,
-        units="m^3 / hr",
+    SalineLimit: NonNegativeFloat = Field(
+        0.05,
         description="Dishcharge limit to determine shrub mortality via saline flooding",
-        validators=[Range(lower=0)],
+        unit="m^3 / hr"
     )
-    Qshrub_max = FloatField(
-        "Qshrub_max",
-        default=0.15,
-        units="",
-        description="Maximum percentage of overwash reduction through a shrub cell with full percent cover",
-        validators=[Range(lower=0, upper=1)],
+    Qshrub_max: confloat(ge=0.0, le=1.0) = Field(
+        0.15,
+        description=(
+            "Maximum percentage of overwash reduction through a shrub cell with full "
+            "percent cover"
+        )
     )
-    DuneParamStart = BooleanField(
-        "DuneParamStart",
-        default=True,
-        description="Dune height will come from external file",
+    DuneParamStart: bool = Field(
+        True,
+        description="Dune height will come from external file"
     )
-    GrowthParamStart = BooleanField(
-        "GrowthParamStart",
-        default=True,
-        description="Dune growth parameters will come from external file",
+    GrowthParamStart: bool = Field(
+        True,
+        description="Dune growth parameters will come from external file"
     )
-    MaxShrubHeight = FloatField(
-        "MaxShrubHeight",
-        default=5.2,
-        units="m",
-        description="Maximum shrub height",
-        validators=[Range(lower=0)],
+    MaxShrubHeight: NonNegativeFloat = Field(
+        5.2, description= "Maximum shrub height", unit="m"
     )
-    ShorefaceToe = FloatField(
-        "ShorefaceToe",
-        default=0,
-        units="m",
-        description="Start location of shoreface toe ",
+    ShorefaceToe: float = Field(
+        0.0,
+        description="Start location of shoreface toe [m]"
     )
-    SeededRNG = BooleanField(
-        "SeededRNG",
-        default=True,
-        description="Use seeded random number generator for reproducibility",
+    SeededRNG: bool = Field(
+        True,
+        description="Use seeded random number generator for reproducibility"
     )
+
+    @validator("rmax", always=True)
+    def check_rmax(cls, v, values, **kwargs):
+        min_field = "rmin"
+
+        with suppress(KeyError):
+            if v < values[min_field]:
+                raise ValueError(
+                    f"ensure this value is greater than or equal to {min_field} "
+                    f"({values[min_field]})"
+                )
+        return v
+
+    @validator("Seedmax", always=True)
+    def check_seed_max(cls, v, values, **kwargs):
+        min_field = "Seedmin"
+
+        with suppress(KeyError):
+            if v < values[min_field]:
+                raise ValueError(
+                    f"ensure this value is greater than or equal to {min_field} "
+                    f"({values[min_field]})"
+                )
+        return v
+
+    @validator("ShrubEl_max", always=True)
+    def check_shrub_elevation_max(cls, v, values, **kwargs):
+        min_field = "ShrubEl_min"
+
+        with suppress(KeyError):
+            if v < values[min_field]:
+                raise ValueError(
+                    f"ensure this value is greater than or equal to {min_field} "
+                    f"({values[min_field]})"
+                )
+        return v
+
+    def to_yaml(self):
+        schema = self.schema()
+
+        lines = []
+        for k, v in sorted(self.dict().items()):
+            key_value = f"{k}: {v!r}"
+            unit = schema['properties'][k].get('unit', None)
+            desc = schema['properties'][k].get('description', None)
+
+            if desc:
+                lines += textwrap.wrap(desc, width=88, initial_indent="# ", subsequent_indent="# ")
+            lines += [f"{k} = {v!r}" + (f"  # [{unit}]" if unit else "")]
+
+        return os.linesep.join(lines)
 
     @classmethod
-    def from_py(cls, path_to_py):
-        import importlib
+    def from_yaml(cls, filepath):
+        import yaml
 
-        mod = importlib.import_module(str(pathlib.Path(path_to_py).stem))
-        return cls(
-            data=dict(
-                [(k, v) for k, v in mod.__dict__.items() if not k.startswith("_")]
-            )
-        )
+        with open(filepath, "r") as fp:
+            config = yaml.safe_load(fp)
 
+        return cls(**config)
 
-def _load_initial_elevation_csv(path_to_csv):
-    return pandas.read_csv(
-        path_to_csv,
-        names=("x", "y", "z"),
-        dtype={"x": int, "y": int, "z": float},
-        comment="#",
-        header=0,
-    )

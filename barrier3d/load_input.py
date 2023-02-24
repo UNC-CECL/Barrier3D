@@ -84,7 +84,7 @@ def load_parameters(path_to_file, fmt="yaml"):
     except AttributeError:
         raise ValueError(f"format not understood ({fmt})")
     else:
-        return loader(path_to_file).data
+        return loader(path_to_file).dict()
 
 
 def load_elevation(path_to_file, fmt="npy"):
