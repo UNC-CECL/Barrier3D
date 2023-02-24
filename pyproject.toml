@@ -29,6 +29,13 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
+  "bmipy",
+  "click",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "pydantic",
+  "pyyaml",
 ]
 dynamic = ["readme", "version"]
 
