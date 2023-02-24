@@ -13,7 +13,7 @@ maintainers = [
     {email = "ian.reeves@whoi.edu"},
 ]
 keywords = ["earth science", "coast", "barrier island"]
-license = {file = "license.txt"}
+license = {file = "LICENSE.md"}
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
@@ -49,7 +49,7 @@ where = ["."]
 include = ["barrier3d*"]
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md", "CHANGES.md"]}
+readme = {file = ["README.md", "AUTHORS.md", "CHANGES.md"]}
 version = {attr = "barrier3d._version.__version__"}
 
 
