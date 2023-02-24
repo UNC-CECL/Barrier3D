@@ -1,20 +1,76 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "barrier3d"
+description = "A spatially explicit exploratory model of barrier island evolution"
+authors = [
+    {name = "Ian Reeves"},
+    {email = "ian.reeves@whoi.edu"},
+]
+maintainers = [
+    {name = "Ian Reeves"},
+    {email = "ian.reeves@whoi.edu"},
+]
+keywords = ["earth science", "coast", "barrier island"]
+license = {file = "license.txt"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+requires-python = ">=3.8"
+dependencies = [
+]
+dynamic = ["readme", "version"]
+
+[project.scripts]
+b3d = "barrier3d.cli:barrier3d"
+
+[project.urls]
+homepage = "https://github.com/UNC-CECL/Barrier3D"
+documentation = "https://github.com/UNC-CECL/Barrier3D"
+repository = "https://github.com/UNC-CECL/Barrier3D"
+changelog = "https://raw.githubusercontent.com/UNC-CECL/Barrier3D/master/CHANGES.rst"
+
+[project.optional-dependencies]
+dev = ["nox"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["barrier3d*"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md", "CHANGES.md"]}
+version = {attr = "barrier3d._version.__version__"}
+
+
 [tool.pytest.ini_options]
-minversion = "5.0"
+minversion = "6.0"
 testpaths = ["barrier3d", "tests"]
 norecursedirs = [".*", "*.egg*", "build", "dist"]
 addopts = """
-    --ignore setup.py
-    --tb native
-    --strict
-    --durations 16
-    --doctest-modules
-    -vvv
+  --ignore setup.py
+  --tb native
+  --strict
+  --durations 16
+  --doctest-modules
+  -vvv
 """
 doctest_optionflags = [
-    "NORMALIZE_WHITESPACE",
-    "IGNORE_EXCEPTION_DETAIL",
-    "ALLOW_UNICODE"
+  "NORMALIZE_WHITESPACE",
+  "IGNORE_EXCEPTION_DETAIL",
+  "ALLOW_UNICODE"
 ]
+
 
 [tool.isort]
 multi_line_output = 3
@@ -22,6 +78,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 line_length = 88
+
 
 [tool.black]
 line-length = 88
