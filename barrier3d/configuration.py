@@ -2,7 +2,6 @@ import pathlib
 
 import numpy as np
 import pandas
-import xlrd
 from exconfig import (
     ArrayField,
     BooleanField,
@@ -437,19 +436,6 @@ class Barrier3dConfiguration(Configuration):
                 [(k, v) for k, v in mod.__dict__.items() if not k.startswith("_")]
             )
         )
-
-
-def _load_initial_elevation_xlsx(path_to_xlsx):
-    wb = xlrd.open_workbook(path_to_xlsx)
-    morph = wb.sheet_by_index(1)  # Initial morphology sheet
-
-    return pandas.DataFrame(
-        {
-            "x": np.asarray(morph.col_values(0, 1, morph.nrows), dtype=int),
-            "y": np.asarray(morph.col_values(1, 1, morph.nrows), dtype=int),
-            "z": np.asarray(morph.col_values(2, 1, morph.nrows), dtype=float),
-        }
-    )
 
 
 def _load_initial_elevation_csv(path_to_csv):
