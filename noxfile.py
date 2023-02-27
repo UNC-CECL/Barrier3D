@@ -1,6 +1,8 @@
+import difflib
 import os
 import pathlib
 import shutil
+import tempfile
 
 import nox
 
@@ -8,7 +10,7 @@ PROJECT = "barrier3d"
 ROOT = pathlib.Path(__file__).parent
 
 
-nox.options.sessions = ["lint", "test", "test-bmi", "test-notebooks"]
+nox.options.sessions = ["lint", "test", "test-bmi", "test-cli", "test-notebooks"]
 
 
 @nox.session
@@ -31,6 +33,52 @@ def test(session: nox.Session) -> None:
 
     if "CI" not in os.environ:
         session.run("coverage", "report", "--ignore-errors", "--show-missing")
+
+
+@nox.session(name="test-cli")
+def test_cli(session: nox.Session):
+    session.install(".")
+
+    session.run("b3d", "--help")
+    session.run("b3d", "--version")
+    session.run("b3d", "plot", "--help")
+    session.run("b3d", "run", "--help")
+    session.run("b3d", "setup", "--help")
+    session.run("b3d", "show", "--help")
+
+    for infile in ["dunes", "elevations", "growthparam", "parameters", "storms"]:
+        out = session.run("b3d", "show", infile, external=True, silent=True)
+        if not out.strip():
+            session.error(f"The command `b3d show {infile}` produced no output")
+
+    expected = {
+        "barrier3d-default-dunes.csv",
+        "barrier3d-default-elevations.csv",
+        "barrier3d-default-growthparam.csv",
+        "barrier3d-default-parameters.yaml",
+        "barrier3d-default-storms.csv",
+    }
+
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=False) as tmpdirname:
+        with session.chdir(tmpdirname):
+            session.run("b3d", "setup")
+            actual = {str(p) for p in pathlib.Path(".").iterdir()}
+
+    if actual != expected:
+        session.log(
+            os.linesep.join(
+                ["diff actual expected"]
+                + list(
+                    difflib.unified_diff(
+                        sorted(actual),
+                        sorted(expected),
+                        fromfile="actual",
+                        tofile="expected",
+                    )
+                )
+            )
+        )
+        session.error("The command `b3d setup` generated an unexpected set of files")
 
 
 @nox.session(name="test-bmi", venv_backend="mamba")
