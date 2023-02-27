@@ -1,5 +1,6 @@
 bmipy
 click
+distfit
 matplotlib
 numpy
 pandas
