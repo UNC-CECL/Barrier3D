@@ -170,25 +170,28 @@ class Barrier3dConfiguration(BaseModel):
         description=(
             "Inundation regime infiltration rate (volume of overwash flow lost per m "
             "cross-shore per time step)"
-        )
+        ),
     )
     Qs_min: float = Field(
         1.0,
-        description="Minimum discharge needed for sediment transport", unit="m^3 / hr",
+        description="Minimum discharge needed for sediment transport",
+        unit="m^3 / hr",
     )
     MaxUpSlope: float = Field(
         0.25,
-        description="Maximum slope water can flow upward", unit="m / m",
-                             )
+        description="Maximum slope water can flow upward",
+        unit="m / m",
+    )
     threshold_in: float = Field(
         0.25,
-        description="Threshold to determine if in inundation regime", unit="m^3 / hr",
+        description="Threshold to determine if in inundation regime",
+        unit="m^3 / hr",
     )
     Kr: float = Field(
         0.000075,
         description="Sediment flux constant, run-up regime",
     )
-        
+
     Ki: float = Field(
         0.0000075,
         description="Sediment flux constant, inundation regime",
@@ -205,7 +208,7 @@ class Barrier3dConfiguration(BaseModel):
         description=(
             "Coefficient for exponential decay of sediment load entering back-barrier "
             "bay in inundation regime"
-        )
+        ),
     )
     Qs_bb_min: NonNegativeFloat = Field(
         1.0,
@@ -213,114 +216,108 @@ class Barrier3dConfiguration(BaseModel):
             "Minimum sediment flux in back-barrier bay (below which sediment won't "
             "flux)"
         ),
-        unit="m^3 / hr"
+        unit="m^3 / hr",
     )
     Cx: NonNegativeFloat = Field(
         10.0,
         description=(
             "Multiplier with the average slope of the interior for constant C in "
             "inundation transport rule"
-        )
+        ),
     )
-    OWss_i: conint(ge=1) = Field( 2, description="Overwash substep")
-    OWss_r: conint(ge=1) = Field(1, description= "Overwash substep")
+    OWss_i: conint(ge=1) = Field(2, description="Overwash substep")
+    OWss_r: conint(ge=1) = Field(1, description="Overwash substep")
     k_sf: float = Field(
         5000,
-        description="Shoreface flux rate constant", unit="m^3 / m / y",
+        description="Shoreface flux rate constant",
+        unit="m^3 / m / y",
     )
     s_sf_eq: float = Field(
         0.02,
         description="Equilibrium shoreface slope",
     )
     Shrub_ON: bool = Field(
-        False,
-        description="1 = shrubs on in simulation, 0 = shrubs off"
+        False, description="1 = shrubs on in simulation, 0 = shrubs off"
     )
     Seedmin: NonNegativeFloat = Field(
         1000.0,
-        description="Seeds produced per shrub per year (fecundity)", unit="1 / yr"
+        description="Seeds produced per shrub per year (fecundity)",
+        unit="1 / yr",
     )
     Seedmax: NonNegativeFloat = Field(
         10000.0,
-        description="Seeds produced per shrub per year (fecundity)", unit="1 / yr"
+        description="Seeds produced per shrub per year (fecundity)",
+        unit="1 / yr",
     )
     disp_mu: float = Field(
         -0.721891,
-        description="For lognormal probability distribution of seed dispersal distance"
+        description="For lognormal probability distribution of seed dispersal distance",
     )
     disp_sigma: float = Field(
         1.5,
-        description="For lognormal probability distribution of seed dispersal distance"
+        description="For lognormal probability distribution of seed dispersal distance",
     )
     Dshrub: NonNegativeFloat = Field(
         2.75,
-        description="Minimum elevation of fronting dune for shrub growth", unit="m"
+        description="Minimum elevation of fronting dune for shrub growth",
+        unit="m",
     )
-    GermRate: confloat(ge=0.0, le=1.0) = Field(
-        0.6,
-        description="Germination rate"
-    )
+    GermRate: confloat(ge=0.0, le=1.0) = Field(0.6, description="Germination rate")
     TimeFruit: NonNegativeFloat = Field(
-        5.0,
-        description="Age shrubs need to be before they start fruiting", unit="y"
+        5.0, description="Age shrubs need to be before they start fruiting", unit="y"
     )
     Female: confloat(ge=0.0, le=1.0) = Field(
-        0.5,
-        description="Percentage of shrubs that are female"
+        0.5, description="Percentage of shrubs that are female"
     )
     ShrubEl_min: NonNegativeFloat = Field(
         1.2,
-        description="Elevation range for shrub growth, minimum bound", unit="m NAVD88"
+        description="Elevation range for shrub growth, minimum bound",
+        unit="m NAVD88",
     )
     ShrubEl_max: NonNegativeFloat = Field(
         2.3,
-        description="Elevation range for shrub growth, maximum bound", unit="m NAVD88"
+        description="Elevation range for shrub growth, maximum bound",
+        unit="m NAVD88",
     )
     SprayDist: NonNegativeFloat = Field(
         170.0,
-        description="Distance from ocean shoreline that shrubs can establish", unit="m"
+        description="Distance from ocean shoreline that shrubs can establish",
+        unit="m",
     )
     BurialLimit: NonNegativeFloat = Field(
         0.75,
         description=(
             "Maximum percentage of height that a shrub can be buried up to before dying"
         ),
-        unit="m"
+        unit="m",
     )
     UprootLimit: NonPositiveFloat = Field(
-        -0.2,
-        description="Shrubs eroded beyond this limit killed", unit="m"
+        -0.2, description="Shrubs eroded beyond this limit killed", unit="m"
     )
     SalineLimit: NonNegativeFloat = Field(
         0.05,
         description="Dishcharge limit to determine shrub mortality via saline flooding",
-        unit="m^3 / hr"
+        unit="m^3 / hr",
     )
     Qshrub_max: confloat(ge=0.0, le=1.0) = Field(
         0.15,
         description=(
             "Maximum percentage of overwash reduction through a shrub cell with full "
             "percent cover"
-        )
+        ),
     )
     DuneParamStart: bool = Field(
-        True,
-        description="Dune height will come from external file"
+        True, description="Dune height will come from external file"
     )
     GrowthParamStart: bool = Field(
-        True,
-        description="Dune growth parameters will come from external file"
+        True, description="Dune growth parameters will come from external file"
     )
     MaxShrubHeight: NonNegativeFloat = Field(
-        5.2, description= "Maximum shrub height", unit="m"
+        5.2, description="Maximum shrub height", unit="m"
     )
-    ShorefaceToe: float = Field(
-        0.0,
-        description="Start location of shoreface toe [m]"
-    )
+    ShorefaceToe: float = Field(0.0, description="Start location of shoreface toe [m]")
     SeededRNG: bool = Field(
-        True,
-        description="Use seeded random number generator for reproducibility"
+        True, description="Use seeded random number generator for reproducibility"
     )
 
     @validator("rmax", always=True)
@@ -365,11 +362,13 @@ class Barrier3dConfiguration(BaseModel):
         lines = []
         for k, v in sorted(self.dict().items()):
             key_value = f"{k}: {v!r}"
-            unit = schema['properties'][k].get('unit', None)
-            desc = schema['properties'][k].get('description', None)
+            unit = schema["properties"][k].get("unit", None)
+            desc = schema["properties"][k].get("description", None)
 
             if desc:
-                lines += textwrap.wrap(desc, width=88, initial_indent="# ", subsequent_indent="# ")
+                lines += textwrap.wrap(
+                    desc, width=88, initial_indent="# ", subsequent_indent="# "
+                )
             lines += [f"{k} = {v!r}" + (f"  # [{unit}]" if unit else "")]
 
         return os.linesep.join(lines)
@@ -383,3 +382,13 @@ class Barrier3dConfiguration(BaseModel):
 
         return cls(**config)
 
+    @classmethod
+    def from_py(cls, filepath):
+        from importlib.machinery import SourceFileLoader
+
+        valid_keys = set(cls.schema()["properties"])
+
+        mod = SourceFileLoader("config", str(filepath)).load_module()
+        config = {k: v for k, v in mod.__dict__.items() if k in valid_keys}
+
+        return cls(**config)
