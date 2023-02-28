@@ -1,16 +1,16 @@
-from contextlib import suppress
 import os
 import textwrap
+from contextlib import suppress
 
 from pydantic import (
     BaseModel,
     Field,
     FilePath,
-    ValidationError,
     NonNegativeFloat,
-    NonPositiveFloat,
     NonNegativeInt,
+    NonPositiveFloat,
     PositiveInt,
+    ValidationError,
     confloat,
     conint,
     conlist,
@@ -357,27 +357,53 @@ class Barrier3dConfiguration(BaseModel):
         return v
 
     def to_yaml(self):
-        schema = self.schema()
-
         lines = []
-        for k, v in sorted(self.dict().items()):
-            key_value = f"{k}: {v!r}"
-            unit = schema["properties"][k].get("unit", None)
-            desc = schema["properties"][k].get("description", None)
+        for k, meta in sorted(self._meta().items()):
+            unit = meta["unit"]
+            value = meta["value"]
+            desc = meta["description"]
 
             if desc:
                 lines += textwrap.wrap(
                     desc, width=88, initial_indent="# ", subsequent_indent="# "
                 )
-            lines += [f"{k} = {v!r}" + (f"  # [{unit}]" if unit else "")]
+            lines += [f"{k}: {value!r}" + (f"  # [{unit}]" if unit else "")]
 
         return os.linesep.join(lines)
+
+    def to_py(self):
+        lines = []
+        for k, meta in sorted(self._meta().items()):
+            unit = meta["unit"]
+            value = meta["value"]
+            desc = meta["description"]
+
+            if desc:
+                lines += textwrap.wrap(
+                    desc, width=88, initial_indent="# ", subsequent_indent="# "
+                )
+            lines += [f"{k} = {value!r}" + (f"  # [{unit}]" if unit else "")]
+
+        return os.linesep.join(lines)
+
+    def _meta(self):
+        schema = self.schema()
+
+        meta = {}
+        for k, v in sorted(self.dict().items()):
+            meta[k] = {
+                "value": v,
+                "unit": schema["properties"][k].get("unit", None),
+                "description": schema["properties"][k].get("description", None),
+            }
+
+        return meta
 
     @classmethod
     def from_yaml(cls, filepath):
         import yaml
 
-        with open(filepath, "r") as fp:
+        with open(filepath) as fp:
             config = yaml.safe_load(fp)
 
         return cls(**config)
