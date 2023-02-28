@@ -27,17 +27,33 @@ class Barrier3dBmi(Bmi):
         self._values = {}
         self._var_units = {}
 
+    @staticmethod
+    def _get_file_prefix(filepath):
+        """Return the prefix for a barrier3d input file.
+
+        The prefix of a barrier3d input file is the part before the last `-` of
+        the file name. If the file name doens't contain a `-`, then the prefix
+        is `None`.
+
+        Examples
+        --------
+        >>> Barrier3dBmi._get_file_prefix("barrier3d-default-parameters.yaml")
+        'barrier3d-default'
+        >>> Barrier3dBmi._get_file_prefix("parameters.yaml") is None
+        True
+        """
+        parts = pathlib.Path(filepath).stem.rsplit("-", maxsplit=1)
+        if len(parts) == 1:
+            prefix = None
+        else:
+            prefix = parts[0]
+        return prefix
+
     def initialize(self, config_file):
         filepath = pathlib.Path(config_file)
-        parameter_file_prefix = config_file.replace("-parameters.yaml", "")
-        parameter_file_prefix = parameter_file_prefix.split("/").pop()
 
-        # if filepath.name != "barrier3d-default-parameters.yaml":  # IR 15Mar22: commented out to allow for prefixes in input parameter file name for batch simulations
-        #     raise ValueError(
-        #         "barrier3d parameter file must be named barrier3d-default-parameters.yaml"
-        #     )
+        parameter_file_prefix = Barier3dBmi._get_file_prefix(filepath)
 
-        # self._model = Barrier3d.from_path(filepath.parent, prefix=prefix, fmt="yaml")
         self._model = Barrier3d.from_yaml(filepath.parent, prefix=parameter_file_prefix)
 
         self._values = {

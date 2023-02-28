@@ -34,6 +34,8 @@ def load_inputs(path_to_folder, prefix="barrier3d-default", fmt="yaml"):
     dict
         Processes input parameters for a barrier3d simulation.
     """
+    prefix = f"{prefix}-" if prefix else ""
+
     fmts = ("py", "yaml")
     if fmt not in fmts:
         raise ValueError(
@@ -41,7 +43,7 @@ def load_inputs(path_to_folder, prefix="barrier3d-default", fmt="yaml"):
                 fmt=fmt, fmts=", ".join(fmts)
             )
         )
-    parameter_file = pathlib.Path(f"{prefix}-parameters.{fmt}")
+    parameter_file = pathlib.Path(f"{prefix}parameters.{fmt}")
 
     with as_cwd(path_to_folder):
         if not parameter_file.is_file():
