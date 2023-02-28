@@ -1,4 +1,5 @@
 import os
+import pathlib
 import textwrap
 from contextlib import suppress
 
@@ -391,6 +392,8 @@ class Barrier3dConfiguration(BaseModel):
 
         meta = {}
         for k, v in sorted(self.dict().items()):
+            if isinstance(v, pathlib.Path):
+                v = str(v)
             meta[k] = {
                 "value": v,
                 "unit": schema["properties"][k].get("unit", None),
