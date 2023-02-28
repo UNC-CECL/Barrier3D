@@ -15,16 +15,16 @@ Full copyright notice located in main Barrier3D.py file
 
 # Script sets up all input parameters
 # Converts from meters to decameters for simulation
-
+import pathlib
 
 import numpy as np
 import math
 
-datadir = "version1_local_copy/Parameterization/"
-elevfile = datadir + "InitElevHog.npy"
-stormfile = datadir + "StormTimeSeries_1000yr.npy"
-dunestartfile = datadir + "DuneStart_1000dam.npy"
-growthparamfile = datadir + "growthparam_1000dam.npy"
+datadir = pathlib.Path(__file__).absolute().parent / "Parameterization"
+elevfile = datadir / "InitElevHog.npy"
+stormfile = datadir / "StormTimeSeries_1000yr.npy"
+dunestartfile = datadir / "DuneStart_1000dam.npy"
+growthparamfile = datadir / "growthparam_1000dam.npy"
 
 ################################
 ### TIME
