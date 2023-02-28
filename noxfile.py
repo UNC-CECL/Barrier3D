@@ -35,6 +35,16 @@ def test(session: nox.Session) -> None:
         session.run("coverage", "report", "--ignore-errors", "--show-missing")
 
 
+@nox.session(name="test-versions")
+def test_versions(session: nox.Session):
+    """Test with the previous version of barrier3d."""
+    session.install("-r", "requirements-testing.txt")
+    session.install("-r", "version1_local_copy/requirements.txt")
+    session.install(".")
+
+    session.run("pytest", "-vvv", "-m", "slow")
+
+
 @nox.session(name="test-cli")
 def test_cli(session: nox.Session):
     """Test the b3d commandline interface."""
