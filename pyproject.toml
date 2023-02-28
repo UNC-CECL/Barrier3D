@@ -52,6 +52,14 @@ changelog = "https://raw.githubusercontent.com/UNC-CECL/Barrier3D/master/CHANGES
 [project.optional-dependencies]
 dev = ["nox"]
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+barrier3d = [
+  "data/*csv",
+  "data/*yaml",
+]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["barrier3d*"]
