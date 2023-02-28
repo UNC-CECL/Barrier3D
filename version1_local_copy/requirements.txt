@@ -1,0 +1,4 @@
+imageio
+matplotlib
+numpy<1.24
+scipy
