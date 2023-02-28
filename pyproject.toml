@@ -72,6 +72,7 @@ addopts = """
   --durations 16
   --doctest-modules
   -vvv
+  --ignore-glob=*/RunningB3D_for_domains.ipynb
 """
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",

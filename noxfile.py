@@ -37,6 +37,7 @@ def test(session: nox.Session) -> None:
 
 @nox.session(name="test-cli")
 def test_cli(session: nox.Session):
+    """Test the b3d commandline interface."""
     session.install(".")
 
     session.run("b3d", "--help")

@@ -39,6 +39,10 @@ jobs:
         run: |
           nox -s test
 
-      - name: Test
+      - name: Test cli
         run: |
           nox -s test-cli
+
+      - name: Test notebooks
+        run: |
+          nox -s test-notebooks
