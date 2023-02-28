@@ -70,7 +70,7 @@ def test_cli(session: nox.Session):
         "barrier3d-default-storms.csv",
     }
 
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=False) as tmpdirname:
+    with tempfile.TemporaryDirectory() as tmpdirname:
         with session.chdir(tmpdirname):
             session.run("b3d", "setup")
             actual = {str(p) for p in pathlib.Path(".").iterdir()}
