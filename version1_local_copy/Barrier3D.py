@@ -962,17 +962,18 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 SimDuration = time.time() - Time
 print()
 print("Elapsed Time: ", SimDuration, "sec")  # Print elapsed time of simulation
-if platform == "win32":
-    import winsound
+if False:
+    if platform == "win32":
+        import winsound
 
-    winsound.Beep(800, 200)
-    winsound.Beep(800, 200)
-elif platform == "darwin":
-    print("\a")
-    os.system('say "barrier shrub simulation complete"')
-elif platform == "linux" or platform == "linux2":
-    print("\a")
-    os.system('spd-say "barrier shrub simulation complete"')
+        winsound.Beep(800, 200)
+        winsound.Beep(800, 200)
+    elif platform == "darwin":
+        print("\a")
+        os.system('say "barrier shrub simulation complete"')
+    elif platform == "linux" or platform == "linux2":
+        print("\a")
+        os.system('spd-say "barrier shrub simulation complete"')
 
 
 # Save Run Data
