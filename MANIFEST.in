@@ -1,1 +1,11 @@
-recursive-include barrier3d/data/ *
+include .pre-commit-config.yaml
+include CHANGES.md
+include noxfile.py
+include requirements*.txt
+
+recursive-include barrier3d/data *
+recursive-include tests *mat *md *npy *py *txt *xlsx *yaml
+recursive-include scripts *py
+
+recursive-exclude notebooks *
+recursive-exclude version1_local_copy *
