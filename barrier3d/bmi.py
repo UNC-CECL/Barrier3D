@@ -52,7 +52,7 @@ class Barrier3dBmi(Bmi):
     def initialize(self, config_file):
         filepath = pathlib.Path(config_file)
 
-        parameter_file_prefix = Barier3dBmi._get_file_prefix(filepath)
+        parameter_file_prefix = Barrier3dBmi._get_file_prefix(filepath)
 
         self._model = Barrier3d.from_yaml(filepath.parent, prefix=parameter_file_prefix)
 
