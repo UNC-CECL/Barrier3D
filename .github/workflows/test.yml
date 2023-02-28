@@ -46,3 +46,21 @@ jobs:
       - name: Test notebooks
         run: |
           nox -s test-notebooks
+
+  test-with-v1:
+    name: Test with original version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.11"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+
+      - name: Install nox
+        run: pip install nox
+
+      - name: Test
+        run: nox -s test-versions
