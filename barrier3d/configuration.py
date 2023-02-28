@@ -8,10 +8,8 @@ from pydantic import (
     Field,
     FilePath,
     NonNegativeFloat,
-    NonNegativeInt,
     NonPositiveFloat,
     PositiveInt,
-    ValidationError,
     confloat,
     conint,
     conlist,
@@ -322,7 +320,7 @@ class Barrier3dConfiguration(BaseModel):
     )
 
     @validator("rmax", always=True)
-    def check_rmax(cls, v, values, **kwargs):
+    def check_rmax(cls, v, values, **kwargs):  # noqa: B902
         min_field = "rmin"
 
         with suppress(KeyError):
@@ -334,7 +332,7 @@ class Barrier3dConfiguration(BaseModel):
         return v
 
     @validator("Seedmax", always=True)
-    def check_seed_max(cls, v, values, **kwargs):
+    def check_seed_max(cls, v, values, **kwargs):  # noqa: B902
         min_field = "Seedmin"
 
         with suppress(KeyError):
@@ -346,7 +344,7 @@ class Barrier3dConfiguration(BaseModel):
         return v
 
     @validator("ShrubEl_max", always=True)
-    def check_shrub_elevation_max(cls, v, values, **kwargs):
+    def check_shrub_elevation_max(cls, v, values, **kwargs):  # noqa: B902
         min_field = "ShrubEl_min"
 
         with suppress(KeyError):
