@@ -83,8 +83,8 @@ def load_inputs(path_to_folder, prefix="barrier3d-default", fmt="yaml"):
 def load_parameters(path_to_file, fmt="yaml"):
     try:
         loader = getattr(Barrier3dConfiguration, f"from_{fmt}")
-    except AttributeError:
-        raise ValueError(f"format not understood ({fmt})")
+    except AttributeError as error:
+        raise ValueError(f"format not understood ({fmt})") from error
     else:
         return loader(path_to_file).dict()
 
@@ -309,18 +309,21 @@ def _process_raw_input(params):
         params["RSLR_const"] /= 10.0
         params["RSLR"] = [params["RSLR_const"]] * params["TMAX"]
     else:
-        # Logistic RSLR rate projection - Rohling et al. (2013): gives a logistic growth curve
-        # starting from 0.003 m/yr (AD2000); note Figure 3a is in m/cyr (divide by 100 to get m/yr)
+        # Logistic RSLR rate projection - Rohling et al. (2013): gives a logistic
+        # growth curve starting from 0.003 m/yr (AD2000); note Figure 3a is in m/cyr
+        # (divide by 100 to get m/yr)
         params["RSLR"] = []
-        alpha = 0.022  # maximum achievable rate, m/yr -- probability maximum = 0.0075 m/y, 68% upper bound = 0.022 m/yr
-        beta = (
-            alpha / 0.003 - 1
-        )  # 0.003 is constant: corresponds to 0.003 m/yr at AD2000
-        gamma = 600  # yr -- probability maximum = 450, 68% upper bound = 600 (KA: changed from Ian's estimates)
+        # maximum achievable rate, m/yr -- probability maximum = 0.0075 m/y,
+        # 68% upper bound = 0.022 m/yr
+        alpha = 0.022
+        # 0.003 is constant: corresponds to 0.003 m/yr at AD2000
+        beta = alpha / 0.003 - 1
+        # yr -- probability maximum = 450, 68% upper bound = 600 (KA: changed from
+        # Ian's estimates)
+        gamma = 600
         C = 12  # constant
-        for t in range(
-            0, params["TMAX"]
-        ):  # this is range shown in Figure 3a of Rohling, starting at AD2000
+        # this is range shown in Figure 3a of Rohling, starting at AD2000
+        for t in range(0, params["TMAX"]):
             delta = alpha / (1 + beta * math.exp(-t / gamma * C))
             params["RSLR"].append(delta / 10)  # Convert from m/yr to dam/yr
 
