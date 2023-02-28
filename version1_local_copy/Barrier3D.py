@@ -38,13 +38,15 @@
 # IMPORTS
 # ==============================================================================================================================================
 
-import version1_local_copy.Barrier3D_Functions as func
-import numpy as np
 import math
-import time
-from sys import platform
 import os
+import time
 import warnings
+from sys import platform
+
+import numpy as np
+
+import version1_local_copy.Barrier3D_Functions as func
 
 warnings.filterwarnings("ignore")
 
@@ -57,47 +59,46 @@ Time = time.time()
 
 ### Load Input Parameters
 from version1_local_copy.Barrier3D_Parameters import (
+    C1,
+    C2,
+    MHW,
+    TMAX,
     BarrierLength,
     BayDepth,
     BermEl,
-    DomainWidth,
-    DuneDomain,
-    Dstart,
-    DuneWidth,
-    DShoreface,
-    InteriorDomain,
-    LShoreface,
-    MHW,
-    SD_storm,
-    StormStart,
-    StormTimeSeries,
-    StormSeries,
-    TMAX,
-    mean_storm,
-    numstorm,
-    Shrub_ON,
-    Qshrub_max,
-    C1,
-    C2,
-    DuneRestart,
-    nn,
-    mm,
-    MaxUpSlope,
-    threshold_in,
-    Rin_r,
-    Rin_i,
-    Qs_min,
-    Kr,
-    Ki,
-    Cbb_r,
     Cbb_i,
-    Qs_bb_min,
+    Cbb_r,
     Cx,
+    DomainWidth,
+    DShoreface,
+    Dstart,
+    DuneDomain,
+    DuneRestart,
+    DuneWidth,
+    InteriorDomain,
+    Ki,
+    Kr,
+    LShoreface,
+    MaxUpSlope,
     OWss_i,
     OWss_r,
+    Qs_bb_min,
+    Qs_min,
+    Qshrub_max,
+    Rin_i,
+    Rin_r,
+    SD_storm,
+    Shrub_ON,
     SimParams,
+    StormSeries,
+    StormStart,
+    StormTimeSeries,
+    mean_storm,
+    mm,
+    nn,
+    numstorm,
+    threshold_in,
 )
-
 
 ### Set variables
 SL = 0  # Does not change (Lagrangian frame of reference)
@@ -157,7 +158,6 @@ Hd_Loss_TS = np.zeros(
 # ==============================================================================================================================================
 
 for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
-
     ### Print time step to screen
     print("\r", "Time Step: ", t, end="")
 
@@ -194,7 +194,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
     ### Shrubs
 
     if Shrub_ON == 1:
-
         (
             ShrubDomainAll,
             ShrubDomainFemale,
@@ -249,7 +248,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
             ### Individual Storm Impacts
             for n in range(numstorm):  # Loop through each individual storm
-
                 ###########################################
                 ### Dune Erosion
 
@@ -260,7 +258,7 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
                 # Find overwashed dunes and gaps
                 Dow = [
                     index
-                    for index, value in enumerate((DuneDomainCrest + BermEl))
+                    for index, value in enumerate(DuneDomainCrest + BermEl)
                     if value < Rhigh[n]
                 ]
                 gaps = func.DuneGaps(
@@ -269,7 +267,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
                 for d in range(len(Dow)):  # Loop through each overwashed dune cell
                     for w in range(DuneWidth):
-
                         # Calculate dune elevation loss
                         Rnorm = Rhigh[n] / (
                             DuneDomain[t, Dow[d], w] + BermEl
@@ -390,7 +387,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
                 ### Run Flow Routing Algorithm
                 for TS in range(duration):
-
                     ShrubDomainWidth = np.shape(ShrubDomainFemale)[0]
                     DeadDomainWidth = np.shape(ShrubDomainDead)[0]
 
@@ -410,7 +406,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
                         for i in range(BarrierLength):
                             if Discharge[TS, d, i] > 0:
-
                                 Q0 = Discharge[TS, d, i]
 
                                 ### Calculate Slopes
@@ -438,7 +433,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
                                 ### Calculate Discharge To Downflow Neighbors
                                 # One or more slopes positive
                                 if S1 > 0 or S2 > 0 or S3 > 0:
-
                                     if S1 < 0:
                                         S1 = 0
                                     if S2 < 0:
@@ -447,13 +441,13 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
                                         S3 = 0
 
                                     Q1 = (
-                                        Q0 * S1 ** nn / (S1 ** nn + S2 ** nn + S3 ** nn)
+                                        Q0 * S1**nn / (S1**nn + S2**nn + S3**nn)
                                     )
                                     Q2 = (
-                                        Q0 * S2 ** nn / (S1 ** nn + S2 ** nn + S3 ** nn)
+                                        Q0 * S2**nn / (S1**nn + S2**nn + S3**nn)
                                     )
                                     Q3 = (
-                                        Q0 * S3 ** nn / (S1 ** nn + S2 ** nn + S3 ** nn)
+                                        Q0 * S3**nn / (S1**nn + S2**nn + S3**nn)
                                     )
 
                                     Q1 = np.nan_to_num(Q1)
@@ -462,7 +456,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
                                 # No slopes positive, one or more equal to zero
                                 elif S1 == 0 or S2 == 0 or S3 == 0:
-
                                     pos = 0
                                     if S1 == 0:
                                         pos += 1
@@ -489,7 +482,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
 
                                 # All slopes negative
                                 else:
-
                                     Q1 = (
                                         Q0
                                         * abs(S1) ** (-nn)
@@ -696,7 +688,6 @@ for t in range(1, TMAX):  # Yearly time steps - actual time = t + 1
                                     SedFluxOut[TS, d, i] = Qs_out
 
                                 else:  # If cell is subaqeous, exponentially decay deposition of remaining sediment across bay
-
                                     if inundation == 0:
                                         Cbb = Cbb_r
                                     else:

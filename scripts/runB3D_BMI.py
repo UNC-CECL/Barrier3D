@@ -5,9 +5,10 @@
         - if using Barrier3D for the first time, remember to $ pip install -e .
 """
 
+import time
+
 from barrier3d import Barrier3dBmi
 from barrier3d.tools import plot as B3Dfunc
-import time
 
 # create an instance of the new BMI class, which is the model
 barrier3d = Barrier3dBmi()

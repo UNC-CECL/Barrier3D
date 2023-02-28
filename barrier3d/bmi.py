@@ -9,7 +9,6 @@ from .barrier3d import Barrier3d
 
 
 class Barrier3dBmi(Bmi):
-
     _name = "Barrier3D"
     _input_var_names = ()
     _output_var_names = (

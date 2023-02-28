@@ -1,9 +1,11 @@
-elevation_file = "barrier3d-default-elevations.npy"  # File that contains initial elevations
-dune_file = "barrier3d-default-dunes.npy"  # File that contains initial dune values
-growth_param_file = (
-    "barrier3d-default-growthparam.npy"  # File that contains initial growth parameters
-)
-storm_file = "barrier3d-default-storms.npy"  # File that contains storm data
+# File that contains initial elevations
+elevation_file = "barrier3d-default-elevations.npy"
+# File that contains initial dune values
+dune_file = "barrier3d-default-dunes.npy"
+# File that contains initial growth parameters
+growth_param_file = "barrier3d-default-growthparam.npy"
+# File that contains storm data
+storm_file = "barrier3d-default-storms.npy"
 TMAX = 51  # [y] Duration of simulation
 StormStart = 2  # [y] Year when storm can start occurring (NOTE: if changed, need new storm time series)
 BarrierLength = 500.0  # [m] Static length (alongshore) of island segment
@@ -59,9 +61,8 @@ ShrubEl_max = 2.3  # [m] Elevation range for shrub growth, maximum bound
 SprayDist = 170  # [m] Distance from ocean shoreline that shrubs can establish
 BurialLimit = 0.75  # [m] Maximum percentage of height that a shrub can be buried up to before dying
 UprootLimit = -0.2  # [m] Shrubs eroded beyond this limit killed
-SalineLimit = (
-    5  # [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
-)
+# [m^3 / hr] Dishcharge limit to determine shrub mortality via saline flooding
+SalineLimit = 5
 Qshrub_max = 0.15  # Maximum percentage of overwash reduction through a shrub cell with full percent cover
 MaxShrubHeight = 5.3  # [m] Maximum shrub height
 ShorefaceToe = 0  # [m] Start location of shoreface toe

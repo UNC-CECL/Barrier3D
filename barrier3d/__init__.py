@@ -5,5 +5,9 @@ from .configuration import Barrier3dConfiguration
 from .load_input import load_inputs
 
 __all__ = [
-    "__version__", "Barrier3d", "Barrier3dBmi", "Barrier3dConfiguration", "load_inputs"
+    "__version__",
+    "Barrier3d",
+    "Barrier3dBmi",
+    "Barrier3dConfiguration",
+    "load_inputs",
 ]

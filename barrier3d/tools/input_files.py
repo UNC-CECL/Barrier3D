@@ -26,10 +26,10 @@ module, developed following the method of ...[1]:
 import bisect
 import pathlib
 import random
-from distfit import distfit
 
 import matplotlib.pyplot as plt
 import numpy as np
+from distfit import distfit
 
 from ..load_input import _guess_format
 
@@ -64,13 +64,14 @@ def yearly_storms(
     if fmt == "npy":
         StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",", encoding='utf-8-sig')
+        StormList = np.loadtxt(
+            datadir / storm_list_name, delimiter=",", encoding="utf-8-sig"
+        )
 
     # pad with zeros until storms start
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # Calculate number of storms in year
         numstorm = round(np.random.normal(mean_yearly_storms, SD_yearly_storms))
         if numstorm < 0:
@@ -206,7 +207,6 @@ def shift_storm_intensity(
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # Calculate number of storms in year
         numstorm = max(0, round(np.random.normal(mean_yearly_storms, SD_yearly_storms)))
         stormTS = np.zeros([numstorm, 5])
@@ -342,14 +342,12 @@ def frequency_storms(
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # only allow for one storm per year
         numstorm = 1
         stormTS = np.zeros([numstorm, 5])
 
         # Select storms for year
         if t % return_period == 0:
-
             stormTS[0, 0] = t
             stormTS[0, 1] = Rhigh[id]
             stormTS[0, 2] = Rlow[id]

@@ -11,9 +11,9 @@ from barrier3d.load_input import as_cwd
 def test_parameters_to_expected(datadir):
     with as_cwd(datadir):
         mod = importlib.import_module("barrier3d-parameters-expected")
-        expected = dict(
-            [(k, v) for k, v in mod.__dict__.items() if not k.startswith("_")]
-        )
+        expected = {
+            k: v for k, v in mod.__dict__.items() if not k.startswith("_")
+        }
         actual = load_inputs(datadir, prefix="barrier3d-default", fmt="yaml")
 
     for key in actual:

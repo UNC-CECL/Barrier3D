@@ -3,7 +3,6 @@ import numpy as np
 
 
 def plot_dune_height(dune_height, max_dune_height):
-
     dune_crest = dune_height.max(axis=2)
 
     fig = plt.figure(figsize=(14, 8))
@@ -60,7 +59,6 @@ def plot_ElevTMAX(
     DeadPercentCoverTS,
     DuneWidth,
 ):
-
     TMAX = TMAX - 1
     Dunes = (DuneDomain[TMAX, :, :] + BermEl) * 10
     Dunes = np.rot90(Dunes)

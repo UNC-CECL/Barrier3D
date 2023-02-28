@@ -1,8 +1,10 @@
-import math
-import numpy as np
-from .load_input import load_inputs
-import random
 import copy
+import math
+import random
+
+import numpy as np
+
+from .load_input import load_inputs
 
 
 class Barrier3dError(Exception):
@@ -61,7 +63,7 @@ class Barrier3d:
         Qdg = 0
         # Grow dune
         for q in range(self._DuneWidth):
-            reduc = 1 / (Cf ** q)
+            reduc = 1 / (Cf**q)
             G = (
                 self._growthparam
                 * DuneDomain[t - 1, :, q]
@@ -197,7 +199,6 @@ class Barrier3d:
             self._BarrierLength
         ):  # Loop through each row of island width (i.e. from ocean to mainland side of island)
             if 0 in ShrubDomainAll:
-
                 # For all cells with a shrub
                 FemaleShrubs = ShrubDomainFemale[:, k]
                 fruiting_shrub = [
@@ -831,7 +832,7 @@ class Barrier3d:
 
         if len(kwds) > 0:
             raise ValueError(
-                "unrecognized keywords ({0})".format(", ".join(kwds.keys()))
+                "unrecognized keywords ({})".format(", ".join(kwds.keys()))
             )
 
         # ### Initialize Shrubs
@@ -927,7 +928,6 @@ class Barrier3d:
         return cls(**load_inputs(path_to_yaml, prefix=prefix, fmt="yaml"))
 
     def update(self):
-
         # ###########################################
         # ### increase sea level and start new time step
         # ###########################################
@@ -1002,7 +1002,6 @@ class Barrier3d:
 
                 # ### Individual Storm Impacts
                 for n in range(numstorm):  # Loop through each individual storm
-
                     # ###########################################
                     # ### Dune Erosion
 
@@ -1013,7 +1012,7 @@ class Barrier3d:
                     # Find overwashed dunes and gaps
                     Dow = [
                         index
-                        for index, value in enumerate((DuneDomainCrest + self._BermEl))
+                        for index, value in enumerate(DuneDomainCrest + self._BermEl)
                         if value < Rhigh[n]
                     ]
                     gaps = self.DuneGaps(
@@ -1022,7 +1021,6 @@ class Barrier3d:
 
                     for d in range(len(Dow)):  # Loop through each overwashed dune cell
                         for w in range(self._DuneWidth):
-
                             # Calculate dune elevation loss
                             Rnorm = Rhigh[n] / (
                                 self._DuneDomain[self._time_index, Dow[d], w]
@@ -1113,11 +1111,14 @@ class Barrier3d:
                     # Set Domain
                     duration = dur[n] * substep
                     width = (
-                            np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
+                        np.shape(self._InteriorDomain)[0] + 1 + self._bay_routing_width
                     )  # (dam) Add one for Dunes and 25 for bay
                     Elevation = np.zeros([duration, width, self._BarrierLength])
                     Dunes = Dunes_prestorm + self._BermEl
-                    Bay = np.ones([self._bay_routing_width, self._BarrierLength]) * -self._BayDepth
+                    Bay = (
+                        np.ones([self._bay_routing_width, self._BarrierLength])
+                        * -self._BayDepth
+                    )
                     Elevation[0, :, :] = np.vstack([Dunes, self._InteriorDomain, Bay])
 
                     # Initialize Memory Storage Arrays
@@ -1159,7 +1160,6 @@ class Barrier3d:
 
                     # ### Run Flow Routing Algorithm
                     for TS in range(duration):
-
                         ShrubDomainWidth = np.shape(self._ShrubDomainFemale)[0]
                         DeadDomainWidth = np.shape(self._ShrubDomainDead)[0]
 
@@ -1179,7 +1179,6 @@ class Barrier3d:
 
                             for i in range(self._BarrierLength):
                                 if Discharge[TS, d, i] > 0:
-
                                     Q0 = Discharge[TS, d, i]
 
                                     # ### Calculate Slopes
@@ -1207,7 +1206,6 @@ class Barrier3d:
                                     # ### Calculate Discharge To Downflow Neighbors
                                     # One or more slopes positive
                                     if S1 > 0 or S2 > 0 or S3 > 0:
-
                                         if S1 < 0:
                                             S1 = 0
                                         if S2 < 0:
@@ -1217,29 +1215,29 @@ class Barrier3d:
 
                                         Q1 = (
                                             Q0
-                                            * S1 ** self._nn
+                                            * S1**self._nn
                                             / (
-                                                S1 ** self._nn
-                                                + S2 ** self._nn
-                                                + S3 ** self._nn
+                                                S1**self._nn
+                                                + S2**self._nn
+                                                + S3**self._nn
                                             )
                                         )
                                         Q2 = (
                                             Q0
-                                            * S2 ** self._nn
+                                            * S2**self._nn
                                             / (
-                                                S1 ** self._nn
-                                                + S2 ** self._nn
-                                                + S3 ** self._nn
+                                                S1**self._nn
+                                                + S2**self._nn
+                                                + S3**self._nn
                                             )
                                         )
                                         Q3 = (
                                             Q0
-                                            * S3 ** self._nn
+                                            * S3**self._nn
                                             / (
-                                                S1 ** self._nn
-                                                + S2 ** self._nn
-                                                + S3 ** self._nn
+                                                S1**self._nn
+                                                + S2**self._nn
+                                                + S3**self._nn
                                             )
                                         )
 
@@ -1249,7 +1247,6 @@ class Barrier3d:
 
                                     # No slopes positive, one or more equal to zero
                                     elif S1 == 0 or S2 == 0 or S3 == 0:
-
                                         pos = 0
                                         if S1 == 0:
                                             pos += 1
@@ -1276,7 +1273,6 @@ class Barrier3d:
 
                                     # All slopes negative
                                     else:
-
                                         Q1 = (
                                             Q0
                                             * abs(S1) ** (-self._nn)
@@ -1490,7 +1486,6 @@ class Barrier3d:
                                         SedFluxOut[TS, d, i] = Qs_out
 
                                     else:  # If cell is subaqeous, exponentially decay dep. of remaining sed across bay
-
                                         if inundation == 0:
                                             Cbb = self._Cbb_r
                                         else:
@@ -1654,7 +1649,6 @@ class Barrier3d:
         )
 
     def update_dune_domain(self):
-
         # ###########################################
         # ### update dune domain (erode/prograde) based on on shoreline change
         # ###########################################
@@ -1953,11 +1947,11 @@ class Barrier3d:
     @RSLR.setter
     def RSLR(self, value):
         self._RSLR = value
-        
+
     @property
     def SL(self):
         return self._SL
-        
+
     @property
     def Hd_AverageTS(self):
         return self._Hd_AverageTS
