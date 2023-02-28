@@ -12,10 +12,11 @@ Full copyright notice located in main Barrier3D.py file
 # Version Number: 4
 # Updated: 30 April 2021
 
-
-import math
 # Script sets up all input parameters
 # Converts from meters to decameters for simulation
+
+
+import math
 import pathlib
 
 import numpy as np

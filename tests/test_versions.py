@@ -1,9 +1,7 @@
-import os
 import pathlib
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_almost_equal
 from packaging.version import Version
 
 from barrier3d import Barrier3dBmi
@@ -39,7 +37,7 @@ def test_BMI_against_V1(tmpdir, datadir):
         barrier3d.initialize(datadir / "barrier3d-default-parameters.yaml")
 
         # increase time step
-        for time_step in range(1, barrier3d._model._TMAX):
+        for _ in range(1, barrier3d._model._TMAX):
             barrier3d.update()
 
     # dune height over time

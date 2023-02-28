@@ -113,11 +113,11 @@ disp_mu = -0.721891
 # For lognormal probability distribution of seed dispersal distance
 disp_sigma = 1.5
 # File that contains initial dune height values [m]
-dune_file = PosixPath('barrier3d-default-dunes.npy')
+dune_file = PosixPath("barrier3d-default-dunes.npy")
 # File that contains initial elevations in [m MHH]
-elevation_file = PosixPath('barrier3d-default-elevations.npy')
+elevation_file = PosixPath("barrier3d-default-elevations.npy")
 # File that contains initial growth parameters
-growth_param_file = PosixPath('barrier3d-default-growthparam.npy')
+growth_param_file = PosixPath("barrier3d-default-growthparam.npy")
 # Shoreface flux rate constant
 k_sf = 5000.0  # [m^3 / m / y]
 # Exponent constant for sediment transport
@@ -131,6 +131,6 @@ rmin = 0.35
 # Equilibrium shoreface slope
 s_sf_eq = 0.02
 # File that contains storm data
-storm_file = PosixPath('barrier3d-default-storms.npy')
+storm_file = PosixPath("barrier3d-default-storms.npy")
 # Threshold to determine if in inundation regime
 threshold_in = 0.25  # [m^3 / hr]
