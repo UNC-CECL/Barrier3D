@@ -82,6 +82,9 @@ celerybeat-schedule
 venv/
 ENV/
 
+# nox virtual envs
+.nox/
+
 # Spyder project settings
 .spyderproject
 

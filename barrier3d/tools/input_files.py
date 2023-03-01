@@ -5,8 +5,9 @@ for use as inputs in Barrier3D simulations.
 
 References
 ----------
-.. [1] Wahl, T., Plant, N. G., & Long, J. W. (2016). Probabilistic assessment of erosion and flooding risk in the
-northern Gulf of Mexico. Journal of Geophysical Research: Oceans, 121(5), 3029-3043.
+.. [1] Wahl, T., Plant, N. G., & Long, J. W. (2016). Probabilistic assessment of
+   erosion and flooding risk in the northern Gulf of Mexico. Journal of Geophysical
+   Research: Oceans, 121(5), 3029-3043.
 
 Notes
 -----
@@ -26,10 +27,10 @@ module, developed following the method of ...[1]:
 import bisect
 import pathlib
 import random
-from distfit import distfit
 
 import matplotlib.pyplot as plt
 import numpy as np
+from distfit import distfit
 
 from ..load_input import _guess_format
 
@@ -64,13 +65,14 @@ def yearly_storms(
     if fmt == "npy":
         StormList = np.load(datadir / storm_list_name, allow_pickle=True)
     elif fmt == "csv":
-        StormList = np.loadtxt(datadir / storm_list_name, delimiter=",", encoding='utf-8-sig')
+        StormList = np.loadtxt(
+            datadir / storm_list_name, delimiter=",", encoding="utf-8-sig"
+        )
 
     # pad with zeros until storms start
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # Calculate number of storms in year
         numstorm = round(np.random.normal(mean_yearly_storms, SD_yearly_storms))
         if numstorm < 0:
@@ -93,8 +95,9 @@ def yearly_storms(
             stormTS[n, 4] = round(
                 dur / 2
             )  # Divided by two assuming TWL only for only half of storm
-            # (NOTE from KA: we could probably do better here, like assume that the TWL follows a distribution;
-            # or create a time series as in the Wahl 2019 follow up paper for MSSM. Future work!)
+            # (NOTE from KA: we could probably do better here, like assume that the
+            # TWL follows a distribution; or create a time series as in the Wahl 2019
+            # follow up paper for MSSM. Future work!)
 
         StormSeries = np.vstack([StormSeries, stormTS])
 
@@ -148,7 +151,9 @@ def shift_storm_intensity(
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     mean_yearly_storms=8.3,
     SD_yearly_storms=5.9,
-    shift=-0.15,  # shift the TWL distribution to change intensity, m NAVD88; [-0.15, 0.15] for Reeves et al., 2021
+    # shift the TWL distribution to change intensity, m NAVD88; [-0.15, 0.15] for
+    # Reeves et al., 2021
+    shift=-0.15,
     MHW=0.46,  # m NAVD88
     StormStart=2,
     BermEl=1.9,  # m NAVD88, just used for plotting
@@ -174,7 +179,8 @@ def shift_storm_intensity(
     elif fmt == "csv":
         StormList = np.loadtxt(datadir / storm_list_name, delimiter=",")
 
-    # sort the storms based on TWL, from min to max (probably a more elegant way to do this)
+    # sort the storms based on TWL, from min to max (probably a more elegant way to
+    # do this)
     dur = StormList[:, 1]  # Duration
     simTWL = StormList[:, 2]
     period = StormList[:, 4]  # Tp
@@ -186,7 +192,8 @@ def shift_storm_intensity(
     period_sorted = np.array([period for (simTWL, dur, period, Rlow) in zip_storm_list])
     Rlow_sorted = np.array([Rlow for (simTWL, dur, period, Rlow) in zip_storm_list])
 
-    # Fit Distribution - Note: this is typically beta for VCR TWLs, so we assume beta here
+    # Fit Distribution - Note: this is typically beta for VCR TWLs, so we assume beta
+    # here
     dist = distfit(distr="beta")
     fit = dist.fit_transform(simTWL_sorted)
     dist.plot()
@@ -206,7 +213,6 @@ def shift_storm_intensity(
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # Calculate number of storms in year
         numstorm = max(0, round(np.random.normal(mean_yearly_storms, SD_yearly_storms)))
         stormTS = np.zeros([numstorm, 5])
@@ -297,7 +303,8 @@ def frequency_storms(
     storm_list_name="StormList_20k_VCR_Berm1pt9m_Slope0pt04.csv",  # can by .py or .csv
     MHW=0.46,
     return_period=50,  # minimum of 1
-    return_period_TWL=2.0,  # in m above MHW (from NOAA Annual Exceedance Probability Curves)
+    # in m above MHW (from NOAA Annual Exceedance Probability Curves)
+    return_period_TWL=2.0,
     StormStart=2,
     BermEl=1.9,  # m NAVD88, just used for plotting
     model_years=1000,
@@ -342,14 +349,12 @@ def frequency_storms(
     StormSeries = np.zeros([StormStart, 5])
 
     for t in range(StormStart, model_years):
-
         # only allow for one storm per year
         numstorm = 1
         stormTS = np.zeros([numstorm, 5])
 
         # Select storms for year
         if t % return_period == 0:
-
             stormTS[0, 0] = t
             stormTS[0, 1] = Rhigh[id]
             stormTS[0, 2] = Rlow[id]

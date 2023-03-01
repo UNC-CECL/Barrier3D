@@ -20,41 +20,47 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v2
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge,defaults
-          channel-priority: true
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
 
-      - name: Show conda installation info
+      - name: Install nox
         run: |
-          mamba info
-          mamba list
-
-      - name: Install requirements
-        run: |
-          mamba install --file=requirements-testing.txt
-          pip install -r requirements.txt
-          mamba list
-
-      - name: Build and install package
-        run: |
-          pip install -e .
+          pip install nox
 
       - name: Test
         run: |
-          python -c 'import barrier3d; print(barrier3d.__version__)'
-          b3d --help
-          b3d --version
-          b3d plot --help
-          b3d run --help
-          b3d setup --help
-          b3d show --help
-          pytest -vvv
+          nox -s test
+
+      - name: Test cli
+        run: |
+          nox -s test-cli
+
+      - name: Test notebooks
+        run: |
+          nox -s test-notebooks
+
+  test-with-v1:
+    name: Test with original version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.11"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+
+      - name: Install nox
+        run: pip install nox
+
+      - name: Test
+        run: nox -s test-versions
