@@ -267,7 +267,11 @@ def _process_raw_input(params):
                     )
                 )
             )
-    params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
+    if "DuneParamMultipleRows" in params:
+        for dune_row in range(0, params["DuneWidth"]):
+            params["DuneDomain"][0, :, dune_row] = params["DuneStart"][params["BarrierLength"] * dune_row: params["BarrierLength"]]
+    else:
+        params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
 
     if "GrowthStart" in params:
         params["growthparam"] = params["GrowthStart"][0 : params["BarrierLength"]]

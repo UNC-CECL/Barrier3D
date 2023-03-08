@@ -10,7 +10,8 @@ LShoreface: 500.0               # [m] Initial length of shoreface
 DShoreface: 10.0                # [m] Height of shoreface
 BayDepth: 3.0                   # [m] Depth of bay behind island segment
 MHW: 0.46                       # [m NAVD88] Elevation of Mean High Water (NOTE: if changed, need new storm time series)
-DuneParamStart: True            # Dune height will come from external file
+DuneParamStart: True            # Dune crest heights will come from external file, and repeated past the first dune row
+DuneParamMultipleRows: False    # Dune heights for all dune rows will come from external file
 Dstart: 0.5                     # [m] Initial height of dune domain above berm elevation
 BermEl: 1.9                     # [m NAVD88] Static elevation of berm; berm elevation + dune height = dune elevation (NOTE: if changed, need new MSSM and storms)
 GrowthParamStart: True          # Dune growth parameter will come from external file
