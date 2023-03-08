@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 import os
 import pathlib
 from functools import partial
@@ -39,7 +38,7 @@ class Barrier3dOutputWriter:
         self._steps = 0
 
         with open(filepath, mode="w") as fp:
-            print("# version: {0}".format(__version__), file=fp)
+            print(f"# version: {__version__}", file=fp)
             print(
                 ",".join(
                     [
@@ -83,7 +82,8 @@ class Barrier3dOutputWriter:
     help="chage to directory, then execute",
 )
 def barrier3d(cd) -> None:
-    """Barrier3D: A spatially explicit exploratory model of barrier island evolution in three dimensions
+    """Barrier3D: A spatially explicit exploratory model of barrier island evolution
+    in three dimensions
 
     \b
     Examples:
@@ -114,10 +114,10 @@ def run(dry_run: bool, verbose: bool) -> None:
 
     message = []
     # if not config_file.is_file():
-    #     message.append("missing Barrier3D configuration file: {0}".format(config_file))
+    #     message.append(f"missing Barrier3D configuration file: {config_file}")
     if (run_dir / "output.csv").exists():
         message.append(
-            "Barrier3D output file already exists: {0}".format(run_dir / "output.csv")
+            "Barrier3D output file already exists: {}".format(run_dir / "output.csv")
         )
     if message:
         err(os.linesep.join(message))
@@ -136,11 +136,11 @@ def run(dry_run: bool, verbose: bool) -> None:
         with click.progressbar(
             range(n_steps),
             label=" ".join(["🚀", str(run_dir)]),
-            item_show_func=lambda step: "step {0} of {1}".format(
+            item_show_func=lambda step: "step {} of {}".format(
                 int(0 if step is None else step), n_steps
             ),
         ) as bar:
-            for step in bar:
+            for _ in bar:
                 barrier3d.update()
                 output.update(1)
 
@@ -169,7 +169,8 @@ def setup() -> None:
     if existing_files:
         for name in existing_files:
             err(
-                f"{name}: File exists. Either remove and then rerun or setup in a different folder",
+                f"{name}: File exists. Either remove and then rerun or setup in a "
+                "different folder",
             )
     else:
         for infile, fname in files.items():
