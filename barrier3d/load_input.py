@@ -247,7 +247,17 @@ def _process_raw_input(params):
 
     if "DuneStart" in params:
         params["DuneDomain"][0, :, 0] = params["DuneStart"][0 : params["BarrierLength"]]
+
+        if "DuneParamMultipleRows" in params:
+            if params["DuneParamMultipleRows"]:  # only if it is True
+                for dune_row in range(1, params["DuneWidth"]):
+                    params["DuneDomain"][0, :, dune_row] = params["DuneStart"][
+                        (params["BarrierLength"] * dune_row) : (params["BarrierLength"] * dune_row) + params["BarrierLength"]]
+            else:
+                params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
+
         params.pop("DuneStart")
+        params.pop("DuneParamMultipleRows")
     else:
         if params["SeededRNG"]:
             params["DuneDomain"][0, :, 0] = np.ones([1, params["BarrierLength"]]) * (
@@ -269,10 +279,6 @@ def _process_raw_input(params):
                     )
                 )
             )
-    if "DuneParamMultipleRows" in params:
-        for dune_row in range(0, params["DuneWidth"]):
-            params["DuneDomain"][0, :, dune_row] = params["DuneStart"][params["BarrierLength"] * dune_row: params["BarrierLength"]]
-    else:
         params["DuneDomain"][0, :, 1:] = params["DuneDomain"][0, :, 0, None]
 
     if "GrowthStart" in params:

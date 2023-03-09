@@ -28,8 +28,10 @@ Dmaxel = 3.4  # [m NAVD88]
 Dshrub = 2.75  # [m]
 # Initial height of dune domain above berm elevation
 Dstart = 0.5  # [m]
-# Dune height will come from external file
+# Dune crest heights will come from external file; copied for each sequential dune row
 DuneParamStart = True
+# if DuneParamStart = True, use dune crest heights to populate multiple dune rows with different crest heights
+DuneParamMultipleRows: False
 # Restart height for dunes lowered to essentially zero
 DuneRestart = 0.075  # [m]
 # Width (cross-shore) of island dune field; for illustration purposes only

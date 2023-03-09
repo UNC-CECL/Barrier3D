@@ -306,7 +306,10 @@ class Barrier3dConfiguration(BaseModel):
         ),
     )
     DuneParamStart: bool = Field(
-        True, description="Dune height will come from external file"
+        True, description="Dune crest heights will come from external file; copied for each sequential dune row"
+    )
+    DuneParamMultipleRows: bool = Field(
+        False, description="if DuneParamStart = True, use dune crest heights to populate multiple dune rows with different crest heights"
     )
     GrowthParamStart: bool = Field(
         True, description="Dune growth parameters will come from external file"
