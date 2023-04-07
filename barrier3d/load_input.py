@@ -109,7 +109,7 @@ def load_elevation(path_to_file, fmt="npy"):
     else:
         fmts = ", ".join(["npy", "csv"])
         raise ValueError(
-            f"unrecognized format for storm time series ({fmt} not one of {fmts})"
+            f"unrecognized format for interior elevation ({fmt} not one of {fmts})"
         )
 
     return elevation

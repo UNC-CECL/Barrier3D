@@ -20,11 +20,11 @@ from pydantic import (
 class Barrier3dConfiguration(BaseModel):
     elevation_file: FilePath = Field(
         "barrier3d-default-elevations.npy",
-        description="File that contains initial elevations in [m MHH]",
+        description="File that contains initial elevations in decameters [dam x dam x dam MHW]",
     )
     dune_file: FilePath = Field(
         "barrier3d-default-dunes.npy",
-        description="File that contains initial dune height values [m]",
+        description="File that contains initial dune height values in decameters [dam x dam x dam]",
     )
     growth_param_file: FilePath = Field(
         "barrier3d-default-growthparam.npy",

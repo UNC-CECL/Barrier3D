@@ -114,9 +114,9 @@ beta: 0.04
 disp_mu: -0.721891
 # For lognormal probability distribution of seed dispersal distance
 disp_sigma: 1.5
-# File that contains initial dune height values [m]
+# File that contains initial dune height values in decameters [dam x dam x dam]
 dune_file: 'barrier3d-default-dunes.npy'
-# File that contains initial elevations in [m MHH]
+# File that contains initial elevations in decameters [dam x dam x dam MHW]
 elevation_file: 'barrier3d-default-elevations.npy'
 # File that contains initial growth parameters
 growth_param_file: 'barrier3d-default-growthparam.npy'
