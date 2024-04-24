@@ -743,7 +743,7 @@ class Barrier3d:
                     0, :
                 ]  # First row of interior will now become new part of active dune field
                 newDuneHeight = newDuneElev - self._BermEl
-                newDuneHeight[newDuneHeight < self._DuneRestart_Orginal] = self._DuneRestart_Orginal
+                newDuneHeight[newDuneHeight < self._DuneRestart_TS[0][0][0]] = self._DuneRestart_TS[0][0][0]
                 self._InteriorDomain = np.delete(self._InteriorDomain, 0, axis=0)
                 if np.shape(self._InteriorDomain)[0] <= 0:
                     self._drown_break = 1
@@ -803,7 +803,6 @@ class Barrier3d:
         Dstart = kwds.pop("Dstart")
         self._DuneDomain = kwds.pop("DuneDomain")
         self._DuneRestart = kwds.pop("DuneRestart")
-        self._DuneRestart_Orginal = copy.deepcopy(self._DuneRestart)
         self._DuneWidth = kwds.pop("DuneWidth")
         self._Female = kwds.pop("Female")
         self._GermRate = kwds.pop("GermRate")
@@ -855,6 +854,7 @@ class Barrier3d:
         )  # if True, use seeded random number generator
         # Convert
         self._DuneRestart = [[self._DuneRestart]*self.BarrierLength]*self.DuneWidth
+        self._DuneRestart_TS = [copy.deepcopy(self._DuneRestart)]
 
         if len(kwds) > 0:
             raise ValueError(
@@ -978,11 +978,14 @@ class Barrier3d:
         DuneDomainCrest = self._DuneDomain[self._time_index, :, :].max(
             axis=1
         )  # Maximum height of each row in DuneDomain
-        DuneDomainCrest[DuneDomainCrest < self._DuneRestart_Orginal] = self._DuneRestart_Orginal
+        DuneDomainCrest[DuneDomainCrest < self._DuneRestart_TS[0][0][0]] = self._DuneRestart_TS[0][0][0]
 
         self._Hd_AverageTS.append(
             np.mean(DuneDomainCrest)
         )  # Store average pre-storm dune-height for time step
+
+        # Record the Dune restart value
+        self._DuneRestart_TS.append(copy.deepcopy(self._DuneRestart))
 
         # ###########################################
         # ### Shrubs
@@ -1098,7 +1101,7 @@ class Barrier3d:
                     self._DuneDomain = self.DiffuseDunes(
                         self._DuneDomain, self._time_index
                     )
-                    self._DuneDomain[self._DuneDomain < self._SL] = self._DuneRestart_Orginal
+                    self._DuneDomain[self._DuneDomain < self._SL] = self._DuneRestart_TS[0][0][0]
 
                     DuneLoss = np.sum(DuneChange) / self._BarrierLength
                     Hd_TSloss = (
