@@ -756,8 +756,8 @@ class Barrier3d:
                 self._SCRagg[time_index] + cellular_shoreline_change
             )  # Reset (make more positive), leaving residual
 
-    @staticmethod
-    @jit(nopython=True, error_model='numpy')
+    @staticmethod  # To use Numba, must exist independently of Barrier3D instance
+    @jit(nopython=True, error_model='numpy')  # Numba just-in-time compilation decorator for speeding up flow routing code
     def route_overwash(BarrierLength,
                        nn,
                        MaxUpSlope,
@@ -790,6 +790,8 @@ class Barrier3d:
                        DeadDomainWidth,
                        inundation,
                        C):
+        """Routes discharge and sediment across the barrier interior for a single model storm iteration, and returns sediment fluxes
+        and updated shrub domains. Intended to be used with Numba to speed up flow routing."""
 
         for d in range(width - 1):
             # Reduce discharge across row via infiltration
@@ -953,8 +955,7 @@ class Barrier3d:
                                     > 0
                             ):
                                 Q1 = Q1 * (
-                                        (1 - Qshrub_max)
-                                        * ShrubPercentCover[d, i - 1]
+                                        1 - (Qshrub_max * ShrubPercentCover[d, i - 1])
                                 )
                             elif (
                                     d < DeadDomainWidth
@@ -963,8 +964,7 @@ class Barrier3d:
                                 # Dead shrubs block 2/3 of what living
                                 # shrubs block
                                 Q1 = Q1 * (
-                                        (1 - Qshrub_max * 0.66)
-                                        * DeadPercentCover[d, i - 1]
+                                        1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i - 1])
                                 )
                             Discharge[TS, d + 1, i - 1] = (
                                     Discharge[TS, d + 1, i - 1] + Q1
@@ -977,16 +977,14 @@ class Barrier3d:
                                 and ShrubPercentCover[d, i] > 0
                         ):
                             Q2 = Q2 * (
-                                    (1 - Qshrub_max)
-                                    * ShrubPercentCover[d, i]
+                                    1 - (Qshrub_max * ShrubPercentCover[d, i])
                             )
                         elif (
                                 d < DeadDomainWidth
                                 and DeadPercentCover[d, i] > 0
                         ):
                             Q2 = Q2 * (
-                                    (1 - Qshrub_max * 0.66)
-                                    * DeadPercentCover[d, i]
+                                    1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i])
                             )
                         Discharge[TS, d + 1, i] = (
                                 Discharge[TS, d + 1, i] + Q2
@@ -1000,16 +998,14 @@ class Barrier3d:
                                     > 0
                             ):
                                 Q3 = Q3 * (
-                                        (1 - Qshrub_max)
-                                        * ShrubPercentCover[d, i + 1]
+                                        1 - (Qshrub_max * ShrubPercentCover[d, i + 1])
                                 )
                             elif (
                                     d < DeadDomainWidth
                                     and DeadPercentCover[d, i + 1] > 0
                             ):
                                 Q3 = Q3 * (
-                                        (1 - Qshrub_max * 0.66)
-                                        * DeadPercentCover[d, i + 1]
+                                        1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i + 1])
                                 )
                             Discharge[TS, d + 1, i + 1] = (
                                     Discharge[TS, d + 1, i + 1] + Q3
