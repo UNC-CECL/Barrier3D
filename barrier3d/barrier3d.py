@@ -1,6 +1,7 @@
 import copy
 import math
 import random
+from numba import jit
 
 import numpy as np
 
@@ -449,30 +450,6 @@ class Barrier3d:
 
         return DuneDomain
 
-    def SalineFlooding(
-        self,
-        ShrubDomainWidth,
-        ShrubDomainAll,
-        ShrubDomainFemale,
-        ShrubDomainMale,
-        ShrubDomainDead,
-        d,
-        i,
-        Q0,
-    ):
-        """Kill all immature (< 1 yr-old) shrubs that have been flooded
-        beyond a threshold discharge (Tolliver et al., 1997)"""
-
-        if d < (ShrubDomainWidth - 1) and i < (self._BarrierLength - 1):
-            if Q0 >= self._SalineLimit and ShrubDomainAll[d, i] == 1:
-                ShrubDomainDead[d, i] = (
-                    ShrubDomainMale[d, i] + ShrubDomainFemale[d, i]
-                )  # Transfer to dead shrub domain
-                ShrubDomainFemale[d, i] = 0
-                ShrubDomainMale[d, i] = 0
-
-        return ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead
-
     def UpdateBurial(
         self, BurialDomain, ElevationChange, ShrubDomainWidth, ShrubDomainAll
     ):
@@ -779,6 +756,409 @@ class Barrier3d:
                 self._SCRagg[time_index] + cellular_shoreline_change
             )  # Reset (make more positive), leaving residual
 
+    @staticmethod  # To use Numba, must exist independently of Barrier3D instance
+    @jit(nopython=True, error_model='numpy')  # Numba just-in-time compilation decorator for speeding up flow routing code
+    def route_overwash(BarrierLength,
+                       nn,
+                       MaxUpSlope,
+                       Shrub_ON,
+                       ShrubPercentCover,
+                       Qshrub_max,
+                       DeadPercentCover,
+                       Dmax,
+                       Qs_min,
+                       Kr,
+                       Ki,
+                       mm,
+                       SL,
+                       Cbb_r,
+                       Cbb_i,
+                       Qs_bb_min,
+                       ShrubDomainFemale,
+                       ShrubDomainMale,
+                       ShrubDomainDead,
+                       ShrubDomainAll,
+                       SalineLimit,
+                       width,
+                       TS,
+                       Discharge,
+                       Rin,
+                       Elevation,
+                       SedFluxIn,
+                       SedFluxOut,
+                       ShrubDomainWidth,
+                       DeadDomainWidth,
+                       inundation,
+                       C):
+        """Routes discharge and sediment across the barrier interior for a single model storm iteration, and returns sediment fluxes
+        and updated shrub domains. Intended to be used with Numba to speed up flow routing."""
+
+        for d in range(width - 1):
+            # Reduce discharge across row via infiltration
+            if d > 0:
+                Discharge[TS, d, :][Discharge[TS, d, :] > 0] -= Rin
+            Discharge[TS, d, :][Discharge[TS, d, :] < 0] = 0
+
+            for i in range(BarrierLength):
+                if Discharge[TS, d, i] > 0:
+                    Q0 = Discharge[TS, d, i]
+
+                    # ### Calculate Slopes
+                    if i > 0:
+                        S1 = (
+                                     Elevation[TS, d, i]
+                                     - Elevation[TS, d + 1, i - 1]
+                             ) / (math.sqrt(2))
+                        S1 = np.nan_to_num(S1)
+                    else:
+                        S1 = 0
+
+                    S2 = Elevation[TS, d, i] - Elevation[TS, d + 1, i]
+                    S2 = np.nan_to_num(S2)
+
+                    if i < (BarrierLength - 1):
+                        S3 = (
+                                     Elevation[TS, d, i]
+                                     - Elevation[TS, d + 1, i + 1]
+                             ) / (math.sqrt(2))
+                        S3 = np.nan_to_num(S3)
+                    else:
+                        S3 = 0
+
+                    # ### Calculate Discharge To Downflow Neighbors
+                    # One or more slopes positive
+                    if S1 > 0 or S2 > 0 or S3 > 0:
+                        if S1 < 0:
+                            S1 = 0
+                        if S2 < 0:
+                            S2 = 0
+                        if S3 < 0:
+                            S3 = 0
+
+                        Q1 = (
+                                Q0
+                                * S1 ** nn
+                                / (
+                                        S1 ** nn
+                                        + S2 ** nn
+                                        + S3 ** nn
+                                )
+                        )
+                        Q2 = (
+                                Q0
+                                * S2 ** nn
+                                / (
+                                        S1 ** nn
+                                        + S2 ** nn
+                                        + S3 ** nn
+                                )
+                        )
+                        Q3 = (
+                                Q0
+                                * S3 ** nn
+                                / (
+                                        S1 ** nn
+                                        + S2 ** nn
+                                        + S3 ** nn
+                                )
+                        )
+
+                        Q1 = np.nan_to_num(Q1)
+                        Q2 = np.nan_to_num(Q2)
+                        Q3 = np.nan_to_num(Q3)
+
+                    # No slopes positive, one or more equal to zero
+                    elif S1 == 0 or S2 == 0 or S3 == 0:
+                        pos = 0
+                        if S1 == 0:
+                            pos += 1
+                        if S2 == 0:
+                            pos += 1
+                        if S3 == 0:
+                            pos += 1
+
+                        Qx = Q0 / pos
+                        Qx = np.nan_to_num(Qx)
+
+                        if S1 == 0 and i > 0:
+                            Q1 = Qx
+                        else:
+                            Q1 = 0
+                        if S2 == 0:
+                            Q2 = Qx
+                        else:
+                            Q2 = 0
+                        if S3 == 0 and i < (BarrierLength - 1):
+                            Q3 = Qx
+                        else:
+                            Q3 = 0
+
+                    # All slopes negative
+                    else:
+                        Q1 = (
+                                Q0
+                                * abs(S1) ** (-nn)
+                                / (
+                                        abs(S1) ** (-nn)
+                                        + abs(S2) ** (-nn)
+                                        + abs(S3) ** (-nn)
+                                )
+                        )
+                        Q2 = (
+                                Q0
+                                * abs(S2) ** (-nn)
+                                / (
+                                        abs(S1) ** (-nn)
+                                        + abs(S2) ** (-nn)
+                                        + abs(S3) ** (-nn)
+                                )
+                        )
+                        Q3 = (
+                                Q0
+                                * abs(S3) ** (-nn)
+                                / (
+                                        abs(S1) ** (-nn)
+                                        + abs(S2) ** (-nn)
+                                        + abs(S3) ** (-nn)
+                                )
+                        )
+
+                        Q1 = np.nan_to_num(Q1)
+                        Q2 = np.nan_to_num(Q2)
+                        Q3 = np.nan_to_num(Q3)
+
+                        # MaxUpSlope = 0.25  # dam
+
+                        if S1 > MaxUpSlope:
+                            Q1 = 0
+                        else:
+                            Q1 = Q1 * (1 - (abs(S1) / MaxUpSlope))
+
+                        if S2 > MaxUpSlope:
+                            Q2 = 0
+                        else:
+                            Q2 = Q2 * (1 - (abs(S2) / MaxUpSlope))
+
+                        if S3 > MaxUpSlope:
+                            Q3 = 0
+                        else:
+                            Q3 = Q3 * (1 - (abs(S3) / MaxUpSlope))
+
+                    # Reduce Overwash Through Shrub Cells and Save
+                    # Discharge
+                    if Shrub_ON:
+                        # Cell 1
+                        if i > 0:
+                            if (
+                                    d < ShrubDomainWidth
+                                    and ShrubPercentCover[d, i - 1]
+                                    > 0
+                            ):
+                                Q1 = Q1 * (
+                                        1 - (Qshrub_max * ShrubPercentCover[d, i - 1])
+                                )
+                            elif (
+                                    d < DeadDomainWidth
+                                    and DeadPercentCover[d, i - 1] > 0
+                            ):
+                                # Dead shrubs block 2/3 of what living
+                                # shrubs block
+                                Q1 = Q1 * (
+                                        1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i - 1])
+                                )
+                            Discharge[TS, d + 1, i - 1] = (
+                                    Discharge[TS, d + 1, i - 1] + Q1
+                            )
+
+                        # Cell 2
+                        # (ShrubDomainWidth - 1)?
+                        if (
+                                d < ShrubDomainWidth
+                                and ShrubPercentCover[d, i] > 0
+                        ):
+                            Q2 = Q2 * (
+                                    1 - (Qshrub_max * ShrubPercentCover[d, i])
+                            )
+                        elif (
+                                d < DeadDomainWidth
+                                and DeadPercentCover[d, i] > 0
+                        ):
+                            Q2 = Q2 * (
+                                    1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i])
+                            )
+                        Discharge[TS, d + 1, i] = (
+                                Discharge[TS, d + 1, i] + Q2
+                        )
+
+                        # Cell 3
+                        if i < (BarrierLength - 1):
+                            if (
+                                    d < ShrubDomainWidth
+                                    and ShrubPercentCover[d, i + 1]
+                                    > 0
+                            ):
+                                Q3 = Q3 * (
+                                        1 - (Qshrub_max * ShrubPercentCover[d, i + 1])
+                                )
+                            elif (
+                                    d < DeadDomainWidth
+                                    and DeadPercentCover[d, i + 1] > 0
+                            ):
+                                Q3 = Q3 * (
+                                        1 - (Qshrub_max * 0.66 * DeadPercentCover[d, i + 1])
+                                )
+                            Discharge[TS, d + 1, i + 1] = (
+                                    Discharge[TS, d + 1, i + 1] + Q3
+                            )
+                    else:
+                        # Cell 1
+                        if i > 0:
+                            Discharge[TS, d + 1, i - 1] = (
+                                    Discharge[TS, d + 1, i - 1] + Q1
+                            )
+
+                        # Cell 2
+                        Discharge[TS, d + 1, i] = (
+                                Discharge[TS, d + 1, i] + Q2
+                        )
+
+                        # Cell 3
+                        if i < (BarrierLength - 1):
+                            Discharge[TS, d + 1, i + 1] = (
+                                    Discharge[TS, d + 1, i + 1] + Q3
+                            )
+
+                    # ### Calculate Sed Movement
+                    fluxLimit = Dmax
+
+                    # Run-up Regime
+                    if inundation == 0:
+                        if Q1 > Qs_min and S1 >= 0:
+                            Qs1 = Kr * Q1
+                            if Qs1 > fluxLimit:
+                                Qs1 = fluxLimit
+                        else:
+                            Qs1 = 0
+
+                        if Q2 > Qs_min and S2 >= 0:
+                            Qs2 = Kr * Q2
+                            if Qs2 > fluxLimit:
+                                Qs2 = fluxLimit
+                        else:
+                            Qs2 = 0
+
+                        if Q3 > Qs_min and S3 >= 0:
+                            Qs3 = Kr * Q3
+                            if Qs3 > fluxLimit:
+                                Qs3 = fluxLimit
+                        else:
+                            Qs3 = 0
+
+                    # Inundation Regime - Murray and Paola (1994, 1997)
+                    # Rule 3 with flux limiter
+                    else:
+                        if Q1 > Qs_min:
+                            Qs1 = Ki * (Q1 * (S1 + C)) ** mm
+                            if Qs1 < 0:
+                                Qs1 = 0
+                            elif Qs1 > fluxLimit:
+                                Qs1 = fluxLimit
+                        else:
+                            Qs1 = 0
+
+                        if Q2 > Qs_min:
+                            Qs2 = Ki * (Q2 * (S2 + C)) ** mm
+                            if Qs2 < 0:
+                                Qs2 = 0
+                            elif Qs2 > fluxLimit:
+                                Qs2 = fluxLimit
+                        else:
+                            Qs2 = 0
+
+                        if Q3 > Qs_min:
+                            Qs3 = Ki * (Q3 * (S3 + C)) ** mm
+                            if Qs3 < 0:
+                                Qs3 = 0
+                            elif Qs3 > fluxLimit:
+                                Qs3 = fluxLimit
+                        else:
+                            Qs3 = 0
+
+                    Qs1 = np.nan_to_num(Qs1)
+                    Qs2 = np.nan_to_num(Qs2)
+                    Qs3 = np.nan_to_num(Qs3)
+
+                    # ### Calculate Net Erosion/Accretion
+                    if Elevation[TS, d, i] > SL or np.sum(np.greater(Elevation[TS, i, d + 1: d + 10], SL)) > 0:
+                        # If cell is subaerial, elevation change is
+                        # determined by difference between
+                        # flux in vs. flux out
+                        if i > 0:
+                            SedFluxIn[TS, d + 1, i - 1] += Qs1
+
+                        SedFluxIn[TS, d + 1, i] += Qs2
+
+                        if i < (BarrierLength - 1):
+                            SedFluxIn[TS, d + 1, i + 1] += Qs3
+
+                        Qs_out = Qs1 + Qs2 + Qs3
+                        SedFluxOut[TS, d, i] = Qs_out
+
+                    else:
+                        # If cell is subaqeous, exponentially decay
+                        # dep. of remaining sed across bay
+                        if inundation == 0:
+                            Cbb = Cbb_r
+                        else:
+                            Cbb = Cbb_i
+
+                        Qs0 = SedFluxIn[TS, d, i] * Cbb
+
+                        Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
+                        Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
+                        Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
+
+                        Qs1 = np.nan_to_num(Qs1)
+                        Qs2 = np.nan_to_num(Qs2)
+                        Qs3 = np.nan_to_num(Qs3)
+
+                        if Qs1 < Qs_bb_min:
+                            Qs1 = 0
+                        elif Qs1 > fluxLimit:
+                            Qs1 = fluxLimit
+                        if Qs2 < Qs_bb_min:
+                            Qs2 = 0
+                        elif Qs2 > fluxLimit:
+                            Qs2 = fluxLimit
+                        if Qs3 < Qs_bb_min:
+                            Qs3 = 0
+                        elif Qs3 > fluxLimit:
+                            Qs3 = fluxLimit
+
+                        if i > 0:
+                            SedFluxIn[TS, d + 1, i - 1] += Qs1
+
+                        SedFluxIn[TS, d + 1, i] += Qs2
+
+                        if i < (BarrierLength - 1):
+                            SedFluxIn[TS, d + 1, i + 1] += Qs3
+
+                        Qs_out = Qs1 + Qs2 + Qs3
+                        SedFluxOut[TS, d, i] = Qs_out
+
+                    if Shrub_ON:
+                        """Saline Flooding: Kill all immature (< 1 yr-old) shrubs that have been flooded
+                        beyond a threshold discharge (Tolliver et al., 1997)"""
+                        if d < (ShrubDomainWidth - 1) and i < (BarrierLength - 1):
+                            if Q0 >= SalineLimit and ShrubDomainAll[d, i] == 1:
+                                ShrubDomainDead[d, i] = (
+                                        ShrubDomainMale[d, i] + ShrubDomainFemale[d, i]
+                                )  # Transfer to dead shrub domain
+                                ShrubDomainFemale[d, i] = 0
+                                ShrubDomainMale[d, i] = 0
+
+        return SedFluxIn, SedFluxOut, ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead
+
     def __init__(self, **kwds):
         self._RNG = kwds.pop("RNG")
 
@@ -882,6 +1262,9 @@ class Barrier3d:
             [self._InitialDomainWidth, self._BarrierLength]
         )
         self._ShrubDomainDead = np.zeros(
+            [self._InitialDomainWidth, self._BarrierLength]
+        )
+        self._ShrubDomainAll = np.zeros(
             [self._InitialDomainWidth, self._BarrierLength]
         )
         self._ShrubPercentCover = self._PercentCoverTS[0]
@@ -1152,6 +1535,11 @@ class Barrier3d:
                     SedFluxIn = np.zeros([duration, width, self._BarrierLength])
                     SedFluxOut = np.zeros([duration, width, self._BarrierLength])
 
+                    # Representative average slope of interior (made static -
+                    # represent. of 200-m wide barrier), for inundation regime
+                    AvgSlope = self._BermEl / 20
+                    C = self._Cx * AvgSlope  # Momentum constant
+
                     # (dam^3/t) Infiltration Rate, volume of overwash flow lost per m
                     # cross-shore per time
                     Rin = 0
@@ -1169,21 +1557,9 @@ class Barrier3d:
                         # Set discharge at dune gap
                         Discharge[:, 0, start:stop] = Qdune
 
+                        C = 0  # Initialize
                         if inundation == 1:  # Inundation regime
                             Rin = self._Rin_i
-
-                            # # Find average slope of interior
-                            # AvgSlope = self._BermEl / InteriorWidth_Avg
-                            #
-                            # # Enforce max average interior slope
-                            # AvgSlope = min(self._MaxAvgSlope, AvgSlope)
-
-                            # Representative average slope of interior (made static -
-                            # represent. of 200-m wide barrier)
-                            AvgSlope = self._BermEl / 20
-
-                            C = self._Cx * AvgSlope  # Momentum constant
-
                         else:  # Run-up regime
                             Rin = self._Rin_r
 
@@ -1200,384 +1576,47 @@ class Barrier3d:
                                 Hd_TSloss / substep * TS
                             )  # Reduce dune in height linearly over course of storm
 
-                        for d in range(width - 1):
-                            # Reduce discharge across row via infiltration
-                            if d > 0:
-                                Discharge[TS, d, :][Discharge[TS, d, :] > 0] -= Rin
-                            Discharge[TS, d, :][Discharge[TS, d, :] < 0] = 0
-
-                            for i in range(self._BarrierLength):
-                                if Discharge[TS, d, i] > 0:
-                                    Q0 = Discharge[TS, d, i]
-
-                                    # ### Calculate Slopes
-                                    if i > 0:
-                                        S1 = (
-                                            Elevation[TS, d, i]
-                                            - Elevation[TS, d + 1, i - 1]
-                                        ) / (math.sqrt(2))
-                                        S1 = np.nan_to_num(S1)
-                                    else:
-                                        S1 = 0
-
-                                    S2 = Elevation[TS, d, i] - Elevation[TS, d + 1, i]
-                                    S2 = np.nan_to_num(S2)
-
-                                    if i < (self._BarrierLength - 1):
-                                        S3 = (
-                                            Elevation[TS, d, i]
-                                            - Elevation[TS, d + 1, i + 1]
-                                        ) / (math.sqrt(2))
-                                        S3 = np.nan_to_num(S3)
-                                    else:
-                                        S3 = 0
-
-                                    # ### Calculate Discharge To Downflow Neighbors
-                                    # One or more slopes positive
-                                    if S1 > 0 or S2 > 0 or S3 > 0:
-                                        if S1 < 0:
-                                            S1 = 0
-                                        if S2 < 0:
-                                            S2 = 0
-                                        if S3 < 0:
-                                            S3 = 0
-
-                                        Q1 = (
-                                            Q0
-                                            * S1**self._nn
-                                            / (
-                                                S1**self._nn
-                                                + S2**self._nn
-                                                + S3**self._nn
-                                            )
-                                        )
-                                        Q2 = (
-                                            Q0
-                                            * S2**self._nn
-                                            / (
-                                                S1**self._nn
-                                                + S2**self._nn
-                                                + S3**self._nn
-                                            )
-                                        )
-                                        Q3 = (
-                                            Q0
-                                            * S3**self._nn
-                                            / (
-                                                S1**self._nn
-                                                + S2**self._nn
-                                                + S3**self._nn
-                                            )
-                                        )
-
-                                        Q1 = np.nan_to_num(Q1)
-                                        Q2 = np.nan_to_num(Q2)
-                                        Q3 = np.nan_to_num(Q3)
-
-                                    # No slopes positive, one or more equal to zero
-                                    elif S1 == 0 or S2 == 0 or S3 == 0:
-                                        pos = 0
-                                        if S1 == 0:
-                                            pos += 1
-                                        if S2 == 0:
-                                            pos += 1
-                                        if S3 == 0:
-                                            pos += 1
-
-                                        Qx = Q0 / pos
-                                        Qx = np.nan_to_num(Qx)
-
-                                        if S1 == 0 and i > 0:
-                                            Q1 = Qx
-                                        else:
-                                            Q1 = 0
-                                        if S2 == 0:
-                                            Q2 = Qx
-                                        else:
-                                            Q2 = 0
-                                        if S3 == 0 and i < (self._BarrierLength - 1):
-                                            Q3 = Qx
-                                        else:
-                                            Q3 = 0
-
-                                    # All slopes negative
-                                    else:
-                                        Q1 = (
-                                            Q0
-                                            * abs(S1) ** (-self._nn)
-                                            / (
-                                                abs(S1) ** (-self._nn)
-                                                + abs(S2) ** (-self._nn)
-                                                + abs(S3) ** (-self._nn)
-                                            )
-                                        )
-                                        Q2 = (
-                                            Q0
-                                            * abs(S2) ** (-self._nn)
-                                            / (
-                                                abs(S1) ** (-self._nn)
-                                                + abs(S2) ** (-self._nn)
-                                                + abs(S3) ** (-self._nn)
-                                            )
-                                        )
-                                        Q3 = (
-                                            Q0
-                                            * abs(S3) ** (-self._nn)
-                                            / (
-                                                abs(S1) ** (-self._nn)
-                                                + abs(S2) ** (-self._nn)
-                                                + abs(S3) ** (-self._nn)
-                                            )
-                                        )
-
-                                        Q1 = np.nan_to_num(Q1)
-                                        Q2 = np.nan_to_num(Q2)
-                                        Q3 = np.nan_to_num(Q3)
-
-                                        # MaxUpSlope = 0.25  # dam
-
-                                        if S1 > self._MaxUpSlope:
-                                            Q1 = 0
-                                        else:
-                                            Q1 = Q1 * (1 - (abs(S1) / self._MaxUpSlope))
-
-                                        if S2 > self._MaxUpSlope:
-                                            Q2 = 0
-                                        else:
-                                            Q2 = Q2 * (1 - (abs(S2) / self._MaxUpSlope))
-
-                                        if S3 > self._MaxUpSlope:
-                                            Q3 = 0
-                                        else:
-                                            Q3 = Q3 * (1 - (abs(S3) / self._MaxUpSlope))
-
-                                    # Reduce Overwash Through Shrub Cells and Save
-                                    # Discharge
-                                    if self._Shrub_ON:
-                                        # Cell 1
-                                        if i > 0:
-                                            if (
-                                                d < ShrubDomainWidth
-                                                and self._ShrubPercentCover[d, i - 1]
-                                                > 0
-                                            ):
-                                                Q1 = Q1 * (
-                                                    (1 - self._Qshrub_max)
-                                                    * self._ShrubPercentCover[d, i - 1]
-                                                )
-                                            elif (
-                                                d < DeadDomainWidth
-                                                and self._DeadPercentCover[d, i - 1] > 0
-                                            ):
-                                                # Dead shrubs block 2/3 of what living
-                                                # shrubs block
-                                                Q1 = Q1 * (
-                                                    (1 - self._Qshrub_max * 0.66)
-                                                    * self._DeadPercentCover[d, i - 1]
-                                                )
-                                            Discharge[TS, d + 1, i - 1] = (
-                                                Discharge[TS, d + 1, i - 1] + Q1
-                                            )
-
-                                        # Cell 2
-                                        # (ShrubDomainWidth - 1)?
-                                        if (
-                                            d < ShrubDomainWidth
-                                            and self._ShrubPercentCover[d, i] > 0
-                                        ):
-                                            Q2 = Q2 * (
-                                                (1 - self._Qshrub_max)
-                                                * self._ShrubPercentCover[d, i]
-                                            )
-                                        elif (
-                                            d < DeadDomainWidth
-                                            and self._DeadPercentCover[d, i] > 0
-                                        ):
-                                            Q2 = Q2 * (
-                                                (1 - self._Qshrub_max * 0.66)
-                                                * self._DeadPercentCover[d, i]
-                                            )
-                                        Discharge[TS, d + 1, i] = (
-                                            Discharge[TS, d + 1, i] + Q2
-                                        )
-
-                                        # Cell 3
-                                        if i < (self._BarrierLength - 1):
-                                            if (
-                                                d < ShrubDomainWidth
-                                                and self._ShrubPercentCover[d, i + 1]
-                                                > 0
-                                            ):
-                                                Q3 = Q3 * (
-                                                    (1 - self._Qshrub_max)
-                                                    * self._ShrubPercentCover[d, i + 1]
-                                                )
-                                            elif (
-                                                d < DeadDomainWidth
-                                                and self._DeadPercentCover[d, i + 1] > 0
-                                            ):
-                                                Q3 = Q3 * (
-                                                    (1 - self._Qshrub_max * 0.66)
-                                                    * self._DeadPercentCover[d, i + 1]
-                                                )
-                                            Discharge[TS, d + 1, i + 1] = (
-                                                Discharge[TS, d + 1, i + 1] + Q3
-                                            )
-                                    else:
-                                        # Cell 1
-                                        if i > 0:
-                                            Discharge[TS, d + 1, i - 1] = (
-                                                Discharge[TS, d + 1, i - 1] + Q1
-                                            )
-
-                                        # Cell 2
-                                        Discharge[TS, d + 1, i] = (
-                                            Discharge[TS, d + 1, i] + Q2
-                                        )
-
-                                        # Cell 3
-                                        if i < (self._BarrierLength - 1):
-                                            Discharge[TS, d + 1, i + 1] = (
-                                                Discharge[TS, d + 1, i + 1] + Q3
-                                            )
-
-                                    # ### Calculate Sed Movement
-                                    fluxLimit = self._Dmax
-
-                                    # Run-up Regime
-                                    if inundation == 0:
-                                        if Q1 > self._Qs_min and S1 >= 0:
-                                            Qs1 = self._Kr * Q1
-                                            if Qs1 > fluxLimit:
-                                                Qs1 = fluxLimit
-                                        else:
-                                            Qs1 = 0
-
-                                        if Q2 > self._Qs_min and S2 >= 0:
-                                            Qs2 = self._Kr * Q2
-                                            if Qs2 > fluxLimit:
-                                                Qs2 = fluxLimit
-                                        else:
-                                            Qs2 = 0
-
-                                        if Q3 > self._Qs_min and S3 >= 0:
-                                            Qs3 = self._Kr * Q3
-                                            if Qs3 > fluxLimit:
-                                                Qs3 = fluxLimit
-                                        else:
-                                            Qs3 = 0
-
-                                    # Inundation Regime - Murray and Paola (1994, 1997)
-                                    # Rule 3 with flux limiter
-                                    else:
-                                        if Q1 > self._Qs_min:
-                                            Qs1 = self._Ki * (Q1 * (S1 + C)) ** self._mm
-                                            if Qs1 < 0:
-                                                Qs1 = 0
-                                            elif Qs1 > fluxLimit:
-                                                Qs1 = fluxLimit
-                                        else:
-                                            Qs1 = 0
-
-                                        if Q2 > self._Qs_min:
-                                            Qs2 = self._Ki * (Q2 * (S2 + C)) ** self._mm
-                                            if Qs2 < 0:
-                                                Qs2 = 0
-                                            elif Qs2 > fluxLimit:
-                                                Qs2 = fluxLimit
-                                        else:
-                                            Qs2 = 0
-
-                                        if Q3 > self._Qs_min:
-                                            Qs3 = self._Ki * (Q3 * (S3 + C)) ** self._mm
-                                            if Qs3 < 0:
-                                                Qs3 = 0
-                                            elif Qs3 > fluxLimit:
-                                                Qs3 = fluxLimit
-                                        else:
-                                            Qs3 = 0
-
-                                    Qs1 = np.nan_to_num(Qs1)
-                                    Qs2 = np.nan_to_num(Qs2)
-                                    Qs3 = np.nan_to_num(Qs3)
-
-                                    ### Calculate Net Erosion/Accretion
-                                    if Elevation[TS, d, i] > self._SL or any(
-                                        z > self._SL
-                                        for z in Elevation[TS, d + 1 : d + 10, i]
-                                    ):
-                                        # If cell is subaerial, elevation change is
-                                        # determined by difference between
-                                        # flux in vs. flux out
-                                        if i > 0:
-                                            SedFluxIn[TS, d + 1, i - 1] += Qs1
-
-                                        SedFluxIn[TS, d + 1, i] += Qs2
-
-                                        if i < (self._BarrierLength - 1):
-                                            SedFluxIn[TS, d + 1, i + 1] += Qs3
-
-                                        Qs_out = Qs1 + Qs2 + Qs3
-                                        SedFluxOut[TS, d, i] = Qs_out
-
-                                    else:
-                                        # If cell is subaqeous, exponentially decay
-                                        # dep. of remaining sed across bay
-                                        if inundation == 0:
-                                            Cbb = self._Cbb_r
-                                        else:
-                                            Cbb = self._Cbb_i
-
-                                        Qs0 = SedFluxIn[TS, d, i] * Cbb
-
-                                        Qs1 = Qs0 * Q1 / (Q1 + Q2 + Q3)
-                                        Qs2 = Qs0 * Q2 / (Q1 + Q2 + Q3)
-                                        Qs3 = Qs0 * Q3 / (Q1 + Q2 + Q3)
-
-                                        Qs1 = np.nan_to_num(Qs1)
-                                        Qs2 = np.nan_to_num(Qs2)
-                                        Qs3 = np.nan_to_num(Qs3)
-
-                                        if Qs1 < self._Qs_bb_min:
-                                            Qs1 = 0
-                                        elif Qs1 > fluxLimit:
-                                            Qs1 = fluxLimit
-                                        if Qs2 < self._Qs_bb_min:
-                                            Qs2 = 0
-                                        elif Qs2 > fluxLimit:
-                                            Qs2 = fluxLimit
-                                        if Qs3 < self._Qs_bb_min:
-                                            Qs3 = 0
-                                        elif Qs3 > fluxLimit:
-                                            Qs3 = fluxLimit
-
-                                        if i > 0:
-                                            SedFluxIn[TS, d + 1, i - 1] += Qs1
-
-                                        SedFluxIn[TS, d + 1, i] += Qs2
-
-                                        if i < (self._BarrierLength - 1):
-                                            SedFluxIn[TS, d + 1, i + 1] += Qs3
-
-                                        Qs_out = Qs1 + Qs2 + Qs3
-                                        SedFluxOut[TS, d, i] = Qs_out
-
-                                    if self._Shrub_ON:
-                                        # ### Saline Flooding
-                                        (
-                                            self._ShrubDomainFemale,
-                                            self._ShrubDomainMale,
-                                            self._ShrubDomainDead,
-                                        ) = self.SalineFlooding(
-                                            ShrubDomainWidth,
-                                            self._ShrubDomainAll,
-                                            self._ShrubDomainFemale,
-                                            self._ShrubDomainMale,
-                                            self._ShrubDomainDead,
-                                            d,
-                                            i,
-                                            Q0,
-                                        )
+                        # Route Overwash
+                        (
+                             SedFluxIn,
+                             SedFluxOut,
+                             self._ShrubDomainFemale,
+                             self._ShrubDomainMale,
+                             self._ShrubDomainDead
+                         ) = self.route_overwash(
+                             self._BarrierLength,
+                             self._nn,
+                             self._MaxUpSlope,
+                             self._Shrub_ON,
+                             self._ShrubPercentCover,
+                             self._Qshrub_max,
+                             self._DeadPercentCover,
+                             self._Dmax,
+                             self._Qs_min,
+                             self._Kr,
+                             self._Ki,
+                             self._mm,
+                             self._SL,
+                             self._Cbb_r,
+                             self._Cbb_i,
+                             self._Qs_bb_min,
+                             self._ShrubDomainFemale,
+                             self._ShrubDomainMale,
+                             self._ShrubDomainDead,
+                             self._ShrubDomainAll,
+                             self._SalineLimit,
+                             width,
+                             TS,
+                             Discharge,
+                             Rin,
+                             Elevation,
+                             SedFluxIn,
+                             SedFluxOut,
+                             ShrubDomainWidth,
+                             DeadDomainWidth,
+                             inundation,
+                             C,
+                        )
 
                         # ### Update Elevation After Every Storm Hour
                         if inundation == 1:
