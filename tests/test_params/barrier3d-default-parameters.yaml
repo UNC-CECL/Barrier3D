@@ -31,7 +31,7 @@ Dstart: 0.5  # [m]
 # Dune crest heights will come from external file; copied for each sequential dune row
 DuneParamStart: True
 # if DuneParamStart = True, use dune crest heights to populate multiple dune rows with different crest heights
-DuneParamMultipleRows: True
+DuneParamMultipleRows: False
 # Restart height for dunes lowered to essentially zero
 DuneRestart: 0.075  # [m]
 # Width (cross-shore) of island dune field; for illustration purposes only
