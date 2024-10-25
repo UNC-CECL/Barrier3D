@@ -1447,6 +1447,7 @@ class Barrier3d:
                             # (i.e. a percent change), from Goldstein and Moore (2016)
 
                             # Set new dune height
+
                             InitDElev = (
                                 self._DuneDomain[self._time_index, Dow[d], w]
                                 + self._BermEl
