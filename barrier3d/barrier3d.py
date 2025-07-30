@@ -1156,7 +1156,6 @@ class Barrier3d:
                                 )  # Transfer to dead shrub domain
                                 ShrubDomainFemale[d, i] = 0
                                 ShrubDomainMale[d, i] = 0
-
         return SedFluxIn, SedFluxOut, ShrubDomainFemale, ShrubDomainMale, ShrubDomainDead
 
     def __init__(self, **kwds):
@@ -1636,7 +1635,7 @@ class Barrier3d:
                                 SedFluxIn[TS, :, :] - SedFluxOut[TS, :, :]
                             ) / substep
                         Elevation[TS, :, :] = Elevation[TS, :, :] + ElevationChange
-
+                        c = 20
                         # Calculate and save volume of sediment deposited on/behind the
                         # island for every hour
                         # (all four methods below should equal the same!)
@@ -1707,6 +1706,7 @@ class Barrier3d:
 
         # Calculate shoreline/shoreface position change following Lorenzo-Trueba
         # and Ashton (2014)
+        c = 20
         (
             self._x_s,
             self._x_t,
